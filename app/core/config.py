@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,7 +8,11 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
     app_name: str = Field(default="GenoPath API", min_length=1)
     debug: bool = False
+    database_url: SecretStr | None = Field(
+        default=None, validation_alias="DATABASE_URL", repr=False
+    )

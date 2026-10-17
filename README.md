@@ -4,7 +4,7 @@ Repository untuk platform web variant calling berbasis FastAPI dan PostgreSQL.
 
 ## Skema Basis Data (PostgreSQL)
 
-Saat ini model basis data dibangun menggunakan SQLAlchemy dengan 3 entitas utama yang telah diinisialisasi:
+Baseline M6 mencakup tiga tabel yang dipetakan melalui SQLAlchemy:
 
 1. **`user`**
    - Atribut: `id_user`, `nama`, `email`, `password_hash`, `role`
@@ -18,6 +18,9 @@ Saat ini model basis data dibangun menggunakan SQLAlchemy dengan 3 entitas utama
    - Atribut: `id_sample`, `id_user`, `nama_berkas`, `path_penyimpanan`, `ukuran_berkas`, `waktu_unggah`
    - Keterangan: Menyimpan metadata berkas sekuens (FASTQ) yang diunggah pengguna.
 
+ORM M7 menambahkan `user.username` serta entitas `job`, `analysis`, `variant`,
+dan `genotype`. Perubahan ORM baru berlaku pada database setelah migrasi diterapkan.
+
 ## Konfigurasi Database dan Pengujian
 
 Backend menggunakan Psycopg 3. Konfigurasi database tetap bernama `DATABASE_URL`
@@ -28,8 +31,9 @@ Psycopg tanpa extra `binary` memerlukan library sistem `libpq`.
 
 Impor aplikasi, pemanggilan `create_app()`, dan akses `/health` tidak membuat tabel atau membuka
 koneksi database. Engine baru disiapkan ketika dependency database digunakan.
-Pembuatan dan perubahan skema harus dilakukan secara eksplisit; belum tersedia
-perintah migrasi pada tahap ini.
+Pembuatan dan perubahan skema dikelola secara eksplisit melalui Alembic.
+Lihat [panduan migrasi](migrations/README.md) untuk membedakan database baru dan
+database M6 existing. Menambahkan source migrasi tidak mengubah PostgreSQL secara otomatis.
 
 Untuk menyiapkan dependency pengembangan, jalankan dari root repository:
 

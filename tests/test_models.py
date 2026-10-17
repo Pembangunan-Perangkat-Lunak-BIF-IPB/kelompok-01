@@ -120,12 +120,42 @@ def test_foreign_keys_resolve_to_shared_metadata(model, targets):
 
 
 def test_analysis_has_unique_job_foreign_key():
-    unique_columns = {
-        tuple(constraint.columns.keys())
+    constraints = [
+        constraint
         for constraint in Analysis.__table__.constraints
         if isinstance(constraint, UniqueConstraint)
-    }
-    assert unique_columns == {("id_job",)}
+        and list(constraint.columns.keys()) == ["id_job"]
+    ]
+    assert len(constraints) == 1
+    assert constraints[0].name == "uq_analysis_id_job"
+
+
+def test_username_is_required_and_unique_without_a_default():
+    column = User.__table__.c.username
+    assert type(column.type) is String
+    assert column.nullable is False
+    assert column.default is None
+    assert column.server_default is None
+    constraints = [
+        constraint
+        for constraint in User.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+        and list(constraint.columns.keys()) == ["username"]
+    ]
+    assert len(constraints) == 1
+    assert constraints[0].name == "uq_user_username"
+
+
+def test_email_keeps_its_existing_unique_index():
+    indexes = [index for index in User.__table__.indexes if index.unique]
+    assert [(index.name, list(index.columns.keys())) for index in indexes] == [
+        ("ix_user_email", ["email"])
+    ]
+    assert not any(
+        isinstance(constraint, UniqueConstraint)
+        and list(constraint.columns.keys()) == ["email"]
+        for constraint in User.__table__.constraints
+    )
 
 
 @pytest.mark.parametrize(

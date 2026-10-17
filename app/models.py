@@ -1,4 +1,14 @@
-from sqlalchemy import BigInteger, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -6,8 +16,10 @@ from .database import Base
 
 class User(Base):
     __tablename__ = "user"
+    __table_args__ = (UniqueConstraint("username", name="uq_user_username"),)
 
     id_user = Column(Integer, primary_key=True, index=True)
+    username = Column(String, nullable=False)
     nama = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
@@ -66,9 +78,10 @@ class Job(Base):
 
 class Analysis(Base):
     __tablename__ = "analysis"
+    __table_args__ = (UniqueConstraint("id_job", name="uq_analysis_id_job"),)
 
     id_analysis = Column(Integer, primary_key=True)
-    id_job = Column(Integer, ForeignKey("job.id_job"), nullable=False, unique=True)
+    id_job = Column(Integer, ForeignKey("job.id_job"), nullable=False)
     parameter_qual = Column(Float, nullable=False)
     parameter_dp = Column(Integer, nullable=False)
     metrik_qc = Column(String, nullable=True)

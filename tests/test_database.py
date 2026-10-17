@@ -36,7 +36,9 @@ with (
 
     application = create_app(Settings(_env_file=None))
     assert application.state.settings.database_url is None
-    assert set(models.Base.metadata.tables) == {"user", "sample", "reference_genome"}
+    assert set(models.Base.metadata.tables) == {
+        "user", "sample", "reference_genome", "job", "analysis", "variant", "genotype"
+    }
 """
     result = subprocess.run(
         [sys.executable, "-B", "-c", script, str(repository)],

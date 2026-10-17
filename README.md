@@ -46,3 +46,41 @@ Perintah instalasi mengubah virtual environment. Pengujian menggunakan konfigura
 tanpa `.env` dan tidak membutuhkan PostgreSQL. Endpoint yang menggunakan database
 dapat diuji dengan `application.dependency_overrides[get_db]` atau override
 `get_session_factory` untuk menyediakan session testing yang terisolasi.
+
+## Fondasi keamanan autentikasi (Checkpoint 3B.1)
+
+`app/core/security.py` menyediakan `hash_password`, `verify_password`,
+`create_access_token`, dan `decode_access_token`. Hash password menggunakan
+Argon2id melalui `pwdlib[argon2]`, dengan salt acak yang dibuat library.
+Verifikasi mengembalikan `False` untuk password salah atau hash rusak/tidak
+didukung. Hash selain Argon2id tidak diterima dan tidak diubah otomatis.
+
+Konfigurasi JWT mengikuti prefix Settings existing:
+
+| Environment variable | Ketentuan |
+| --- | --- |
+| `GENOPATH_JWT_SECRET` | Wajib saat operasi JWT; tidak memiliki default; minimal 32 byte UTF-8. |
+| `GENOPATH_JWT_ALGORITHM` | Hanya `HS256`, sekaligus nilai default. |
+| `GENOPATH_ACCESS_TOKEN_EXPIRE_MINUTES` | Integer positif, default `240` menit. |
+
+Secret harus berasal dari generator acak kriptografis, disediakan melalui
+environment, dan tidak disimpan di repository. Batas panjang tidak membuktikan
+keacakan secret. Jangan memakai password manusia, placeholder, atau contoh
+publik sebagai secret. Secret disimpan sebagai `SecretStr` dan tidak dimasukkan
+ke representasi Settings.
+
+Token ditandatangani dengan HS256 melalui PyJWT. Payload yang diterbitkan hanya
+berisi `sub` (string ID pengguna positif sesuai PostgreSQL INTEGER), `iat`
+(waktu penerbitan), dan `exp` (waktu kedaluwarsa). Waktu menggunakan UTC dalam
+detik Unix; `exp - iat` default adalah 14.400 detik. JWT ditandatangani, bukan
+dienkripsi, sehingga payload tidak boleh berisi password atau informasi rahasia.
+Verifikasi memeriksa signature, algoritma yang diizinkan, claim wajib, tipe dan
+urutan waktu, serta format subject. Role tidak dimasukkan ke token.
+
+Secret yang hilang atau terlalu pendek ditolak saat utilitas JWT dipanggil,
+sehingga import aplikasi dan `/health` tetap dapat berjalan tanpa secret.
+`SecurityConfigurationError` menandakan konfigurasi auth tidak dapat digunakan;
+`InvalidAccessTokenError` menandakan token ditolak. Keduanya belum dipetakan ke
+HTTP pada tahap ini. Endpoint login JSON dan dependency `get_current_user`
+belum dibuat. Unit tests menggunakan key sementara dan waktu terkontrol,
+tanpa membaca `.env` atau membutuhkan PostgreSQL.

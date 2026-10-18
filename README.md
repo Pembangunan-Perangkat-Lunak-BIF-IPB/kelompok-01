@@ -80,7 +80,65 @@ urutan waktu, serta format subject. Role tidak dimasukkan ke token.
 Secret yang hilang atau terlalu pendek ditolak saat utilitas JWT dipanggil,
 sehingga import aplikasi dan `/health` tetap dapat berjalan tanpa secret.
 `SecurityConfigurationError` menandakan konfigurasi auth tidak dapat digunakan;
-`InvalidAccessTokenError` menandakan token ditolak. Keduanya belum dipetakan ke
-HTTP pada tahap ini. Endpoint login JSON dan dependency `get_current_user`
-belum dibuat. Unit tests menggunakan key sementara dan waktu terkontrol,
+`InvalidAccessTokenError` menandakan token ditolak. Unit tests menggunakan
+key sementara dan waktu terkontrol,
 tanpa membaca `.env` atau membutuhkan PostgreSQL.
+
+## Login JSON dan autentikasi (Checkpoint 3B.2)
+
+`POST /auth/login` menerima `Content-Type: application/json`:
+
+```json
+{"username": "pengguna_contoh", "password": "password-uji-contoh"}
+```
+
+Nilai di atas hanya contoh, bukan akun yang dibuat oleh aplikasi. Username
+dicocokkan persis dengan `User.username`, tanpa trim, perubahan kapitalisasi,
+atau pencarian email. Kedua field wajib berupa string tidak kosong; field
+tambahan ditolak. Password request ditampung sebagai `SecretStr`.
+
+Respons sukses (200):
+
+```json
+{"access_token": "<JWT-hasil-login>", "token_type": "bearer"}
+```
+
+Respons token memakai `Cache-Control: no-store` dan `Pragma: no-cache`.
+Login memakai session dari `get_db`, memverifikasi hash Argon2id, lalu menerbitkan
+JWT menggunakan Settings milik instance aplikasi. Tidak ada penulisan database.
+Username tidak ditemukan tetap menjalankan verifikasi terhadap hash dummy yang
+dibuat secara lazy dan disimpan dalam memori proses. Ini mitigasi timing sederhana,
+bukan jaminan waktu konstan (terutama pada akses pertama atau hash akun yang rusak).
+
+Endpoint bisnis nantinya memakai `Depends(get_current_user)` dari
+`app.api.dependencies`. Client mengirim `Authorization: Bearer <access_token>`.
+Token diverifikasi sebelum session database dibuka; setelah itu `User` dicari
+berdasarkan ID pada `sub`. Role berasal dari baris User aktual, bukan payload JWT.
+Dependency ini mengautentikasi pengguna, belum menetapkan izin atas resource.
+Endpoint harus tetap menggunakan response schema eksplisit agar tidak
+menserialisasikan ORM User beserta `password_hash` secara langsung.
+
+| Status | Kontrak |
+| --- | --- |
+| 200 | Login berhasil, `access_token` dan `token_type`. |
+| 401 | Kredensial salah, token invalid/expired/hilang, atau User tidak ditemukan. Detail generik `Could not authenticate.` dan `WWW-Authenticate: Bearer`. |
+| 422 | Request tidak memenuhi schema/JSON; detail disamarkan agar input tidak dipantulkan kembali. |
+| 503 | Konfigurasi auth/database tidak tersedia, error driver DBAPI, atau timeout pool; detail generik `Service unavailable.`. |
+
+Handler 503 hanya menangani kelas exception layanan yang dikenali, bukan seluruh
+exception aplikasi. Handler validasi 422 berlaku pada app factory dan tidak
+menyertakan input, context, atau pesan exception mentah. Tidak ada logging
+kredensial/token atau detail exception layanan pada implementasi ini.
+
+OpenAPI `/openapi.json` dan Swagger `/docs` menyediakan skema HTTP Bearer/JWT.
+Masukkan token yang diperoleh dari login JSON ke tombol Authorize. Login dan
+`/health` tetap publik; tidak ada security requirement global. Belum ada endpoint
+bisnis production, sehingga hanya tests yang menambahkan route terproteksi.
+Tidak tersedia registrasi, refresh token, remember-me, atau RBAC.
+
+Tests auth memakai session mock melalui override `get_session_factory`/`get_db`,
+key sementara, dan waktu terkontrol. Tests memverifikasi session ditutup pada
+sukses/gagal, status HTTP, sanitasi error, dan penolakan token sebelum akses DB.
+Pengujian ini belum membuktikan perilaku terhadap PostgreSQL sungguhan; pengujian
+integrasi terpisah memerlukan database testing dan persetujuan sebelum penulisan
+fixture akun, bukan memakai `genopath_db`.

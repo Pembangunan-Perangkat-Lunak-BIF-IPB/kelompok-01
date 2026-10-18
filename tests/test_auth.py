@@ -363,7 +363,7 @@ def test_openapi_exposes_http_bearer_and_json_login(case, app_factory):
     # Production OpenAPI includes the scheme even before business routes exist.
     production_app = app_factory(Settings(_env_file=None))
     schema = production_app.openapi()
-    assert set(schema["paths"]) == {"/health", "/auth/login"}
+    assert set(schema["paths"]) == {"/health", "/auth/login", "/samples/upload"}
     assert schema["components"]["securitySchemes"]["HTTPBearer"] == {
         "type": "http", "scheme": "bearer", "bearerFormat": "JWT",
         "description": "Access token returned by POST /auth/login (JSON login).",

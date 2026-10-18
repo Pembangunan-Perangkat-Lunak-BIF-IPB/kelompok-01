@@ -46,3 +46,18 @@ def get_current_user(
         raise authentication_error()
     # The returned ORM object includes the role currently stored in the database.
     return user
+
+
+def get_upload_owner_id(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> int:
+    """Snapshot the owner and release the read transaction before a large body.
+
+    FastAPI shares this get_db dependency with get_current_user. Session.close()
+    releases its connection/transaction now; get_db's final close is idempotent.
+    Persistence uses a separate session created only after file validation.
+    """
+    id_user = current_user.id_user
+    db.close()
+    return id_user

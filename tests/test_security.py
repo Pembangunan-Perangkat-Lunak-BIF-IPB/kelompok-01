@@ -298,4 +298,4 @@ def test_security_dependency_manifests_match():
     assert dependencies == (root / "requirements.txt").read_text().splitlines()
     assert "pwdlib[argon2]>=0.3,<1.0" in dependencies
     assert "PyJWT>=2.10.1,<3.0" in dependencies
-    assert not any(item.startswith("python-multipart") for item in dependencies)
+    assert "python-multipart==0.0.32" in dependencies

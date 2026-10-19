@@ -2,6 +2,40 @@
 
 Repository untuk platform web variant calling berbasis FastAPI dan PostgreSQL.
 
+## Mulai menggunakan Backend M7
+
+M7 menyediakan login JWT dan upload FASTQ/FASTQ.gz beserta penyimpanan file dan
+metadata Sample. **Upload HTTP 201 berarti Sample tersimpan, bukan analisis selesai.**
+Pembuatan Job dan integrasi Nextflow masih scope M8.
+
+| Pembaca | Panduan utama |
+| --- | --- |
+| Frontend React | [Kontrak API](BACKEND_INTEGRATION_GUIDE.md#endpoint-m7) dan [integrasi React/proxy](BACKEND_INTEGRATION_GUIDE.md#frontend-react) |
+| QA | [Matriks dan pengujian aman](BACKEND_INTEGRATION_GUIDE.md#qa-dan-pengujian-aman) |
+| System Analyst | [Relasi data dan batas M7/M8](BACKEND_INTEGRATION_GUIDE.md#system-analyst-dan-alur-data) |
+| Anggota berbantuan AI | [Konteks dan batas eksekusi](BACKEND_INTEGRATION_GUIDE.md#bekerja-dengan-ai) |
+| Operator demo | [Prosedur Swagger terisolasi](scripts/SWAGGER_DEMO.md) |
+
+Quickstart singkat dari root checkout:
+
+1. Jika backend sudah disiapkan BE/operator, minta base URL dan akun testing lewat
+   kanal privat. Tidak perlu memasang dependency atau mengakses database sendiri.
+2. Untuk backend lokal Linux/WSL, gunakan Python 3.11+, buat `.venv` bila belum ada,
+   lalu pasang dependency:
+
+   ```bash
+   python3 -m venv .venv
+   .venv/bin/python -m pip install -e '.[dev]'
+   ```
+
+3. Ikuti [konfigurasi, startup, dan health](BACKEND_INTEGRATION_GUIDE.md#quickstart-lokal)
+   sebelum menjalankan server. Database/schema/User tidak dibuat otomatis; target
+   harus disiapkan dan diverifikasi operator. Health 200 hanya membuktikan API hidup.
+
+Panduan di atas adalah jalur penggunaan FE/QA/SA. Bagian berikut mempertahankan
+referensi teknis implementasi, sedangkan [panduan migrasi](migrations/README.md)
+khusus untuk operasi schema yang sudah disetujui.
+
 ## Skema Basis Data (PostgreSQL)
 
 Baseline M6 mencakup tiga tabel yang dipetakan melalui SQLAlchemy:
@@ -110,7 +144,7 @@ Username tidak ditemukan tetap menjalankan verifikasi terhadap hash dummy yang
 dibuat secara lazy dan disimpan dalam memori proses. Ini mitigasi timing sederhana,
 bukan jaminan waktu konstan (terutama pada akses pertama atau hash akun yang rusak).
 
-Endpoint bisnis nantinya memakai `Depends(get_current_user)` dari
+Endpoint upload memakai `Depends(get_current_user)` melalui dependency pemilik dari
 `app.api.dependencies`. Client mengirim `Authorization: Bearer <access_token>`.
 Token diverifikasi sebelum session database dibuka; setelah itu `User` dicari
 berdasarkan ID pada `sub`. Role berasal dari baris User aktual, bukan payload JWT.

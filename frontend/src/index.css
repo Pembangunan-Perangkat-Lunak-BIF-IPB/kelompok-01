@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Oswald';
+  }
+}
+
+/* Sembunyikan tombol mata bawaan peramban */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+}

@@ -1,54 +1,105 @@
-import type { JobItem } from '../pages/JobMonitoringPage';
+export interface LoginPayload {
+  username: string;
+  password: string;
+}
 
-export async function fetchJobStatuses(token?: string): Promise<JobItem[]> {
-  try {
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
 
-    const res = await fetch('/api/jobs/status', { headers, cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-    return await res.json();
-  } catch {
-    // Fallback Mock Data yang disesuaikan dengan interface JobItem baru
-    return [
-      {
-        id: '#JOB-0941',
-        sampleName: 'Bawang_Putih_Lokal_Tawangmangu_R1.fq',
-        fastqType: 'Single-End',
-        status: 'Running',
-        statusLabel: 'Berjalan: Alignment BWA-MEM2',
-      },
-      {
-        id: '#JOB-0938',
-        sampleName: 'Allium_sativum_Cianjur_SE.fastq.gz',
-        fastqType: 'Single-End',
-        status: 'Completed',
-        statusLabel: 'Selesai',
-        vcfReportId: 'JOB-0938',
-      },
-      {
-        id: '#JOB-0925',
-        sampleName: 'Garlic_Brebes_Kultivar_Lumbu_Hijau.fq',
-        fastqType: 'Paired-End',
-        status: 'Completed',
-        statusLabel: 'Selesai',
-        vcfReportId: 'JOB-0925',
-      },
-      {
-        id: '#JOB-0919',
-        sampleName: 'Sampel_Uji_Coba_Corrupt_Read.fastq',
-        fastqType: 'Single-End',
-        status: 'Failed',
-        statusLabel: 'Gagal: FASTQ Korup',
-      },
-      {
-        id: '#JOB-0910',
-        sampleName: 'Allium_sativum_Kupang_Isolat_03.fastq',
-        fastqType: 'Single-End',
-        status: 'Completed',
-        statusLabel: 'Selesai',
-        vcfReportId: 'JOB-0910',
-      },
-    ];
+export interface SampleUploadResponse {
+  id_sample: number;
+  nama_berkas: string;
+  ukuran_berkas: number;
+  waktu_unggah: string;
+}
+
+// Perbaikan ApiError agar sesuai aturan erasableSyntaxOnly
+export class ApiError extends Error {
+  status: number;
+  retryAfter: string | null;
+
+  constructor(status: number, message: string, retryAfter: string | null = null) {
+    super(message);
+    this.status = status;
+    this.retryAfter = retryAfter;
   }
+}
+
+// 1. Endpoint Login: POST /auth/login
+export async function loginUser(payload: LoginPayload): Promise<TokenResponse> {
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message =
+      typeof data?.detail === 'string'
+        ? data.detail
+        : 'Gagal melakukan otentikasi. Periksa kredensial Anda.';
+    throw new ApiError(response.status, message);
+  }
+
+  return data as TokenResponse;
+}
+
+// 2. Endpoint Upload FASTQ: POST /samples/upload
+export async function uploadSample(file: File, token: string): Promise<SampleUploadResponse> {
+  if (file.size > 1_000_000_000) {
+    throw new ApiError(413, 'Ukuran berkas melebihi batas maksimum 1 GB.');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch('/api/samples/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const retryAfter = response.headers.get('Retry-After');
+    let message = 'Gagal mengunggah berkas sampel.';
+
+    switch (response.status) {
+      case 400:
+        message = 'Format pengiriman berkas tidak valid atau terpotong.';
+        break;
+      case 401:
+        message = 'Sesi Anda telah berakhir. Silakan login kembali.';
+        break;
+      case 413:
+        message = 'Ukuran berkas melebihi batas yang diizinkan server (maks. 1 GB).';
+        break;
+      case 415:
+        message = 'Tipe konten harus berupa multipart/form-data.';
+        break;
+      case 422:
+        message = typeof data?.detail === 'string' 
+          ? data.detail 
+          : 'Format berkas FASTQ tidak valid atau melampaui batas validasi.';
+        break;
+      case 503:
+        message = retryAfter 
+          ? `Server sedang memproses pengunggahan lain. Coba lagi dalam ${retryAfter} detik.`
+          : 'Layanan pengunggahan sedang tidak tersedia.';
+        break;
+      default:
+        if (typeof data?.detail === 'string') message = data.detail;
+    }
+
+    throw new ApiError(response.status, message, retryAfter);
+  }
+
+  return data as SampleUploadResponse;
 }

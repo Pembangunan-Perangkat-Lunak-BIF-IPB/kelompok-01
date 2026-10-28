@@ -1,15 +1,42 @@
-@tailwind base;
+ @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    font-family: 'Oswald';
+    font-family: 'Oswald', sans-serif;
   }
 }
-
-/* Sembunyikan tombol mata bawaan peramban */
+/* Sembunyikan tombol mata bawaan peramban (Microsoft Edge / Chrome) */
 input::-ms-reveal,
 input::-ms-clear {
   display: none !important;
+}
+
+@layer utilities {
+  /* Efek Kartu Kristal Transparan dengan Kedalaman */
+  .glass-card {
+    @apply backdrop-blur-xl transition-all duration-300;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 
+      0 8px 32px 0 rgba(31, 38, 135, 0.08),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  /* Efek Kristal Saat Mode Malam Aktif */
+  .dark .glass-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 
+      0 8px 32px 0 rgba(0, 0, 0, 0.45),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.15),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  /* Efek Hover untuk Kartu Interaktif */
+  .glass-card-hover {
+    @apply hover:-translate-y-1 hover:shadow-lg;
+  }
 }

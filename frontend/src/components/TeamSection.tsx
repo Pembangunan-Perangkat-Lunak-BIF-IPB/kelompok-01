@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-// Pengimporan berkas dari src/assets/
+// Pengimporan berkas dari src/assets/ (Tetap dipertahankan penuh)
 import uchihaImg from '../assets/Uchiha.jpg';
 import u1Img from '../assets/u1.png';
 import u2Img from '../assets/u2.png';
@@ -51,23 +51,26 @@ export const TeamSection: React.FC = () => {
 
   return (
     <section className="max-w-5xl mx-auto pt-4 pb-16">
-      {/* Header Judul di Luar Foto (Seragam dengan Section Lain) */}
-      <div className="flex justify-between items-end mb-3 border-b border-slate-200 pb-2">
+      {/* Header Judul di Luar Foto */}
+      {/* Penambahan: Pembatas garis dan teks adaptif tema siang/malam (dark:border-slate-800/60 & dark:text-slate-200) */}
+      <div className="flex justify-between items-end mb-3 border-b border-slate-300/40 dark:border-slate-800/60 pb-2 transition-colors duration-300">
         <div>
-          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <span className="w-2 h-2 bg-blue-600 rounded-full"></span> Tim Pengembang Proyek Praktikum
+          <h2 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full"></span> Tim Pengembang Proyek Praktikum
           </h2>
-          <p className="text-[11px] text-slate-500 font-medium ml-4 mt-0.5">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium ml-4 mt-0.5">
             Program Studi Bioinformatika — IPB University
           </p>
         </div>
-        <span className="text-[10px] font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded uppercase font-bold">
+        {/* Penambahan: Badge kristal adaptif mode malam */}
+        <span className="glass-card text-[10px] font-mono text-slate-700 dark:text-slate-300 px-3 py-1 rounded-xl uppercase font-bold transition-all">
           KONTRIBUTOR MAHASISWA
         </span>
       </div>
 
       {/* Frame Foto Utama & Layer Interaktif */}
-      <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-slate-900 border border-slate-200 min-h-[440px] flex flex-col justify-end">
+      {/* Penambahan: Border transparan dan efek bayangan kristal pada pembungkus foto utama */}
+      <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-slate-300/40 dark:border-slate-800/80 min-h-[440px] flex flex-col justify-end transition-colors duration-300">
         
         {/* Layer Foto Utama & Cutout per Anggota */}
         <div className="absolute inset-0 w-full h-full bg-slate-950">
@@ -79,7 +82,7 @@ export const TeamSection: React.FC = () => {
             }`}
           />
 
-          {/* Layer PNG Transparan per Anggota */}
+          {/* Layer PNG Transparan Cutout per Anggota (Tetap utuh) */}
           {TEAM_DATA.map((member) => (
             <img
               key={member.id}
@@ -91,7 +94,7 @@ export const TeamSection: React.FC = () => {
             />
           ))}
 
-          {/* Gradasi Gelap Hanya di Sisi Bawah Kartu Nama */}
+          {/* Gradasi Gelap di Sisi Bawah Kartu Nama */}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-transparent pointer-events-none"></div>
         </div>
 
@@ -105,19 +108,22 @@ export const TeamSection: React.FC = () => {
               <div
                 key={member.id}
                 onClick={() => handleMemberClick(member)}
-                className={`rounded-xl p-2.5 shadow-lg transition-all duration-500 cursor-pointer select-none backdrop-blur-md ${
+                // Penambahan: Penyesuaian skema warna kartu saat terpilih, kabur, maupun default menggunakan gaya kristal transparan
+                className={`rounded-xl p-2.5 transition-all duration-500 cursor-pointer select-none backdrop-blur-md ${
                   isSelected
-                    ? 'bg-white/95 border-2 border-blue-600 ring-2 ring-blue-500/20 -translate-y-2 scale-105 z-30'
+                    ? 'bg-white/95 dark:bg-slate-900/95 border-2 border-blue-600 dark:border-blue-400 ring-2 ring-blue-500/20 dark:ring-blue-400/30 -translate-y-2 scale-105 z-30 shadow-xl'
                     : isBlurred
-                    ? 'bg-white/30 opacity-40 blur-[1px] scale-95 border border-white/20'
-                    : 'bg-white/70 hover:bg-white/90 border border-white/60 hover:-translate-y-1 hover:shadow-xl'
+                    ? 'bg-white/30 dark:bg-slate-900/30 opacity-40 blur-[1px] scale-95 border border-white/20 dark:border-slate-800/30'
+                    : 'glass-card hover:bg-white/90 dark:hover:bg-slate-900/90 hover:-translate-y-1 hover:shadow-xl'
                 }`}
               >
-                <span className="text-[8px] font-mono text-slate-500 block mb-0.5">
+                {/* Penambahan: Warna NIM adaptif mode malam */}
+                <span className="text-[8px] font-mono text-slate-500 dark:text-slate-400 block mb-0.5">
                   {member.nim}
                 </span>
 
-                <h4 className="font-bold text-[11px] text-slate-900 leading-tight min-h-[26px] [word-break:keep-all]">
+                {/* Judul Nama & Animasi Per Karakter */}
+                <h4 className="font-bold text-[11px] text-slate-900 dark:text-slate-100 leading-tight min-h-[26px] [word-break:keep-all]">
                   {member.name.split('').map((char, charIdx) => {
                     const isCharAnimating =
                       animatingChar?.memberId === member.id &&
@@ -128,7 +134,7 @@ export const TeamSection: React.FC = () => {
                         key={charIdx}
                         className={`inline-block transition-transform duration-200 ${
                           isCharAnimating
-                            ? 'scale-130 text-blue-600 font-black -translate-y-0.5'
+                            ? 'scale-130 text-blue-600 dark:text-blue-400 font-black -translate-y-0.5'
                             : 'scale-100'
                         }`}
                       >
@@ -138,7 +144,8 @@ export const TeamSection: React.FC = () => {
                   })}
                 </h4>
 
-                <p className="text-[9.5px] text-blue-600 font-semibold mt-0.5">
+                {/* Peran / Role */}
+                <p className="text-[9.5px] text-blue-600 dark:text-blue-400 font-semibold mt-0.5">
                   {member.role}
                 </p>
               </div>

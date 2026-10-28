@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware  # [BARU] Import CORSMiddleware
 from sqlalchemy.exc import DBAPIError, TimeoutError as DatabaseTimeoutError
 
 from app.api.dependencies import bearer_scheme
@@ -16,6 +17,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     application = FastAPI(title=settings.app_name, debug=settings.debug)
     application.state.settings = settings
+
+    # [BARU] Konfigurasi CORS agar React (port 5173) bisa berkomunikasi dengan backend
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     application.add_exception_handler(RequestValidationError, invalid_request)
     for error_type in (
         SecurityConfigurationError, DatabaseConfigurationError, DBAPIError, DatabaseTimeoutError

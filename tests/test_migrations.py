@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "migrations/versions/0001_m6_baseline.py"
 M7 = ROOT / "migrations/versions/0002_m7_schema.py"
 M8 = ROOT / "migrations/versions/0003_m8_pipeline.py"
+M9 = ROOT / "migrations/versions/0004_m9_result_indexes.py"
 
 
 def revision_tree(path):
@@ -58,6 +59,7 @@ def test_revision_chain_is_explicit_and_linear():
         (BASELINE, "0001_m6_baseline", None),
         (M7, "0002_m7_schema", "0001_m6_baseline"),
         (M8, "0003_m8_pipeline", "0002_m7_schema"),
+        (M9, "0004_m9_result_indexes", "0003_m8_pipeline"),
     ]:
         assignments = {
             node.targets[0].id: ast.literal_eval(node.value)
@@ -151,6 +153,7 @@ def test_migration_modules_import_without_side_effects(alembic_api, monkeypatch)
     runpy.run_path(str(BASELINE))
     runpy.run_path(str(M7))
     runpy.run_path(str(M8))
+    runpy.run_path(str(M9))
 
     assert environment["target_metadata"] is Base.metadata
     assert len(Base.metadata.tables) == 7
@@ -161,9 +164,9 @@ def test_alembic_resolves_one_head(offline_config):
     from alembic.script import ScriptDirectory
 
     scripts = ScriptDirectory.from_config(offline_config)
-    assert scripts.get_heads() == ["0003_m8_pipeline"]
+    assert scripts.get_heads() == ["0004_m9_result_indexes"]
     assert [item.revision for item in scripts.walk_revisions()] == [
-        "0003_m8_pipeline", "0002_m7_schema", "0001_m6_baseline"
+        "0004_m9_result_indexes", "0003_m8_pipeline", "0002_m7_schema", "0001_m6_baseline"
     ]
 
 
@@ -247,7 +250,7 @@ def test_explicit_revision_columns_match_orm(offline_config, monkeypatch):
     )
 
 
-@pytest.mark.parametrize("path", [BASELINE, M7, M8], ids=["m6", "m7", "m8"])
+@pytest.mark.parametrize("path", [BASELINE, M7, M8, M9], ids=["m6", "m7", "m8", "m9"])
 def test_downgrade_requires_separate_review(alembic_api, path):
     from alembic.util import CommandError
 
@@ -263,6 +266,21 @@ def test_m8_is_additive_nullable_metadata_without_aligner_assumptions():
     for call in calls:
         assert any(k.arg == "schema" and ast.literal_eval(k.value) == "public" for k in call.keywords)
         assert any(k.arg == "nullable" and ast.literal_eval(k.value) is True for k in call.args[1].keywords)
+
+
+def test_m9_indexes_match_orm_and_only_add_indexes(offline_config):
+    from alembic import command
+    calls = upgrade_calls(M9)
+    assert len(calls) == 3 and all(call.func.attr == "create_index" for call in calls)
+    for call in calls:
+        name, table, columns = (ast.literal_eval(arg) for arg in call.args)
+        index = next(index for index in Base.metadata.tables[table].indexes if index.name == name)
+        assert list(index.columns.keys()) == columns
+        assert not index.unique
+    command.upgrade(offline_config, "0003_m8_pipeline:head", sql=True)
+    sql = offline_config.output_buffer.getvalue()
+    assert sql.count("CREATE INDEX") == 3
+    assert "CREATE TABLE" not in sql and "ALTER TABLE" not in sql
 
 
 def test_online_errors_hide_connection_details(alembic_api, monkeypatch):

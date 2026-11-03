@@ -51,3 +51,19 @@ def test_connected_identity_is_verified_before_returning_connection(manifest, mo
     with pytest.raises(RuntimeError, match="isolation check failed"):
         smoke.connect_checked(manifest)
     connection.close.assert_called_once()
+
+
+def test_m8_harness_does_not_apply_later_feature_migrations(manifest, monkeypatch):
+    connection = MagicMock()
+    connection.execute.side_effect = [
+        MagicMock(fetchone=Mock(return_value=(None,))),
+        MagicMock(fetchall=Mock(return_value=[])),
+        MagicMock(),
+        MagicMock(fetchone=Mock(return_value=("0003_m8_pipeline",))),
+    ]
+    monkeypatch.setattr(smoke, "connect_checked", Mock(return_value=connection))
+    assert smoke.migrate_pristine_or_verify(manifest) == "0003_m8_pipeline"
+    sql = connection.execute.call_args_list[2].args[0]
+    assert "0003_m8_pipeline" in sql
+    assert "0004_m9_result_indexes" not in sql
+    assert "ix_variant_analysis_page" not in sql

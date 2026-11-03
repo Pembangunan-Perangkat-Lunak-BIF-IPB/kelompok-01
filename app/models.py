@@ -5,6 +5,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    Index,
     JSON,
     String,
     Text,
@@ -100,6 +101,10 @@ class Analysis(Base):
 
 class Variant(Base):
     __tablename__ = "variant"
+    __table_args__ = (
+        Index("ix_variant_analysis_page", "id_analysis", "id_variant"),
+        Index("ix_variant_analysis_type_qual", "id_analysis", "variant_type", "qual"),
+    )
 
     id_variant = Column(Integer, primary_key=True)
     id_analysis = Column(Integer, ForeignKey("analysis.id_analysis"), nullable=False)
@@ -118,6 +123,7 @@ class Variant(Base):
 
 class Genotype(Base):
     __tablename__ = "genotype"
+    __table_args__ = (Index("ix_genotype_variant_sample", "id_variant", "id_sample"),)
 
     id_genotype = Column(Integer, primary_key=True)
     id_variant = Column(Integer, ForeignKey("variant.id_variant"), nullable=False)

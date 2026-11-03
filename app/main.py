@@ -8,6 +8,7 @@ from app.api.router import router
 from app.core.config import Settings
 from app.core.security import SecurityConfigurationError
 from app.database import DatabaseConfigurationError
+from app.schemas.result import ResultSummary, VariantPage
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -32,6 +33,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         schema.setdefault("components", {}).setdefault("securitySchemes", {})[
             bearer_scheme.scheme_name
         ] = bearer_scheme.model.model_dump(mode="json", by_alias=True, exclude_none=True)
+        # FastAPI's OpenAPI encoder drops None values, including required
+        # nullable fields inside examples (such as next_offset on the last page).
+        # Restore validated public DTO examples after that encoding step.
+        components = schema.get("components", {}).get("schemas", {})
+        for model in (ResultSummary, VariantPage):
+            if model.__name__ in components:
+                examples = model.model_config["json_schema_extra"]["examples"]
+                components[model.__name__]["examples"] = [
+                    model.model_validate(example).model_dump(mode="json") for example in examples
+                ]
         return schema
 
     application.openapi = openapi

@@ -1,454 +1,356 @@
-# GenoPath - Kelompok 1
+# GenoPath Backend, M8
 
-Repository untuk platform web variant calling berbasis FastAPI dan PostgreSQL.
+Backend FastAPI, SQLAlchemy, PostgreSQL, JWT, dan input FASTQ **single-end**.
+Branch ini: **`feature/be-pipeline-runner`**, target integrasi: `development`.
 
-## Mulai menggunakan Backend M7
-
-M7 menyediakan login JWT dan upload FASTQ/FASTQ.gz beserta penyimpanan file dan
-metadata Sample. **Upload HTTP 201 berarti Sample tersimpan, bukan analisis selesai.**
-Pembuatan Job dan integrasi Nextflow masih scope M8.
-
-| Pembaca | Panduan utama |
+| Tersedia pada branch ini | Batas implementasi |
 | --- | --- |
-| Frontend React | [Kontrak API](BACKEND_INTEGRATION_GUIDE.md#endpoint-m7) dan [integrasi React/proxy](BACKEND_INTEGRATION_GUIDE.md#frontend-react) |
-| QA | [Matriks dan pengujian aman](BACKEND_INTEGRATION_GUIDE.md#qa-dan-pengujian-aman) |
-| System Analyst | [Relasi data dan batas M7/M8](BACKEND_INTEGRATION_GUIDE.md#system-analyst-dan-alur-data) |
-| Anggota berbantuan AI | [Konteks dan batas eksekusi](BACKEND_INTEGRATION_GUIDE.md#bekerja-dengan-ai) |
-| Operator demo | [Prosedur Swagger terisolasi](scripts/SWAGGER_DEMO.md) |
+| Login JSON dengan JWT, password Argon2id, upload FASTQ/FASTQ.gz | Tidak ada `/auth/register`; registrasi Tahap A masih di branch terpisah `feature/be-register-integration`. |
+| Pembuatan, polling, start, dan retry Job dengan ownership | Upload hanya menyimpan Sample; tidak otomatis menjalankan Job. |
+| Runner subprocess sintetis, persistensi Analysis/Variant/Genotype, rollback | VCF sintetis membuktikan alur software, bukan alignment atau variant calling biologis. |
+| Kontrak adapter alignment dan workflow Nextflow DSL2 | Toolchain dan pipeline biologis end-to-end belum diverifikasi. Aligner/reference belum diputuskan. |
+| Metadata hasil dan VCF terseleksi | Result API, pagination/filter hasil, dan download merupakan M9, belum tersedia. |
 
-Quickstart singkat dari root checkout:
+## 1. Clone dan Python environment
 
-1. Jika backend sudah disiapkan BE/operator, minta base URL dan akun testing lewat
-   kanal privat. Tidak perlu memasang dependency atau mengakses database sendiri.
-2. Untuk backend lokal Linux/WSL, gunakan Python 3.11+, buat `.venv` bila belum ada,
-   lalu pasang dependency:
-
-   ```bash
-   python3 -m venv .venv
-   .venv/bin/python -m pip install -e '.[dev]'
-   ```
-
-3. Ikuti [konfigurasi, startup, dan health](BACKEND_INTEGRATION_GUIDE.md#quickstart-lokal)
-   sebelum menjalankan server. Database/schema/User tidak dibuat otomatis; target
-   harus disiapkan dan diverifikasi operator. Health 200 hanya membuktikan API hidup.
-
-Panduan di atas adalah jalur penggunaan FE/QA/SA. Bagian berikut mempertahankan
-referensi teknis implementasi, sedangkan [panduan migrasi](migrations/README.md)
-khusus untuk operasi schema yang sudah disetujui.
-
-## Skema Basis Data (PostgreSQL)
-
-Baseline M6 mencakup tiga tabel yang dipetakan melalui SQLAlchemy:
-
-1. **`user`**
-   - Atribut: `id_user`, `nama`, `email`, `password_hash`, `role`
-   - Keterangan: Mengelola informasi akun dan peran pengguna dalam sistem.
-
-2. **`reference_genome`**
-   - Atribut: `id_reference_genome`, `nama_genom`, `versi`, `sumber`, `path_fasta`
-   - Keterangan: Menyimpan metadata dan lokasi berkas FASTA untuk genom referensi.
-
-3. **`sample`**
-   - Atribut: `id_sample`, `id_user`, `nama_berkas`, `path_penyimpanan`, `ukuran_berkas`, `waktu_unggah`
-   - Keterangan: Menyimpan metadata berkas sekuens (FASTQ) yang diunggah pengguna.
-
-ORM M7 menambahkan `user.username` serta entitas `job`, `analysis`, `variant`,
-dan `genotype`. Perubahan ORM baru berlaku pada database setelah migrasi diterapkan.
-
-## Konfigurasi Database dan Pengujian
-
-Backend menggunakan Psycopg 3. Konfigurasi database tetap bernama `DATABASE_URL`
-dan dapat diberikan melalui environment atau `.env`. Gunakan skema URL
-`postgresql+psycopg://` diikuti kredensial, host, port, dan nama database milik
-environment masing-masing. Jangan menyimpan kredensial di source code atau Git.
-Psycopg tanpa extra `binary` memerlukan library sistem `libpq`.
-
-Impor aplikasi, pemanggilan `create_app()`, dan akses `/health` tidak membuat tabel atau membuka
-koneksi database. Engine baru disiapkan ketika dependency database digunakan.
-Pembuatan dan perubahan skema dikelola secara eksplisit melalui Alembic.
-Lihat [panduan migrasi](migrations/README.md) untuk membedakan database baru dan
-database M6 existing. Menambahkan source migrasi tidak mengubah PostgreSQL secara otomatis.
-
-Untuk menyiapkan dependency pengembangan, jalankan dari root repository:
+Linux/WSL direkomendasikan. Python **3.11+**, PostgreSQL lokal, `libpq`, dan Git
+harus tersedia. PostgreSQL 18.6 pernah dipakai untuk pengujian terisolasi;
+kompatibilitas versi server lain belum diuji dalam checkpoint M8 ini.
 
 ```bash
-.venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -B -m pytest -p no:cacheprovider
+git clone --origin github --branch feature/be-pipeline-runner \
+  https://github.com/Pembangunan-Perangkat-Lunak-BIF-IPB/kelompok-01.git
+cd kelompok-01
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
 ```
 
-Perintah instalasi mengubah virtual environment. Pengujian menggunakan konfigurasi
-tanpa `.env` dan tidak membutuhkan PostgreSQL. Endpoint yang menggunakan database
-dapat diuji dengan `application.dependency_overrides[get_db]` atau override
-`get_session_factory` untuk menyediakan session testing yang terisolasi.
+Jika sudah memiliki clone, simpan pekerjaan lokal sebelum berpindah branch.
+Gunakan nama remote milik clone sendiri; contoh di atas menetapkan `github`.
+Pada Ubuntu yang belum memiliki prasyarat, pasang seperlunya:
 
-## Fondasi keamanan autentikasi (Checkpoint 3B.1)
+```bash
+sudo apt update
+sudo apt install python3-venv postgresql postgresql-client libpq5
+sudo service postgresql start
+```
 
-`app/core/security.py` menyediakan `hash_password`, `verify_password`,
-`create_access_token`, dan `decode_access_token`. Hash password menggunakan
-Argon2id melalui `pwdlib[argon2]`, dengan salt acak yang dibuat library.
-Verifikasi mengembalikan `False` untuk password salah atau hash rusak/tidak
-didukung. Hash selain Argon2id tidak diterima dan tidak diubah otomatis.
+Perintah tersebut untuk mesin lokal anggota, bukan server/database bersama.
+Tidak perlu Java, Nextflow, atau aligner untuk menjalankan API dan demo sintetis.
+Gunakan checkout Linux di WSL untuk validasi upload: worker memakai descriptor
+POSIX dan batas CPU `resource`. Menjalankan seluruh backend langsung dengan
+Python Windows belum didukung jalur worker ini. Browser Windows tetap dapat
+membuka Swagger WSL. pgAdmin bersifat opsional.
 
-Konfigurasi JWT mengikuti prefix Settings existing:
+## 2. Buat database lokal baru dan `.env`
 
-| Environment variable | Ketentuan |
+Contoh ini memakai database **baru, kosong, milik anggota sendiri** bernama
+`genopath_m8_local`, PostgreSQL TCP `127.0.0.1:5432`. Jika nama sudah ada, hentikan
+dan pilih database baru secara sadar, jangan memakai ulang atau menghapusnya.
+Jangan menargetkan database utama, praktikum, atau database bersama.
+
+```bash
+sudo -u postgres createuser --pwprompt genopath_m8_local
+sudo -u postgres createdb --owner=genopath_m8_local genopath_m8_local
+```
+
+`createuser` meminta password role database secara tersembunyi. Langkah berikut
+meminta password yang sama, membuat JWT secret acak, dan menulis `.env` dengan
+izin `600`. Tidak ada secret yang dicetak atau ditaruh dalam history command.
+Jalankan dari root repository; pembuatan ditolak jika `.env` sudah ada.
+
+```bash
+python - <<'PY'
+import getpass
+import json
+import os
+import secrets
+from sqlalchemy.engine import URL
+
+url = URL.create(
+    'postgresql+psycopg', username='genopath_m8_local',
+    password=getpass.getpass('Password role PostgreSQL lokal: '),
+    host='127.0.0.1', port=5432, database='genopath_m8_local',
+)
+lines = [
+    'DATABASE_URL=' + json.dumps(url.render_as_string(hide_password=False)),
+    'GENOPATH_JWT_SECRET=' + secrets.token_urlsafe(48),
+    'GENOPATH_PIPELINE_ENABLED=true',
+    'GENOPATH_PIPELINE_ALLOW_SYNTHETIC=true',
+]
+fd = os.open('.env', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+with os.fdopen(fd, 'w') as output:
+    output.write('\n'.join(lines) + '\n')
+print('.env lokal dibuat; secret tidak ditampilkan.')
+PY
+```
+
+`DATABASE_URL` tidak memakai prefix `GENOPATH_`. URL harus menggunakan driver
+`postgresql+psycopg://`. Settings membaca `.env` relatif working directory.
+JWT memakai HS256, secret minimal 32 byte, masa sesi default **240 menit**.
+Jangan mencetak `.env`, membagikan JWT, atau memasukkan password ke source code.
+Variabel environment aktif mengalahkan `.env`; hapus override lama yang salah.
+
+Gates pipeline default aplikasi adalah **false**. Contoh lokal di atas secara
+sengaja membuka gate Job dan gate sintetis. Tidak ada aligner/reference biologis
+yang dipilih oleh konfigurasi tersebut.
+
+## 3. Migrasi, akun lokal, dan reference sintetis
+
+Pada database baru dan kosong yang baru dibuat:
+
+```bash
+python -m alembic upgrade head
+```
+
+Head branch ini adalah `0003_m8_pipeline`: M6 membuat tiga tabel dasar, M7
+menambahkan username dan tabel analisis, M8 menambahkan lima kolom metadata
+nullable. Alembic tidak dijalankan otomatis saat API mulai.
+**Database existing memerlukan audit dan persetujuan terpisah**, termasuk
+backfill username jika tabel User sudah berisi data. Jangan memakai `stamp head`
+untuk melewati migrasi. Lihat [panduan migrasi](migrations/README.md).
+
+Tidak ada akun bawaan atau Reference API pada branch ini. Untuk database lokal
+baru tadi, buat akun ber-role `user` dan satu reference fixture. Script menolak
+nama database lain, schema bukan M8, atau akun/reference yang sudah terisi;
+tidak mengubah akun existing. Password akun diminta tersembunyi dan di-hash.
+
+```bash
+python - <<'PY'
+import getpass
+from pathlib import Path
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session
+from app.core.config import Settings
+from app.core.security import hash_password
+from app.database import get_engine
+from app.models import ReferenceGenome, User
+
+settings = Settings()
+engine = get_engine(settings.database_url)
+password = getpass.getpass('Password akun demo lokal (minimal 12 karakter): ')
+if len(password) < 12:
+    raise SystemExit('Gunakan password lokal minimal 12 karakter.')
+root = settings.reference_root
+root.mkdir(parents=True, exist_ok=True)
+with Session(engine) as db, db.begin():
+    if db.scalar(text('SELECT current_database()')) != 'genopath_m8_local':
+        raise SystemExit('Ditolak: database tujuan bukan database lokal contoh.')
+    if db.scalar(text('SELECT version_num FROM public.alembic_version')) != '0003_m8_pipeline':
+        raise SystemExit('Ditolak: migrasi M8 belum lengkap.')
+    if (db.scalar(select(User.id_user).limit(1)) is not None
+            or db.scalar(select(ReferenceGenome.id_reference_genome).limit(1)) is not None):
+        raise SystemExit('Ditolak: akun/reference sudah terisi; jangan seed ulang.')
+    with (root / 'tiny.fa').open('x') as fasta:
+        fasta.write('>synthetic_chr\nACGTACGT\n')
+    user = User(username='local_demo', nama='Local synthetic demo',
+                email='local_demo@example.invalid', role='user',
+                password_hash=hash_password(password))
+    reference = ReferenceGenome(nama_genom='SYNTHETIC, not an approved genome',
+                                versi='fixture', sumber='Generated locally', path_fasta='tiny.fa')
+    db.add_all([user, reference])
+    db.flush()
+    identifiers = (user.id_user, reference.id_reference_genome)
+engine.dispose()
+print('Username: local_demo; User ID: %s; Reference ID: %s' % identifiers)
+PY
+python -m scripts.generate_dummy_fastq \
+  --output data/samples/synthetic.fastq --reads 3 --read-length 12
+```
+
+Catat Reference ID yang dicetak, jangan mengasumsikan ID selalu `1`. FASTQ kecil
+berisi sequence acak sintetis. `tiny.fa` hanya memenuhi kontrak input sintetis,
+bukan genom referensi yang telah disetujui. Mode sintetis tidak membaca sequence
+untuk menentukan varian: subprocess menghasilkan tiga record VCF tetap.
+Password akun berbeda kegunaan dari password role PostgreSQL.
+
+Seed di atas hanya untuk bootstrap lokal sekali. File FASTA dibuat secara
+exclusive dan transaksi row database atomik; filesystem dan database bukan satu
+transaksi. Jika commit gagal setelah file dibuat, jangan menjalankan ulang atau
+menghapus file secara buta: periksa database/file yang tersisa terlebih dahulu.
+
+## 4. FastAPI, Swagger, dan alur demo
+
+```bash
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Buka [Swagger](http://127.0.0.1:8000/docs) atau `/openapi.json`. `/health` HTTP 200
+hanya membuktikan proses API hidup, bukan koneksi atau kesiapan database.
+Jalankan dari root repository agar `.env`, `pipeline/`, dan storage konsisten.
+
+1. `POST /auth/login`, JSON `{"username":"local_demo","password":"<password akun lokal>"}`.
+   Login menggunakan **username**, bukan email. Salin JWT hasil login hanya ke
+   tombol **Authorize** Swagger, jangan ke chat atau screenshot. Token bukan
+   contoh akun atau nilai bawaan; tidak ada refresh token/remember-me.
+2. `POST /samples/upload`, pilih field multipart **`file`** dan file
+   `data/samples/synthetic.fastq`. Respons 201 berisi `id_sample`; catat nilainya.
+   Sample/file tersimpan, belum ada Job. FASTQ.gz juga didukung.
+3. `POST /jobs` dengan JSON berikut. Ganti kedua ID dengan hasil aktual dan
+   gunakan UUID baru untuk setiap submission baru (`python -c 'import uuid; print(uuid.uuid4())'`).
+
+   ```json
+   {
+     "id_sample": 1,
+     "id_reference_genome": 1,
+     "request_id": "195097c9-9ced-47b5-8124-e0a03c31ca24",
+     "vcf_sample": "local_sample",
+     "parameter_qual": 30.0,
+     "parameter_dp": 10,
+     "require_pass": true,
+     "execution_mode": "synthetic",
+     "variant_ploidy": 2
+   }
+   ```
+
+4. Respons 201 berstatus `Queued`. `POST /jobs/{id_job}/start` memberi 202 sebagai
+   acknowledgment dispatch, lalu polling `GET /jobs/{id_job}` sampai `Completed`
+   atau `Failed`. `has_result=true` menunjukkan Analysis tersedia. Respons start
+   dapat masih `Queued`, karena pekerjaan berlangsung setelah respons.
+5. `POST /jobs/{id_job}/retry` hanya untuk Job **Failed**, menghasilkan Job baru
+   berstatus Queued, yang harus di-start lagi secara eksplisit.
+
+Seluruh Job API memakai JWT dan ownership. UUID sama dengan body sama
+mengembalikan Job yang sama; UUID sama dengan body berbeda mendapat 409.
+Satu Job `Queued`/`Running` per user diserialisasi dengan row lock PostgreSQL.
+Jangan upload ulang secara buta jika respons upload terputus atau 503: COMMIT
+Sample dapat sudah berhasil, dan upload belum memiliki idempotency key.
+
+Untuk fixture default ini, hasil terseleksi adalah **3 Variant dan 3 Genotype**:
+1 SNP, 1 InDel, dan 1 `other` (ALT campuran). GT default fixture `0/1`, FORMAT/DP
+`25`; angka tersebut bukan temuan biologis. Hasil hanya dapat diperiksa melalui
+SQL/ORM lokal dan file run pada M8. Belum ada endpoint Result API atau download.
+
+Query baca saja, melalui `psql` atau Query Tool pada database lokal sendiri;
+ganti `1` pada filter dengan Job ID aktual:
+
+```sql
+SELECT j.id_job AS job, j.status, v.chromosome AS chrom, v.position AS pos,
+       v.ref_allele AS ref, v.alt_allele AS alt, v.variant_type AS type,
+       v.qual, g.genotype_call AS gt, g.dp
+FROM public.job j
+JOIN public.analysis a ON a.id_job = j.id_job
+JOIN public.variant v ON v.id_analysis = a.id_analysis
+JOIN public.genotype g ON g.id_variant = v.id_variant AND g.id_sample = j.id_sample
+WHERE j.id_job = 1
+ORDER BY v.id_variant;
+```
+
+Misalnya `psql -h 127.0.0.1 -U genopath_m8_local -d genopath_m8_local -W` meminta
+password tanpa menaruhnya pada command. Tidak perlu membuka pgAdmin.
+
+## 5. Pengujian yang terisolasi
+
+```bash
+python -B -m pytest -p no:cacheprovider
+# Subset M8 untuk iterasi cepat:
+python -B -m pytest -p no:cacheprovider \
+  tests/test_jobs.py tests/test_job_http.py tests/test_pipeline.py \
+  tests/test_vcf_records.py tests/test_vcf_summary.py tests/test_m8_smoke_guard.py
+# Validasi migrasi offline, tanpa koneksi database:
+python -m alembic upgrade head --sql > /tmp/genopath-m8-schema.sql
+```
+
+Pytest menggunakan mock, SQLite in-memory, temporary storage, dan subprocess
+sintetis. Fixture menonaktifkan `.env` dan mengisolasi konfigurasi terkait;
+pengujian ini tidak memerlukan atau menulis PostgreSQL. SQLite tidak membuktikan
+semantik row lock PostgreSQL. Script manual di `scripts/` tidak dijalankan oleh
+pytest; jangan menjalankannya sebagai pengganti tests default tanpa memahami
+guard dan targetnya.
+
+Checkpoint 3 November 2026: **765 tests passed** pada suite M8 sebelum publikasi;
+**8 skenario PostgreSQL 18.6 nyata** juga sudah lulus pada cluster disposable
+terisolasi (bukti dari Tahap B, tidak dijalankan ulang saat publikasi). Skenario
+mencakup persistensi 3 varian/GT, rollback parsing dan FK, ownership, idempotency,
+retry, satu Job aktif per user, serta klaim worker bersamaan. Tidak ada klaim
+bahwa 8 skenario tersebut adalah tests mock atau eksekusi biologis.
+
+`scripts/m8_disposable_smoke.py` adalah harness khusus pengujian terisolasi yang
+memerlukan manifest kepemilikan dari penyiapan cluster terpisah. Repository ini
+belum menyediakan provisioning cluster/manifest generik untuk harness tersebut.
+Gunakan demo lokal di atas untuk mencoba API; jangan membuat manifest tiruan
+atau mengarahkan harness ke database existing. Bukti dan database pengembang
+tidak diperlukan untuk mengikuti README ini.
+
+## 6. Konfigurasi pipeline dan batas operasional
+
+| Variabel | Default / kegunaan |
 | --- | --- |
-| `GENOPATH_JWT_SECRET` | Wajib saat operasi JWT; tidak memiliki default; minimal 32 byte UTF-8. |
-| `GENOPATH_JWT_ALGORITHM` | Hanya `HS256`, sekaligus nilai default. |
-| `GENOPATH_ACCESS_TOKEN_EXPIRE_MINUTES` | Integer positif, default `240` menit. |
+| `GENOPATH_UPLOAD_ROOT` | `data/samples`, storage FASTQ; path Sample relatif root ini. |
+| `GENOPATH_REFERENCE_ROOT` | `data/reference`, file FASTA yang dirujuk ReferenceGenome. |
+| `GENOPATH_PIPELINE_ROOT` | `data/jobs`, satu direktori UUID untuk setiap run. |
+| `GENOPATH_PIPELINE_ENABLED` | `false`, gate pembuatan/start Job. |
+| `GENOPATH_PIPELINE_ALLOW_SYNTHETIC` | `false`, gate tambahan mode sintetis. |
+| `GENOPATH_PIPELINE_THREADS` | `1`, batas konfigurasi 1–64. |
+| `GENOPATH_PIPELINE_TIMEOUT_SECONDS` | `3600`, timeout subprocess; tidak membatasi query DB. |
+| `GENOPATH_PIPELINE_ALIGNMENT_STRATEGY` | Tidak ada default, identifier strategi operator. |
+| `GENOPATH_PIPELINE_ALIGNMENT_ADAPTER` | Path executable adapter yang disetujui. |
+| `GENOPATH_PIPELINE_NEXTFLOW_EXECUTABLE` | Path executable Nextflow. |
+| `GENOPATH_PIPELINE_FASTP_EXECUTABLE` | Path executable fastp. |
+| `GENOPATH_PIPELINE_SAMTOOLS_EXECUTABLE` | Path executable SAMtools. |
+| `GENOPATH_PIPELINE_BCFTOOLS_EXECUTABLE` | Path executable BCFtools. |
+| `GENOPATH_PIPELINE_NEXTFLOW_PROFILE` | `local`, satu-satunya profile saat ini. |
 
-Secret harus berasal dari generator acak kriptografis, disediakan melalui
-environment, dan tidak disimpan di repository. Batas panjang tidak membuktikan
-keacakan secret. Jangan memakai password manusia, placeholder, atau contoh
-publik sebagai secret. Secret disimpan sebagai `SecretStr` dan tidak dimasukkan
-ke representasi Settings.
+Mode `nextflow` memerlukan Java yang cocok dengan versi Nextflow, Nextflow
+(`nextflow.config` menetapkan minimal 24.10.0), fastp, SAMtools, BCFtools,
+reference/index yang cocok, serta adapter alignment. Toolchain belum lengkap
+pada checkpoint ini; tidak dipasang atau dijalankan oleh quickstart sintetis.
 
-Token ditandatangani dengan HS256 melalui PyJWT. Payload yang diterbitkan hanya
-berisi `sub` (string ID pengguna positif sesuai PostgreSQL INTEGER), `iat`
-(waktu penerbitan), dan `exp` (waktu kedaluwarsa). Waktu menggunakan UTC dalam
-detik Unix; `exp - iat` default adalah 14.400 detik. JWT ditandatangani, bukan
-dienkripsi, sehingga payload tidak boleh berisi password atau informasi rahasia.
-Verifikasi memeriksa signature, algoritma yang diizinkan, claim wajib, tipe dan
-urutan waktu, serta format subject. Role tidak dimasukkan ke token.
+Adapter menerima `--reads`, `--reference`, `--output`, `--sample-name`, dan
+`--threads`, lalu menghasilkan SAM dengan read-group sample yang sesuai.
+Adapter mengelola tool dan index strateginya sendiri. Downstream memakai SAM,
+BAM terurut/terindeks, dan VCF. Tidak ada adapter BWA-MEM2/Bowtie2 bawaan;
+perubahan strategi pada M10 tidak memerlukan Result API memahami command aligner.
+Kesesuaian ilmiah alternatif, reference, dan ploidy tetap perlu keputusan tim.
+`variant_ploidy` wajib diberikan, bukan default biologis.
 
-Secret yang hilang atau terlalu pendek ditolak saat utilitas JWT dipanggil,
-sehingga import aplikasi dan `/health` tetap dapat berjalan tanpa secret.
-`SecurityConfigurationError` menandakan konfigurasi auth tidak dapat digunakan;
-`InvalidAccessTokenError` menandakan token ditolak. Unit tests menggunakan
-key sementara dan waktu terkontrol,
-tanpa membaca `.env` atau membutuhkan PostgreSQL.
+Runner meluncurkan subprocess tanpa shell, membatasi timeout dan menghentikan
+grup proses pada timeout POSIX, serta tidak mewariskan environment kredensial.
+Environment subprocess minimal; konfigurasi tambahan seperti Java/Nextflow home
+masih perlu diverifikasi saat toolchain disiapkan. Workflow DSL2 di `pipeline/`
+belum diverifikasi eksekusinya, sehingga belum disebut pipeline biologis lengkap.
 
-## Login JSON dan autentikasi (Checkpoint 3B.2)
+Dispatch memakai FastAPI BackgroundTasks dalam proses. Ini belum queue tahan
+restart. Crash dapat menyisakan Job Queued/Running yang perlu rekonsiliasi
+operator; tidak ada cancel, auto-resume, atau pengulangan Job Running otomatis.
+Direktori run gagal dipertahankan untuk review. Transaksi DB menulis Analysis,
+Variant, Genotype, dan status Completed bersama; filesystem/DB tidak atomik.
+File tersisa setelah transaksi gagal bukan hasil Completed.
 
-`POST /auth/login` menerima `Content-Type: application/json`:
+Parser `summarize_vcf` tetap menghitung record ALT mentah. Ingestion memakai
+satu Variant per record multiallelic (ALT dipertahankan), GT asli dan FORMAT/DP;
+INFO/DP tidak menggantikan FORMAT/DP. Missing QUAL/DP dikecualikan walau threshold
+nol. FILTER wajib PASS jika `require_pass=true`. Raw counts dan selected counts
+terpisah dalam metadata. Belum ada normalisasi/left-alignment atau validasi alel
+terhadap reference. VCF UTF-8 tak terkompresi, tepat satu sample dengan nama
+cocok persis, dan batas input ingestion 1 GB.
 
-```json
-{"username": "pengguna_contoh", "password": "password-uji-contoh"}
-```
+## Troubleshooting dan referensi
 
-Nilai di atas hanya contoh, bukan akun yang dibuat oleh aplikasi. Username
-dicocokkan persis dengan `User.username`, tanpa trim, perubahan kapitalisasi,
-atau pencarian email. Kedua field wajib berupa string tidak kosong; field
-tambahan ditolak. Password request ditampung sebagai `SecretStr`.
+- `libpq library not found`: pasang `libpq5` pada Linux/WSL, lalu pastikan memakai
+  Python dari `.venv` yang benar. Psycopg dependency tidak memakai extra binary.
+- Koneksi ditolak/password gagal: periksa service PostgreSQL, host/port dan role
+  lokal. Jangan menampilkan `.env` atau connection string saat meminta bantuan.
+- Login 401: periksa username, password akun (bukan password role database),
+  token expired, dan akun yang benar. Login 503 dapat berarti JWT secret atau
+  database belum siap. `/health` tidak menguji keduanya.
+- `column ... does not exist`: periksa target database dan Alembic revision;
+  database baru harus mencapai `0003_m8_pipeline`. Jangan stamp schema yang salah.
+- Job 503: periksa kedua gate sintetis, file input/reference dan root storage.
+  Jangan mengaktifkan mode nextflow sebelum tool/reference/adapter disetujui.
+- Job 409: ada Job aktif, status tidak cocok untuk start/retry, atau UUID dipakai
+  dengan parameter berbeda. Poll Job terkait sebelum membuat submission lain.
+- Job 404: Job/Sample tidak ada atau bukan milik akun. Reference tidak valid
+  mendapat 422. Tidak tersedia endpoint daftar reference pada M8.
+- Generator/file fixture sudah ada: pembuatan exclusive memang menolak overwrite;
+  gunakan hasil sebelumnya atau nama baru yang direncanakan, jangan cleanup buta.
+- Port 8000 dipakai: pilih port kosong melalui `--port`, sesuaikan base URL klien.
+  FE memakai kontrak login JSON username/password; upload 201 bukan Job Completed.
 
-Respons sukses (200):
-
-```json
-{"access_token": "<JWT-hasil-login>", "token_type": "bearer"}
-```
-
-Respons token memakai `Cache-Control: no-store` dan `Pragma: no-cache`.
-Login memakai session dari `get_db`, memverifikasi hash Argon2id, lalu menerbitkan
-JWT menggunakan Settings milik instance aplikasi. Tidak ada penulisan database.
-Username tidak ditemukan tetap menjalankan verifikasi terhadap hash dummy yang
-dibuat secara lazy dan disimpan dalam memori proses. Ini mitigasi timing sederhana,
-bukan jaminan waktu konstan (terutama pada akses pertama atau hash akun yang rusak).
-
-Endpoint upload memakai `Depends(get_current_user)` melalui dependency pemilik dari
-`app.api.dependencies`. Client mengirim `Authorization: Bearer <access_token>`.
-Token diverifikasi sebelum session database dibuka; setelah itu `User` dicari
-berdasarkan ID pada `sub`. Role berasal dari baris User aktual, bukan payload JWT.
-Dependency ini mengautentikasi pengguna, belum menetapkan izin atas resource.
-Endpoint harus tetap menggunakan response schema eksplisit agar tidak
-menserialisasikan ORM User beserta `password_hash` secara langsung.
-
-| Status | Kontrak |
-| --- | --- |
-| 200 | Login berhasil, `access_token` dan `token_type`. |
-| 401 | Kredensial salah, token invalid/expired/hilang, atau User tidak ditemukan. Detail generik `Could not authenticate.` dan `WWW-Authenticate: Bearer`. |
-| 422 | Request tidak memenuhi schema/JSON; detail disamarkan agar input tidak dipantulkan kembali. |
-| 503 | Konfigurasi auth/database tidak tersedia, error driver DBAPI, atau timeout pool; detail generik `Service unavailable.`. |
-
-Handler 503 hanya menangani kelas exception layanan yang dikenali, bukan seluruh
-exception aplikasi. Handler validasi 422 berlaku pada app factory dan tidak
-menyertakan input, context, atau pesan exception mentah. Tidak ada logging
-kredensial/token atau detail exception layanan pada implementasi ini.
-
-OpenAPI `/openapi.json` dan Swagger `/docs` menyediakan skema HTTP Bearer/JWT.
-Masukkan token yang diperoleh dari login JSON ke tombol Authorize. Login dan
-`/health` tetap publik; tidak ada security requirement global. Endpoint
-`/samples/upload` kini memakai dependency autentikasi yang sama.
-Tidak tersedia registrasi, refresh token, remember-me, atau RBAC.
-
-Tests auth memakai session mock melalui override `get_session_factory`/`get_db`,
-key sementara, dan waktu terkontrol. Tests memverifikasi session ditutup pada
-sukses/gagal, status HTTP, sanitasi error, dan penolakan token sebelum akses DB.
-Pengujian ini belum membuktikan perilaku terhadap PostgreSQL sungguhan; pengujian
-integrasi terpisah memerlukan database testing dan persetujuan sebelum penulisan
-fixture akun, bukan memakai `genopath_db`.
-
-## Validasi FASTQ dan local storage (Checkpoint 4A)
-
-`app.services.fastq` memvalidasi filename dan struktur FASTQ secara streaming.
-Sequence dan quality boleh multiline; jumlah karakter quality harus sama dengan
-sequence. Karakter `@` dan `+` pada quality diproses berdasarkan panjang, bukan
-dianggap sebagai awal record. Separator `+` boleh kosong atau mengulangi header
-secara persis. Mendukung LF, CRLF, dan quality terakhir tanpa newline.
-
-Parser menerima header ASCII printable yang tidak kosong, serta sequence/quality
-ASCII printable tanpa whitespace. Baris kosong, record terpotong, separator salah,
-dan perbedaan panjang ditolak. Ini validasi struktur, tanpa pembatasan alfabet
-nukleotida, perhitungan kualitas biologis, trimming, atau inferensi single/paired-end.
-Kontrak input tetap satu file single-end per pemanggilan layanan. Record dan baris
-dibaca sampai EOF, tanpa menggabungkan sequence/quality ke dalam satu buffer.
-
-| Environment variable | Default / ketentuan |
-| --- | --- |
-| `GENOPATH_UPLOAD_ROOT` | `data/samples`, relatif terhadap working directory aplikasi. |
-| `GENOPATH_UPLOAD_MAX_BYTES` | `1000000000`, inklusif; boleh diturunkan, tidak boleh melebihi 1 GB desimal. |
-| `GENOPATH_UPLOAD_MAX_DECOMPRESSED_BYTES` | `4294967296` (4 GiB), positif; batas seluruh data hasil dekompresi termasuk newline. |
-| `GENOPATH_UPLOAD_CHUNK_BYTES` | `1048576` (1 MiB), positif; batas setiap pembacaan sumber saat penyalinan. |
-| `GENOPATH_UPLOAD_MAX_LINE_BYTES` | `1048576` (1 MiB), positif; panjang isi baris tanpa terminator LF/CRLF. |
-
-Settings hanya dibaca oleh pemanggil, lalu diberikan ke `LocalStorage(settings)`.
-Layanan tidak membaca `.env` sendiri dan tidak membuat direktori saat import atau
-konstruksi. Root default sudah diabaikan Git. Root kustom harus di luar repository
-atau diabaikan Git secara eksplisit, dan tidak boleh dipublikasikan oleh web server.
-
-Filename menerima suffix case-sensitive `.fastq` atau `.fastq.gz`, maksimal 255
-byte UTF-8. Separator path, drive/ADS colon, karakter kontrol/format, dan whitespace
-di awal/akhir ditolak. Filename hanya metadata; nama fisik memakai UUID server.
-Upload gzip disimpan tetap terkompresi dan ukuran upload dihitung dari byte
-terkompresi. Validasi membuka gzip secara streaming hingga EOF, termasuk CRC dan
-trailer. Gzip rusak/truncated dan data melewati batas dekompresi ditolak; tidak ada
-file hasil dekompresi yang ditulis ke disk.
-
-`gzip.GzipFile` tidak menyediakan parameter publik untuk membatasi jumlah member
-atau panjang header opsional. Banyak member kosong atau header filename/comment
-yang panjang dapat menghabiskan CPU tanpa melewati batas hasil dekompresi. Batas
-upload terkompresi tetap berlaku, tetapi bukan batas waktu validasi. Tidak ada
-parser gzip custom atau klaim proteksi CPU penuh pada pemanggilan langsung API 4A.
-Endpoint upload menggunakan subprocess dengan batas CPU/waktu sebagaimana dijelaskan
-di bawah. Timeout coroutine saja tidak menghentikan worker sinkron.
-
-API internal sinkron, tanpa endpoint HTTP atau database:
-
-```python
-storage = LocalStorage(settings)
-with storage.stage(source, "reads.fastq.gz") as upload:
-    metadata = upload.metadata  # original_name, storage_key relatif root, size_bytes
-    upload.finalize()
-    upload.retain()  # Simpan file setelah keluar context, tanpa transaksi eksternal.
-```
-
-Untuk integrasi 4B, panggil `upload.preserve_for_reconciliation()` sesudah
-`finalize()` dan **sebelum** mencoba commit Sample. Metode tersebut mempertahankan
-file meskipun caller kemudian menerima exception, termasuk hasil commit yang
-belum pasti. Database dan filesystem tidak atomik. Caller wajib merekonsiliasi
-hasil commit dan file secara terpisah; jangan menghapus file hanya karena commit
-melempar exception. Proteksi ini sengaja bisa menyisakan orphan bila commit gagal
-secara pasti, sampai rekonsiliasi membuktikan file tidak direferensikan.
-
-`source` adalah binary file-like dengan `read(size)`; pemanggil tetap memiliki dan
-menutup sumber tersebut. Sebelum context menghasilkan `upload`, seluruh file sudah
-disalin dalam chunk terbatas dan divalidasi. Staging memakai file `.part` eksklusif
-dengan mode `0600`. Finalisasi memakai hard link dalam direktori yang sama, lalu
-melepas nama staging: publikasi file lengkap bersifat atomic dan target existing
-tidak pernah ditimpa. Data file dan publikasi direktori di-fsync.
-Status finalisasi baru sukses setelah unlink staging dan fsync direktori selesai.
-Jika salah satunya gagal, `retain()` dan `preserve_for_reconciliation()` ditolak,
-meskipun caller menangkap exception finalisasi.
-
-Context membersihkan file miliknya ketika validasi/copy gagal atau bila keluar
-tanpa `retain()`, termasuk jika sudah difinalisasi. Cleanup hanya menyentuh inode
-yang dibuat context tersebut. Root dan setiap ancestor dibuka dengan directory
-descriptor dan `O_NOFOLLOW`; target file/symlink existing tidak ditimpa. Root harus
-dimiliki akun service, tidak writable oleh group/others, dan berada di parent yang
-tepercaya. Direktori baru memakai mode `0700`; permission existing tidak diubah.
-Setiap entri direktori yang dilewati dipersist melalui `fsync` parent sebelum
-melanjutkan ke komponen berikutnya, termasuk entri existing agar retry setelah
-setup gagal tetap aman. Kegagalan sinkronisasi menghentikan upload sebelum staging
-atau Session tulis Sample dibuat. Direktori kosong yang terlanjur dibuat dapat
-tetap ada; proses tidak menghapus direktori tanpa bukti bahwa aman untuk dihapus.
-Implementasi ini menargetkan server Linux/POSIX dengan dukungan hard link.
-
-Descriptor tetap dimiliki context saat setup wrapper gagal dan selalu dicoba
-ditutup. Bila `fstat()` gagal sesudah pembuatan `.part`, cleanup mencoba memperoleh
-identitas dari descriptor yang masih terbuka menggunakan `stat(fd)`. Jika kedua
-inspeksi gagal, file tidak dihapus tanpa bukti kepemilikan. Cleanup mencoba tiap
-nama miliknya secara independen; kegagalan satu file tidak melewati file lain.
-Error utama dipertahankan dengan catatan sanitasi bila cleanup tidak lengkap.
-Jika tidak ada error utama, kegagalan cleanup menghasilkan `StorageError`.
-
-`InvalidFilenameError`, `InvalidFastqError`, `UploadLimitError`, dan `StorageError`
-merupakan error internal yang dipetakan oleh endpoint ke HTTP 422, 422, 413, dan
-503. Error storage tidak menyertakan path atau exception OS mentah. Tidak ada
-logging isi file. Proses crash/power loss atau kegagalan cleanup
-dapat meninggalkan file yang perlu direkonsiliasi; tidak ada background cleaner.
-Filesystem dan database bukan satu transaksi: hasil commit Sample yang ambigu
-memerlukan proteksi sebelum commit dan rekonsiliasi agar file yang mungkin sudah
-direferensikan tidak langsung dihapus. Root harus tetap eksklusif bagi service;
-pemeriksaan inode dan unlink berbasis nama bukan perlindungan terhadap proses
-berbahaya yang berjalan dengan UID service yang sama.
-
-Tests memakai `tmp_path`, FASTQ/gzip kecil, dan limit kecil yang di-inject. Tidak
-ada fixture 1 GB, akses database sungguhan, atau perubahan storage aplikasi.
-Endpoint di bawah mengintegrasikan fondasi ini dari thread yang ditunggu selesai,
-sehingga disk I/O, validasi, dan persistence tidak memblokir event loop.
-
-## Upload FASTQ dan metadata Sample (Checkpoint 4B-2)
-
-Scope M7 mencakup upload, validasi struktur FASTQ, penyimpanan file, dan metadata
-Sample. Pembuatan Job serta integrasi pipeline Nextflow tetap menjadi scope M8;
-endpoint upload tidak menjalankan analisis biologis atau pipeline tersebut.
-
-`POST /samples/upload` membutuhkan JWT HTTP Bearer melalui `get_current_user` dan
-menerima tepat satu file pada field `file`, tanpa field teks/tambahan. Swagger
-menyediakan file picker melalui schema OpenAPI eksplisit. Tidak ada parameter
-runtime `File`, `Form`, atau `Body`: dependency autentikasi selesai sebelum parser
-dibuat atau aplikasi memanggil ASGI `receive`. Token invalid tetap menghasilkan
-401 meskipun Content-Length besar. Buffer TCP/Uvicorn/proxy berada di luar jaminan
-aplikasi ini; tidak ada middleware yang membaca body sebelum autentikasi.
-
-Respons sukses HTTP **201 Created**, setelah file difinalisasi dan commit Sample
-berhasil:
-
-```json
-{
-  "id_sample": 42,
-  "nama_berkas": "reads.fastq.gz",
-  "ukuran_berkas": 1234,
-  "waktu_unggah": "2030-01-02T03:04:05Z"
-}
-```
-
-Angka, waktu, dan nama di atas hanya contoh. Response tidak memuat ID pemilik,
-storage key, path server, password, atau JWT. `Sample.id_user` berasal dari User
-yang sudah diautentikasi; parameter pemilik dari client tidak diterima. Model Sample
-existing mencukupi, tanpa migrasi dan tanpa membuat Job atau menjalankan pipeline.
-
-`get_upload_owner_id` mengambil snapshot ID dari `get_current_user`, kemudian
-menutup session baca yang sama **sebelum body dibaca**. Penutupan idempotent dari
-dependency `get_db` tetap berjalan saat teardown. Koneksi dan transaksi baca tidak
-ditahan sepanjang transfer/validasi. Session tulis terpisah dibuat, dipakai, dan
-ditutup dalam satu thread setelah seluruh validasi subprocess berhasil.
-
-`nama_berkas` menyimpan nama asli tervalidasi, `path_penyimpanan` storage key relatif
-UUID buatan server, dan `ukuran_berkas` ukuran payload upload (terkompresi untuk
-gzip). Waktu berasal dari server dalam UTC: kolom `DateTime` existing menyimpan
-UTC tanpa timezone, sementara response menampilkan UTC dengan `Z`.
-
-Parser menggunakan callback publik `python-multipart==0.0.32`, bukan parser format
-multipart buatan sendiri. Payload file dibatasi 1.000.000.000 byte inklusif (atau
-nilai `GENOPATH_UPLOAD_MAX_BYTES` yang lebih kecil); total body dibatasi nilai
-tersebut + 65.536 byte. Total header part, termasuk CRLF, maksimal 16 KiB. Boundary
-dibatasi 70 byte, nama header duplikat dan Content-Transfer-Encoding ditolak.
-Byte file diperiksa sebelum ditulis, termasuk tanpa Content-Length; panjang yang
-dideklarasikan juga diverifikasi terhadap byte aktual saat EOF. Closing boundary
-wajib lengkap. Preamble/epilogue/overhead dibatasi terpisah 65.536 byte, dengan
-lookbehind parser kecil selama penerimaan dan pemeriksaan persis saat selesai.
-
-Feed parser dan penulisan file memakai chunk maksimal 64 KiB. Temporary upload
-anonim milik context dibuat memakai `TemporaryFile` di direktori temporary sistem,
-lalu disalin ke staging 4A. Seluruh disk I/O dan parsing berjalan di thread yang
-ditunggu selesai sebelum file ditutup. Tidak ada seluruh body yang digabung ke
-RAM. Kebutuhan disk sesaat mendekati dua kali ukuran upload, pada temporary
-filesystem dan storage. Kedua lokasi membutuhkan kapasitas yang cukup.
-
-Satu lock nonblocking membatasi **satu upload aktif per proses**, termasuk antar
-instance aplikasi di proses yang sama. Request tambahan menerima 503 dan
-`Retry-After: 1` sebelum body dibaca. Lock meliputi penerimaan, validasi, dan
-cleanup, lalu dilepas pada sukses, error, atau cancellation. Beberapa Uvicorn worker
-masing-masing memiliki slot sendiri; ini belum merupakan limit global.
-
-Validasi FASTQ dan gzip dijalankan dalam subprocess satu kali pada Linux/WSL.
-Proses utama memiliki staging; worker hanya menerima descriptor baca dan batas
-numerik. Worker memakai `-I -B`, environment kosong, output dibuang, tidak membaca
-Settings/.env atau mengimpor modul database. Batas CPU dipasang di dalam worker
-melalui `resource.setrlimit`, tanpa `preexec_fn`. Core dump dinonaktifkan.
-
-| Environment variable | Default / ketentuan |
-| --- | --- |
-| `GENOPATH_UPLOAD_VALIDATION_CPU_SECONDS` | `60`, integer positif; soft CPU limit dan hard limit satu detik kemudian. |
-| `GENOPATH_UPLOAD_VALIDATION_WALL_SECONDS` | `120`, angka positif finite; khusus fase validasi. |
-
-Saat budget habis atau request dibatalkan, supervisor menghentikan subprocess dan
-menunggunya selesai **sebelum** staging dibersihkan. Thread tidak ditinggalkan saat
-cancellation; pembacaan/penulisan yang sedang berjalan ditunggu sebelum cleanup.
-Pembatasan CPU/waktu melindungi dari biaya member/header gzip yang banyak/panjang,
-bukan menetapkan jumlah member. File valid yang terlalu mahal juga dapat ditolak.
-Nilai awal perlu dikalibrasi terhadap mesin dan data aktual.
-
-| Status | Kondisi |
-| --- | --- |
-| 201 | File permanen dan commit Sample berhasil; metadata dikembalikan. |
-| 400 | Multipart rusak/terpotong, disconnect, atau Content-Length tidak cocok. |
-| 401 | Token hilang/invalid/expired atau User tidak ditemukan. |
-| 413 | Batas byte file/body/header/hasil dekompresi/panjang baris terlampaui. |
-| 415 | Content-Type bukan multipart/form-data. |
-| 422 | Field/file tambahan, filename/FASTQ/gzip invalid, atau budget validasi habis. |
-| 503 | Slot penuh, storage/worker tidak tersedia, layanan auth/database gagal, atau commit tidak dapat dikonfirmasi. |
-
-Error memakai pesan tetap, tanpa isi file, token, path server, atau exception OS
-mentah. Automated tests memakai file kecil, batas kecil, `tmp_path`, dependency
-overrides, serta worker subprocess dengan input sintetis. Session di-mock atau
-dibuat tanpa koneksi database dengan operasi terkait di-mock; fixture memblokir
-koneksi nyata pada test terkait dan menonaktifkan pembacaan `.env`. Default pytest
-suite tidak mengakses PostgreSQL sungguhan. Tooling smoke PostgreSQL dan demo
-Swagger berada terpisah di `scripts/`, bersifat manual/opt-in, dan tidak dijalankan
-oleh pytest. Pengujian PostgreSQL nyata hanya boleh memakai
-`genopath_integration_test` setelah approval terpisah.
-
-Urutan persistence di dalam context staging:
-
-```text
-transfer multipart -> staging + validasi subprocess -> buat Session tulis
--> add/flush Sample -> siapkan response DTO -> finalize file
--> preserve_for_reconciliation -> commit Sample -> tutup Session -> HTTP 201
-```
-
-Response DTO dibuat sesudah `flush()` dan sebelum commit. Tidak ada `refresh()`,
-akses atribut ORM yang sudah expired, atau pemanggilan `retain()` ulang setelah
-commit. `preserve_for_reconciliation()` sudah mempertahankan file sebelumnya.
-Transaksi database hanya meliputi metadata dan finalisasi filesystem, tidak
-transfer file atau validasi yang lama.
-
-Kegagalan sebelum commit dicoba melakukan rollback dan cleanup file milik context,
-termasuk hasil finalisasi yang belum dipertahankan. Kegagalan rollback/close tidak
-menutupi error utama. Setelah commit dicoba, semua kegagalan diperlakukan secara
-konservatif: file tetap dipertahankan meskipun rollback berhasil, karena rollback
-tersebut tidak membuktikan COMMIT sebelumnya tidak diterima server. Log rekonsiliasi
-hanya mencatat storage key buatan server dan id_sample, tanpa filename client atau
-exception driver/SQL. Kegagalan menutup session setelah commit terkonfirmasi
-dicatat dengan pesan tetap; tidak mengubah hasil commit menjadi kegagalan upload.
-
-Cancellation sebelum checkpoint terakhir menyebabkan rollback dan cleanup. Setelah
-masuk fase preserve/commit, thread menyelesaikan upaya commit walaupun request
-dibatalkan; caller menunggu sampai thread selesai sebelum menutup temporary file
-dan melepas slot. Commit sukses saat client sudah pergi tetap menyimpan Sample dan
-file. Commit ambigu saat cancellation juga mempertahankan file. Timeout thread
-tidak dapat menghentikan I/O database: policy timeout koneksi/statement perlu
-diverifikasi sebelum pengujian PostgreSQL nyata. Driver yang macet bisa menahan
-slot sampai operasi selesai.
-
-Filesystem, database, dan pengiriman respons bukan satu transaksi atomik. File
-orphan dapat tersisa jika commit gagal/ambigu setelah preserve, atau proses crash.
-Client dapat tidak menerima respons meskipun commit berhasil; retry belum memiliki
-idempotency key sehingga bisa membuat Sample duplikat. Tidak ada auto-delete untuk
-file dengan hasil commit belum pasti.
-
-Prosedur rekonsiliasi manual (setelah approval akses database terpisah):
-
-1. Identifikasi storage key/id_sample dari log sanitasi dan pastikan operasi asal
-   sudah berhenti. Pastikan transaksi COMMIT tidak masih berjalan atau belum pasti.
-2. Baca database primary yang authoritative dengan session baru; cari seluruh
-   Sample yang mereferensikan `path_penyimpanan` tersebut. Bila ada referensi,
-   pertahankan file dan periksa keberadaannya. Jangan menjadikan 503 sebagai bukti
-   bahwa Sample tidak tercipta.
-3. Hanya setelah transaksi asal dipastikan selesai dan tidak ada referensi,
-   file dapat dianggap kandidat orphan. Query yang belum menemukan row saat
-   COMMIT masih mungkin berjalan **tidak cukup** untuk mengizinkan penghapusan.
-4. Penghapusan memerlukan approval tersendiri, identitas file yang terverifikasi,
-   root storage tepercaya, serta koordinasi agar tidak berbenturan dengan upload
-   aktif. Jangan menghapus semua `.part` atau file UUID berdasarkan umur saja.
-
-Endpoint tidak menjalankan rekonsiliasi atau migrasi otomatis. Verifikasi dan
-cleanup database/storage melalui tooling manual memerlukan approval terpisah.
-Sequence ID yang sudah dipakai oleh flush dapat memiliki gap sesudah
-rollback; itu bukan bukti adanya Sample yang hilang.
-
-Keterbatasan MVP: belum ada timeout khusus penerimaan/slow upload, kuota disk global,
-atau cleaner crash/orphan. Upload lambat dapat memegang satu slot sampai disconnect
-atau timeout dari transport. Tidak ada perubahan konfigurasi Uvicorn/proxy pada
-checkpoint ini. Cancellation/error normal tetap mencoba cleanup seluruh file
-milik context; kegagalan OS atau crash memerlukan rekonsiliasi.
+[Kontrak FE/QA M7](BACKEND_INTEGRATION_GUIDE.md) menjelaskan detail autentikasi,
+FASTQ, storage, dan error. Bagian M8/future pada panduan lama harus dibaca bersama
+README ini untuk status Job terbaru. [Prosedur Swagger M7](scripts/SWAGGER_DEMO.md)
+adalah tooling opt-in terpisah, bukan jalur setup M8. Registrasi Tahap A tetap
+terpisah sampai integrasinya disetujui; README tidak mengaktifkan pendaftaran
+publik atau mengubah frontend.

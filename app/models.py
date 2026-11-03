@@ -5,6 +5,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -69,6 +70,7 @@ class Job(Base):
     waktu_mulai = Column(DateTime, nullable=True)
     waktu_selesai = Column(DateTime, nullable=True)
     pesan_error = Column(Text, nullable=True)
+    parameter_pipeline = Column(JSON, nullable=True)
 
     owner = relationship("User", back_populates="jobs")
     sample = relationship("Sample", back_populates="jobs")
@@ -88,6 +90,7 @@ class Analysis(Base):
     total_varian = Column(Integer, nullable=True)
     snp_count = Column(Integer, nullable=True)
     indel_count = Column(Integer, nullable=True)
+    other_count = Column(Integer, nullable=True)
     path_vcf = Column(String, nullable=True)
     path_csv = Column(String, nullable=True)
 
@@ -105,6 +108,9 @@ class Variant(Base):
     ref_allele = Column(String, nullable=False)
     alt_allele = Column(String, nullable=False)
     qual = Column(Float, nullable=True)
+    variant_type = Column(String, nullable=True)
+    filter_status = Column(String, nullable=True)
+    info = Column(JSON, nullable=True)
 
     analysis = relationship("Analysis", back_populates="variants")
     genotypes = relationship("Genotype", back_populates="variant")

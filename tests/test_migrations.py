@@ -17,6 +17,7 @@ from app.database import Base
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "migrations/versions/0001_m6_baseline.py"
 M7 = ROOT / "migrations/versions/0002_m7_schema.py"
+M8 = ROOT / "migrations/versions/0003_m8_pipeline.py"
 
 
 def revision_tree(path):
@@ -56,6 +57,7 @@ def test_revision_chain_is_explicit_and_linear():
     for path, revision, parent in [
         (BASELINE, "0001_m6_baseline", None),
         (M7, "0002_m7_schema", "0001_m6_baseline"),
+        (M8, "0003_m8_pipeline", "0002_m7_schema"),
     ]:
         assignments = {
             node.targets[0].id: ast.literal_eval(node.value)
@@ -148,6 +150,7 @@ def test_migration_modules_import_without_side_effects(alembic_api, monkeypatch)
     environment = runpy.run_path(str(ROOT / "migrations/env.py"))
     runpy.run_path(str(BASELINE))
     runpy.run_path(str(M7))
+    runpy.run_path(str(M8))
 
     assert environment["target_metadata"] is Base.metadata
     assert len(Base.metadata.tables) == 7
@@ -158,9 +161,9 @@ def test_alembic_resolves_one_head(offline_config):
     from alembic.script import ScriptDirectory
 
     scripts = ScriptDirectory.from_config(offline_config)
-    assert scripts.get_heads() == ["0002_m7_schema"]
+    assert scripts.get_heads() == ["0003_m8_pipeline"]
     assert [item.revision for item in scripts.walk_revisions()] == [
-        "0002_m7_schema", "0001_m6_baseline"
+        "0003_m8_pipeline", "0002_m7_schema", "0001_m6_baseline"
     ]
 
 
@@ -203,7 +206,9 @@ def test_explicit_revision_columns_match_orm(offline_config, monkeypatch):
     from alembic import command, op
 
     create_table = op.create_table
+    add_column = op.add_column
     created = {}
+    added = {}
 
     def capture_table(name, *args, **kwargs):
         table = create_table(name, *args, **kwargs)
@@ -211,17 +216,22 @@ def test_explicit_revision_columns_match_orm(offline_config, monkeypatch):
         return table
 
     monkeypatch.setattr(op, "create_table", capture_table)
+
+    def capture_column(name, column, **kwargs):
+        added.setdefault(name, {})[column.name] = column
+        return add_column(name, column, **kwargs)
+
+    monkeypatch.setattr(op, "add_column", capture_column)
     command.upgrade(offline_config, "head", sql=True)
 
     assert set(created) == set(Base.metadata.tables)
     for name, table in created.items():
         expected = Base.metadata.tables[name]
-        expected_columns = set(expected.columns.keys())
-        if name == "user":
-            expected_columns.remove("username")
-        assert set(table.columns.keys()) == expected_columns
+        declarations = {column.name: column for column in table.columns}
+        declarations.update(added.get(name, {}))
+        assert set(declarations) == set(expected.columns.keys())
         assert list(table.primary_key.columns.keys()) == list(expected.primary_key.columns.keys())
-        for column in table.columns:
+        for column in declarations.values():
             reference = expected.c[column.name]
             assert type(column.type) is type(reference.type)
             assert column.nullable is reference.nullable
@@ -237,13 +247,22 @@ def test_explicit_revision_columns_match_orm(offline_config, monkeypatch):
     )
 
 
-@pytest.mark.parametrize("path", [BASELINE, M7], ids=["m6", "m7"])
+@pytest.mark.parametrize("path", [BASELINE, M7, M8], ids=["m6", "m7", "m8"])
 def test_downgrade_requires_separate_review(alembic_api, path):
     from alembic.util import CommandError
 
     revision = runpy.run_path(str(path))
     with pytest.raises(CommandError):
         revision["downgrade"]()
+
+
+def test_m8_is_additive_nullable_metadata_without_aligner_assumptions():
+    calls = upgrade_calls(M8)
+    assert len(calls) == 5 and all(call.func.attr == "add_column" for call in calls)
+    assert {ast.literal_eval(call.args[0]) for call in calls} == {"job", "analysis", "variant"}
+    for call in calls:
+        assert any(k.arg == "schema" and ast.literal_eval(k.value) == "public" for k in call.keywords)
+        assert any(k.arg == "nullable" and ast.literal_eval(k.value) is True for k in call.args[1].keywords)
 
 
 def test_online_errors_hide_connection_details(alembic_api, monkeypatch):

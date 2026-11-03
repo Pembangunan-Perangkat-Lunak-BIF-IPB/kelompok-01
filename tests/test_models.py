@@ -4,6 +4,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     Integer,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -29,6 +30,7 @@ M7_COLUMNS = {
         "waktu_mulai": (DateTime, True),
         "waktu_selesai": (DateTime, True),
         "pesan_error": (Text, True),
+        "parameter_pipeline": (JSON, True),
     },
     Analysis: {
         "id_analysis": (Integer, False),
@@ -39,6 +41,7 @@ M7_COLUMNS = {
         "total_varian": (Integer, True),
         "snp_count": (Integer, True),
         "indel_count": (Integer, True),
+        "other_count": (Integer, True),
         "path_vcf": (String, True),
         "path_csv": (String, True),
     },
@@ -50,6 +53,9 @@ M7_COLUMNS = {
         "ref_allele": (String, False),
         "alt_allele": (String, False),
         "qual": (Float, True),
+        "variant_type": (String, True),
+        "filter_status": (String, True),
+        "info": (JSON, True),
     },
     Genotype: {
         "id_genotype": (Integer, False),

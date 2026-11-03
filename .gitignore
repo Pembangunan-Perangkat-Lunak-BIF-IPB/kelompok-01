@@ -1,5 +1,6 @@
 data/reference/
 data/samples/
+data/jobs/
 .venv/
 __pycache__/
 *.py[cod]

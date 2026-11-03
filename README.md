@@ -1,7 +1,10 @@
-# GenoPath Backend, M8
+# GenoPath Backend, M9 Result API (berbasis M8)
 
 Backend FastAPI, SQLAlchemy, PostgreSQL, JWT, dan input FASTQ **single-end**.
-Branch ini: **`feature/be-pipeline-runner`**, target integrasi: `development`.
+Branch ini: **`feature/be-result-api`**, dibangun dari M8 `100ba5c`.
+M8 PR #16 masih terbuka; M9 belum dipush. Setelah review, PR M9 sebaiknya
+sementara berbasis `feature/be-pipeline-runner` agar diff hanya berisi M9.
+Target integrasi akhir tetap `development`, setelah M8 masuk dan diff ditinjau ulang.
 
 | Tersedia pada branch ini | Batas implementasi |
 | --- | --- |
@@ -9,7 +12,7 @@ Branch ini: **`feature/be-pipeline-runner`**, target integrasi: `development`.
 | Pembuatan, polling, start, dan retry Job dengan ownership | Upload hanya menyimpan Sample; tidak otomatis menjalankan Job. |
 | Runner subprocess sintetis, persistensi Analysis/Variant/Genotype, rollback | VCF sintetis membuktikan alur software, bukan alignment atau variant calling biologis. |
 | Kontrak adapter alignment dan workflow Nextflow DSL2 | Toolchain dan pipeline biologis end-to-end belum diverifikasi. Aligner/reference belum diputuskan. |
-| Metadata hasil dan VCF terseleksi | Result API, pagination/filter hasil, dan download merupakan M9, belum tersedia. |
+| Result API: ringkasan, Variant/Genotype, pagination dan filter SQL | Download file dan sorting server dinamis belum tersedia. Data sintetis tetap diberi label `execution_mode=synthetic`. |
 
 ## 1. Clone dan Python environment
 
@@ -18,13 +21,17 @@ harus tersedia. PostgreSQL 18.6 pernah dipakai untuk pengujian terisolasi;
 kompatibilitas versi server lain belum diuji dalam checkpoint M8 ini.
 
 ```bash
-git clone --origin github --branch feature/be-pipeline-runner \
+git clone --origin github --branch feature/be-result-api \
   https://github.com/Pembangunan-Perangkat-Lunak-BIF-IPB/kelompok-01.git
 cd kelompok-01
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[dev]'
 ```
+
+**Branch M9 saat ini masih lokal dan belum tersedia untuk clone anggota.**
+Contoh clone di atas berlaku sesudah publikasi disetujui; sebelum itu M8 yang
+sudah tersedia memakai `--branch feature/be-pipeline-runner`, tanpa Result API.
 
 Jika sudah memiliki clone, simpan pekerjaan lokal sebelum berpindah branch.
 Gunakan nama remote milik clone sendiri; contoh di atas menetapkan `github`.
@@ -104,9 +111,10 @@ Pada database baru dan kosong yang baru dibuat:
 python -m alembic upgrade head
 ```
 
-Head branch ini adalah `0003_m8_pipeline`: M6 membuat tiga tabel dasar, M7
+Head branch ini adalah `0004_m9_result_indexes`: M6 membuat tiga tabel dasar, M7
 menambahkan username dan tabel analisis, M8 menambahkan lima kolom metadata
-nullable. Alembic tidak dijalankan otomatis saat API mulai.
+nullable. M9 menambahkan tiga index untuk pagination/filter Variant dan lookup
+Genotype, tanpa kolom/tabel baru. Alembic tidak dijalankan otomatis saat API mulai.
 **Database existing memerlukan audit dan persetujuan terpisah**, termasuk
 backfill username jika tabel User sudah berisi data. Jangan memakai `stamp head`
 untuk melewati migrasi. Lihat [panduan migrasi](migrations/README.md).
@@ -137,8 +145,8 @@ root.mkdir(parents=True, exist_ok=True)
 with Session(engine) as db, db.begin():
     if db.scalar(text('SELECT current_database()')) != 'genopath_m8_local':
         raise SystemExit('Ditolak: database tujuan bukan database lokal contoh.')
-    if db.scalar(text('SELECT version_num FROM public.alembic_version')) != '0003_m8_pipeline':
-        raise SystemExit('Ditolak: migrasi M8 belum lengkap.')
+    if db.scalar(text('SELECT version_num FROM public.alembic_version')) != '0004_m9_result_indexes':
+        raise SystemExit('Ditolak: migrasi branch M9 belum lengkap.')
     if (db.scalar(select(User.id_user).limit(1)) is not None
             or db.scalar(select(ReferenceGenome.id_reference_genome).limit(1)) is not None):
         raise SystemExit('Ditolak: akun/reference sudah terisi; jangan seed ulang.')
@@ -219,8 +227,8 @@ Sample dapat sudah berhasil, dan upload belum memiliki idempotency key.
 
 Untuk fixture default ini, hasil terseleksi adalah **3 Variant dan 3 Genotype**:
 1 SNP, 1 InDel, dan 1 `other` (ALT campuran). GT default fixture `0/1`, FORMAT/DP
-`25`; angka tersebut bukan temuan biologis. Hasil hanya dapat diperiksa melalui
-SQL/ORM lokal dan file run pada M8. Belum ada endpoint Result API atau download.
+`25`; angka tersebut bukan temuan biologis. Pada branch M9, hasil dapat dibaca melalui Result API di bawah, SQL/ORM lokal,
+dan file run. Download file belum tersedia.
 
 Query baca saja, melalui `psql` atau Query Tool pada database lokal sendiri;
 ganti `1` pada filter dengan Job ID aktual:
@@ -240,7 +248,147 @@ ORDER BY v.id_variant;
 Misalnya `psql -h 127.0.0.1 -U genopath_m8_local -d genopath_m8_local -W` meminta
 password tanpa menaruhnya pada command. Tidak perlu membuka pgAdmin.
 
-## 5. Pengujian yang terisolasi
+## 5. Result API untuk FE dan QA
+
+Kedua endpoint berikut **GET**, memerlukan Bearer JWT yang sama dengan Job API.
+Swagger `/docs` dan `/openapi.json` memuat schema serta contoh respons aktual
+fixture sintetis. ID pada contoh bukan akun/reference bawaan untuk anggota.
+Tidak ada pipeline yang dijalankan atau row database yang diubah oleh Result API.
+
+| Endpoint | Kegunaan |
+| --- | --- |
+| `GET /jobs/{id_job}/result` | Ringkasan semua Variant tersimpan untuk grafik, parameter Analysis, mode eksekusi, dan timestamp UTC. |
+| `GET /jobs/{id_job}/variants` | Halaman tabel Variant dan daftar Genotype milik Sample yang dipetakan Job. |
+
+Contoh respons ringkasan aktual Job sintetis pada pengujian PostgreSQL:
+
+```json
+{
+  "id_job": 11,
+  "id_analysis": 11,
+  "id_sample": 3,
+  "id_reference_genome": 3,
+  "status": "Completed",
+  "counts": {
+    "total_variants": 3,
+    "snps": 1,
+    "indels": 1,
+    "other": 1,
+    "unclassified": 0
+  },
+  "parameters": {
+    "parameter_qual": 30.0,
+    "parameter_dp": 10,
+    "require_pass": true,
+    "variant_ploidy": 2
+  },
+  "execution_mode": "synthetic",
+  "waktu_mulai": "2026-11-03T11:39:46.265060Z",
+  "waktu_selesai": "2026-11-03T11:39:46.391799Z"
+}
+```
+
+Contoh request tabel: `GET /jobs/11/variants?min_qual=60&limit=1&offset=2`.
+Respons aktual (ID hanya untuk menjelaskan kontrak):
+
+```json
+{
+  "id_job": 11,
+  "id_analysis": 11,
+  "items": [
+    {
+      "id_variant": 419,
+      "chromosome": "synthetic_chr",
+      "position": 3,
+      "ref_allele": "A",
+      "alt_allele": "C,AT",
+      "qual": 60.0,
+      "variant_type": "other",
+      "filter_status": "PASS",
+      "info": {
+        "DP": "999"
+      },
+      "genotypes": [
+        {
+          "id_genotype": 419,
+          "id_sample": 3,
+          "genotype_call": "0/1",
+          "dp": 25
+        }
+      ]
+    }
+  ],
+  "total": 3,
+  "limit": 1,
+  "offset": 2,
+  "returned": 1,
+  "has_more": false,
+  "next_offset": null,
+  "filters": {
+    "variant_type": null,
+    "min_qual": 60.0,
+    "max_qual": null
+  }
+}
+```
+
+Gunakan ID Job **lokal sendiri** yang sudah Completed saat mencoba di Swagger,
+kemudian Execute kedua endpoint. Untuk membandingkan pagination, coba `limit=1`
+dengan `offset=0`, `1`, dan `2`. Untuk fixture default, `variant_type=snp`
+menghasilkan satu Variant dan `min_qual=61` menghasilkan total nol. Tidak perlu
+menyalin database pengembang atau menjalankan seed tambahan.
+
+Parameter tabel:
+
+| Parameter | Default / validasi |
+| --- | --- |
+| `limit` | `50`, integer 1–500. |
+| `offset` | `0`, integer 0–2147483647. |
+| `variant_type` | Opsional: `snp`, `indel`, `other`, `unclassified`, case-sensitive. |
+| `min_qual`, `max_qual` | Opsional, finite dan nonnegatif, batas inklusif; min tidak boleh melebihi max. |
+
+`total` adalah jumlah Variant **setelah filter**, sebelum limit/offset. `returned`
+adalah panjang `items`; `has_more` dan `next_offset` menuntun halaman berikutnya.
+Urutan selalu `id_variant ASC`; sorting server lain belum tersedia. Offset di luar
+hasil tetap memberi 200 dengan `items=[]`, total aktual, dan `next_offset=null`.
+Unknown query parameter ditolak 422 agar salah nama filter tidak diabaikan.
+QUAL NULL tidak cocok dengan batas numerik; tanpa filter tetap dapat dikembalikan.
+
+Ringkasan grafik tidak mengikuti filter tabel. Counts dihitung melalui SQL dari
+Variant yang benar-benar tersimpan, bukan menebak dari GT atau mengandalkan counter
+Analysis yang mungkin lama. Tipe NULL/tidak dikenal dihitung sebagai `unclassified`,
+tidak diubah menjadi `other`. ALT multiallelic dan GT berfase/missing dipertahankan;
+`info` tetap string/null sesuai VCF. Genotype dari Sample lain tidak dikirim.
+Variant tanpa Genotype tetap muncul dengan `genotypes=[]`; jumlah GT tidak
+menggandakan pagination/count Variant.
+
+Job/Analysis milik akun lain dan Job tidak ada sama-sama memberi 404. Job milik
+sendiri yang belum Completed atau tidak memiliki Analysis memberi 409. JWT salah,
+hilang, atau expired memberi 401; query/path invalid 422; kegagalan DB yang
+dikenali 503 dengan pesan generik. Respons sukses memakai `Cache-Control: private,
+no-store`. Path storage, parameter executable, JWT, dan metadata QC mentah tidak
+dikirim oleh Result API. Mode eksekusi legacy yang tidak tercatat tetap null.
+
+Untuk FE Vite dengan proxy `/api`, gunakan `/api/jobs/{id}/result` dan
+`/api/jobs/{id}/variants`, sertakan header Authorization. Ubah offset kembali ke
+0 saat filter berubah, tangani 401 dengan login ulang, dan 409 dengan polling Job.
+FE/Result Viewer tidak diubah di tahap ini; kontrak Result belum ada pada
+`api.ts` branch FE yang diperiksa. Tidak ada CORS tambahan.
+
+Query count/page/genotype dibatasi ke Analysis terotorisasi. Genotype diambil
+dalam satu query untuk ID Variant pada halaman, tanpa N+1. PostgreSQL menggunakan
+transaksi REPEATABLE READ READ ONLY dan statement timeout 10 detik agar count dan
+page konsisten pada satu request. Request ringkasan dan tabel yang terpisah bukan
+satu snapshot bersama. Offset besar dan exact count masih memerlukan benchmark
+pada data besar; ini bukan klaim performa genom penuh.
+
+Index M9 tersedia sebagai source migrasi `0004_m9_result_indexes`. Migrasi index
+baru diuji offline/SQLite, **belum diterapkan ke cluster fixture PostgreSQL M8**.
+API read-only juga diverifikasi pada schema M8 tersebut, karena index tidak
+mengubah kontrak kolom. Pada database anggota baru gunakan `alembic upgrade head`;
+pada database existing, tinjau target dan kebutuhan lock/maintenance sebelum DDL.
+
+## 6. Pengujian yang terisolasi
 
 ```bash
 python -B -m pytest -p no:cacheprovider
@@ -248,8 +396,10 @@ python -B -m pytest -p no:cacheprovider
 python -B -m pytest -p no:cacheprovider \
   tests/test_jobs.py tests/test_job_http.py tests/test_pipeline.py \
   tests/test_vcf_records.py tests/test_vcf_summary.py tests/test_m8_smoke_guard.py
+# Subset Result API:
+python -B -m pytest -p no:cacheprovider tests/test_results.py
 # Validasi migrasi offline, tanpa koneksi database:
-python -m alembic upgrade head --sql > /tmp/genopath-m8-schema.sql
+python -m alembic upgrade head --sql > /tmp/genopath-m9-schema.sql
 ```
 
 Pytest menggunakan mock, SQLite in-memory, temporary storage, dan subprocess
@@ -267,13 +417,24 @@ retry, satu Job aktif per user, serta klaim worker bersamaan. Tidak ada klaim
 bahwa 8 skenario tersebut adalah tests mock atau eksekusi biologis.
 
 `scripts/m8_disposable_smoke.py` adalah harness khusus pengujian terisolasi yang
-memerlukan manifest kepemilikan dari penyiapan cluster terpisah. Repository ini
+memerlukan manifest kepemilikan dari penyiapan cluster terpisah. Harness dipin
+ke revision M8 dan tidak menerapkan migrasi M9. Repository ini
 belum menyediakan provisioning cluster/manifest generik untuk harness tersebut.
 Gunakan demo lokal di atas untuk mencoba API; jangan membuat manifest tiruan
 atau mengarahkan harness ke database existing. Bukti dan database pengembang
 tidak diperlukan untuk mengikuti README ini.
 
-## 6. Konfigurasi pipeline dan batas operasional
+Checkpoint M9, 3 November 2026: **831 tests passed, 0 failed**, dua peringatan
+dependency. Suite mencakup regresi M8 dan Result API, termasuk ownership, expiry,
+filter/pagination, data kosong, query tanpa N+1, dan migrasi index offline.
+Tambahan **8 pemeriksaan read-only PostgreSQL 18.6 nyata** pada fixture sintetis
+M8 lulus, termasuk count/page/filter dan penolakan akses. Dua screenshot Chrome
+berasal dari API Uvicorn yang benar-benar berjalan, dengan JSON diperbesar untuk
+keterbacaan. Tidak ada row fixture atau schema cluster M8 yang diubah. Index
+M9 belum diuji online atau dibenchmark pada dataset besar. Bukti tersimpan di
+luar repository dan tidak diperlukan untuk bootstrap anggota.
+
+## 7. Konfigurasi pipeline dan batas operasional
 
 | Variabel | Default / kegunaan |
 | --- | --- |
@@ -336,7 +497,7 @@ cocok persis, dan batas input ingestion 1 GB.
   token expired, dan akun yang benar. Login 503 dapat berarti JWT secret atau
   database belum siap. `/health` tidak menguji keduanya.
 - `column ... does not exist`: periksa target database dan Alembic revision;
-  database baru harus mencapai `0003_m8_pipeline`. Jangan stamp schema yang salah.
+  database baru branch M9 harus mencapai `0004_m9_result_indexes`. Jangan stamp schema yang salah.
 - Job 503: periksa kedua gate sintetis, file input/reference dan root storage.
   Jangan mengaktifkan mode nextflow sebelum tool/reference/adapter disetujui.
 - Job 409: ada Job aktif, status tidak cocok untuk start/retry, atau UUID dipakai

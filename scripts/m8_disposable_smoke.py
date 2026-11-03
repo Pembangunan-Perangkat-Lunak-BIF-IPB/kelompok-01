@@ -71,7 +71,8 @@ def migrate_pristine_or_verify(manifest):
             root = Path(__file__).resolve().parents[1]
             configuration = Config(str(root / "alembic.ini"))
             configuration.output_buffer = io.StringIO()
-            command.upgrade(configuration, "head", sql=True)
+            # This harness validates M8, even when later feature branches add revisions.
+            command.upgrade(configuration, "0003_m8_pipeline", sql=True)
             connection.execute(configuration.output_buffer.getvalue())
         revision = connection.execute("SELECT version_num FROM public.alembic_version").fetchone()[0]
         if revision != "0003_m8_pipeline":

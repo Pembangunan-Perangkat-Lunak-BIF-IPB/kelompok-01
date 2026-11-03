@@ -13,14 +13,19 @@ Mode offline tidak membaca `.env` dan tidak membuat koneksi.
   indeks M6. Email hanya menggunakan unique index `ix_user_email`.
 - `0002_m7_schema`: menambahkan `user.username` yang NOT NULL dan UNIQUE,
   kemudian membuat `job`, `analysis`, `variant`, dan `genotype`.
-- `0003_m8_pipeline` (head branch M8): menambahkan metadata JSON konfigurasi
+- `0003_m8_pipeline`: menambahkan metadata JSON konfigurasi
   Job, `analysis.other_count`, serta `variant.variant_type`, `filter_status`,
   dan `info`. Kelima kolom nullable, tanpa memilih aligner tertentu.
+- `0004_m9_result_indexes` (head branch M9): menambahkan index
+  `variant(id_analysis, id_variant)`, `variant(id_analysis, variant_type, qual)`,
+  dan `genotype(id_variant, id_sample)`. Tidak mengubah data, kolom, atau tabel.
+  CREATE INDEX biasa dapat menahan penulisan; tinjau maintenance untuk database
+  existing. Belum diterapkan pada fixture PostgreSQL M8 saat checkpoint M9.
 
 Revision ditulis eksplisit, tidak dibuat dengan autogenerate terhadap database
 development. Indeks primary key tambahan yang sudah ada tidak dihapus.
-Downgrade otomatis ketiga revision ditolak agar tidak menghapus tabel M6,
-data username, analisis, atau metadata M8. Rollback memerlukan rencana yang
+Downgrade otomatis keempat revision ditolak agar tidak menghapus tabel M6,
+data username, analisis, metadata M8, atau index tanpa review. Rollback memerlukan rencana yang
 ditinjau terpisah.
 
 ## Pemeriksaan sebelum stamp atau upgrade
@@ -91,6 +96,6 @@ Untuk database M6 existing yang telah diverifikasi cocok, setelah disetujui:
 ```
 
 Stamp menulis riwayat Alembic tanpa membuat tabel M6. Upgrade berikutnya menerapkan
-revision M7 dan M8. Jangan menggunakan `stamp head` karena akan mencatat seluruh
+revision M7, M8, dan M9. Jangan menggunakan `stamp head` karena akan mencatat seluruh
 migrasi sebagai selesai tanpa menerapkan perubahan schema. Perintah online menggunakan konfigurasi koneksi
 aktif, sehingga database tujuan harus selalu diverifikasi sebelum eksekusi.

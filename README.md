@@ -1,15 +1,13 @@
-# GenoPath Backend, M9 Result API (berbasis M8)
+# GenoPath Backend: Auth, Job, dan Result API
 
 Backend FastAPI, SQLAlchemy, PostgreSQL, JWT, dan input FASTQ **single-end**.
-Branch ini: **`feature/be-result-api`**, dibangun dari M8 `100ba5c`.
-Branch M9 sudah menyertakan baseline M8, sehingga cukup clone branch ini untuk
-mencoba Result API. Selama M8 PR #16 belum merged, PR M9 memakai base
-`feature/be-pipeline-runner` agar diff review hanya berisi M9. Target integrasi
-akhir tetap `development`, setelah M8 masuk dan diff ditinjau ulang.
+Branch integrasi registrasi: **`feature/be-auth-register-final`**, berbasis
+`development` yang sudah memuat M8 #16 dan M9 #17. Setelah PR registrasi di-merge,
+anggota dapat memakai `development`. Registrasi tidak memerlukan migrasi baru.
 
 | Tersedia pada branch ini | Batas implementasi |
 | --- | --- |
-| Login JSON dengan JWT, password Argon2id, upload FASTQ/FASTQ.gz | Tidak ada `/auth/register`; registrasi Tahap A masih di branch terpisah `feature/be-register-integration`. |
+| Register JSON, login JWT, password Argon2id, upload FASTQ/FASTQ.gz | Register membuat akun role `user`, tanpa token otomatis. Kebijakan registrasi deployment publik belum diputuskan. |
 | Pembuatan, polling, start, dan retry Job dengan ownership | Upload hanya menyimpan Sample; tidak otomatis menjalankan Job. |
 | Runner subprocess sintetis, persistensi Analysis/Variant/Genotype, rollback | VCF sintetis membuktikan alur software, bukan alignment atau variant calling biologis. |
 | Kontrak adapter alignment dan workflow Nextflow DSL2 | Toolchain dan pipeline biologis end-to-end belum diverifikasi. Aligner/reference belum diputuskan. |
@@ -22,7 +20,7 @@ harus tersedia. PostgreSQL 18.6 pernah dipakai untuk pengujian terisolasi;
 kompatibilitas versi server lain belum diuji dalam checkpoint M8 ini.
 
 ```bash
-git clone --origin github --branch feature/be-result-api \
+git clone --origin github --branch feature/be-auth-register-final \
   https://github.com/Pembangunan-Perangkat-Lunak-BIF-IPB/kelompok-01.git
 cd kelompok-01
 python3 -m venv .venv
@@ -116,8 +114,13 @@ Genotype, tanpa kolom/tabel baru. Alembic tidak dijalankan otomatis saat API mul
 backfill username jika tabel User sudah berisi data. Jangan memakai `stamp head`
 untuk melewati migrasi. Lihat [panduan migrasi](migrations/README.md).
 
-Tidak ada akun bawaan atau Reference API pada branch ini. Untuk database lokal
-baru tadi, buat akun ber-role `user` dan satu reference fixture. Script menolak
+Tidak ada akun bawaan atau Reference API pada branch ini. **Untuk integrasi
+register/login saja, bootstrap akun/reference di bawah tidak diperlukan**: setelah
+migrasi, jalankan server dan gunakan `/auth/register`.
+
+Bootstrap berikut opsional untuk demo Job sintetis M8/M9 pada database baru yang
+masih kosong. Jalankan sebelum registrasi akun lain jika ingin mencoba kedua alur.
+Script membuat akun ber-role `user` dan satu reference fixture, serta menolak
 nama database lain, schema bukan M8, atau akun/reference yang sudah terisi;
 tidak mengubah akun existing. Password akun diminta tersembunyi dan di-hash.
 
@@ -244,6 +247,101 @@ ORDER BY v.id_variant;
 
 Misalnya `psql -h 127.0.0.1 -U genopath_m8_local -d genopath_m8_local -W` meminta
 password tanpa menaruhnya pada command. Tidak perlu membuka pgAdmin.
+
+## Kontrak register/login untuk Azril dan QA
+
+Server `127.0.0.1:8000` menyediakan route tanpa prefix `/api`. Pada FE Vite yang
+sudah memakai proxy `/api`, panggil **`/api/auth/register`** dan
+**`/api/auth/login`**; proxy menghapus `/api`. Tidak ada perubahan CORS atau kode
+FE dalam integrasi ini. Setelah PR di-merge, backend yang berjalan perlu memakai
+checkout `development` terbaru agar endpoint tersedia pada base URL tim.
+
+`POST /auth/register`, `Content-Type: application/json`, **tanpa JWT**:
+
+```json
+{
+  "username": "azril_demo",
+  "nama": "Peneliti Demo",
+  "email": "azril_demo@example.invalid",
+  "password": "<ganti-dengan-password-lokal-sendiri>"
+}
+```
+
+Nilai password di atas placeholder, bukan kredensial atau akun bawaan. Contoh
+bentuk respons **HTTP 201** (ID berasal dari server):
+
+```json
+{"id_user":1,"username":"azril_demo","nama":"Peneliti Demo","email":"azril_demo@example.invalid","role":"user"}
+```
+
+Akun sudah di-commit ke PostgreSQL sebelum 201. Respons tidak memuat password,
+hash, atau JWT. Password di-hash Argon2id. Role ditentukan server: field `role`,
+`is_admin`, `id_user`, `password_hash`, dan field tambahan lain ditolak.
+
+| Field registrasi | Kontrak |
+| --- | --- |
+| `username` | Wajib, 3–64 karakter; awal huruf/angka ASCII, sisanya huruf/angka/`_`/`.`/`-`; case-sensitive. |
+| `nama` | Wajib, 1–120 karakter printable, tidak boleh kosong. |
+| `email` | Wajib, maksimal 254 karakter; email ASCII tanpa quoted local part, domain bertitik; disimpan lowercase. Tidak melakukan verifikasi email/DNS. |
+| `password` | Wajib, 12–128 karakter, bukan seluruhnya whitespace; **tidak di-trim**. |
+
+Username/nama/email di-trim saat registrasi. Login tetap mencocokkan username
+persis, sehingga gunakan username hasil respons registrasi atau trim input username
+di FE; jangan menggantinya dengan email. Password selalu dikirim persis seperti
+input pengguna, termasuk spasi yang disengaja.
+
+`POST /auth/login` tetap menerima JSON berikut, tanpa field lain:
+
+```json
+{"username":"azril_demo","password":"<password-akun-yang-baru-didaftarkan>"}
+```
+
+Respons **HTTP 200**, token ditampilkan sebagai placeholder dalam dokumentasi:
+
+```json
+{"access_token":"<disamarkan>","token_type":"bearer"}
+```
+
+JWT default **240 menit**, bukan 72 jam. Token hanya membawa `sub`, `iat`, `exp`;
+login tidak mengembalikan profil nama/email/role. Label role yang saat ini dibuat
+FE bukan otorisasi backend. Header endpoint terlindungi tetap `Authorization:
+Bearer <token>`. Jangan mencetak JWT/password di console, log, atau screenshot.
+
+| Status | Arti untuk FE |
+| --- | --- |
+| Register 201 | Akun tersimpan; lanjut login atau arahkan ke form login. |
+| Register 409 | `{"detail":"Username or email already registered."}`; username/email sudah ada, termasuk konflik transaksi. |
+| Register/login 422 | Request invalid; `detail` berupa array pesan sanitasi, bukan selalu string. Tidak memantulkan nilai input. |
+| Login 401 | Username/password salah; email tidak didukung sebagai identifier login. |
+| 503 | Layanan auth/database tidak tersedia; pesan generik `Service unavailable.`. |
+
+Cara mencoba paling singkat: buka `/docs`, Execute register dengan empat field,
+lalu Execute login memakai username/password yang sama. Untuk demo auth ini,
+tidak perlu seed User, Sample, reference, atau menjalankan pipeline. Gunakan akun
+sintetis baru; jangan mengambil screenshot payload password atau respons token.
+
+Kontrak minimum yang dapat diteruskan Azril ke AI coding assistant FE:
+
+1. Tambahkan input **`nama`** pada form register dan kirim tepat
+   `{username,nama,email,password}` ke `POST /api/auth/register`.
+2. Setelah 201, panggil `login({username: result.username, password})` existing,
+   atau pindah ke tab login. Register sendiri tidak membuat sesi/JWT.
+3. Ganti label/placeholder login username/email menjadi **Username**. API login
+   tetap `{username,password}`; jangan mengirim email sebagai username.
+4. Sesuaikan teks sesi menjadi 240 menit atau hindari angka hardcoded. Pada 401,
+   panggil logout untuk menghapus token/profile lokal dan minta login ulang.
+5. Jangan kirim field role, jangan menganggap profil/role dummy di AuthContext
+   sebagai data dari JWT. Map `nama` ke `name` hanya untuk kebutuhan tampilan.
+6. Tangani 409/422/503 secara jelas. Integrasi UI belum diuji pada tahap backend
+   ini; FE tidak diubah. Endpoint registrasi disiapkan untuk MVP/demo lokal,
+   bukan persetujuan kebijakan pendaftaran publik pada deployment.
+
+Verifikasi integrasi registrasi: **906 tests passed**, termasuk regresi M8/M9.
+Tambahan **15 pemeriksaan PostgreSQL nyata** pada database baru terisolasi lulus:
+Register → akun tersimpan ber-hash → Login → JWT, duplikat, invalid input,
+role escalation, unique-race username/email, serta penggunaan JWT pada upload
+M7 dan autentikasi Result API M9. Bukti HTTP/satu screenshot asli tersimpan di
+luar repository. Database dan fixture M8/M9 sebelumnya tidak diubah.
 
 ## 5. Result API untuk FE dan QA
 
@@ -538,6 +636,6 @@ cocok persis, dan batas input ingestion 1 GB.
 [Kontrak FE/QA M7](BACKEND_INTEGRATION_GUIDE.md) menjelaskan detail autentikasi,
 FASTQ, storage, dan error. Bagian M8/future pada panduan lama harus dibaca bersama
 README ini untuk status Job terbaru. [Prosedur Swagger M7](scripts/SWAGGER_DEMO.md)
-adalah tooling opt-in terpisah, bukan jalur setup M8. Registrasi Tahap A tetap
-terpisah sampai integrasinya disetujui; README tidak mengaktifkan pendaftaran
-publik atau mengubah frontend.
+adalah tooling opt-in terpisah, bukan jalur setup M8. Registrasi dari Tahap A diintegrasikan pada branch auth final ini;
+kebijakan pendaftaran deployment publik tetap belum diputuskan dan frontend
+tidak diubah.

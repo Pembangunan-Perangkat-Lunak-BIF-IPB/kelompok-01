@@ -12,7 +12,7 @@ from sqlalchemy.exc import OperationalError
 from app.core.security import create_access_token
 from app.database import get_session_factory
 from app.models import Analysis, Genotype, Job, Variant
-from app.schemas.result import VariantQuery
+from app.schemas.result import ResultSummary, VariantPage, VariantQuery
 from app.services import jobs, results
 from app.services.pipeline import PipelineResult
 
@@ -281,3 +281,12 @@ def test_openapi_documents_result_contract_and_bearer(case):
     parameters = {p['name']: p['schema'] for p in schema['paths']['/jobs/{id_job}/variants']['get']['parameters']}
     assert parameters['limit']['maximum'] == 500
     assert parameters['offset']['maximum'] == 2**31 - 1
+
+
+def test_openapi_examples_keep_required_null_fields_and_validate_as_real_responses(case):
+    schema = case.client.get('/openapi.json').json()
+    for model in (ResultSummary, VariantPage):
+        for example in schema['components']['schemas'][model.__name__]['examples']:
+            assert model.model_validate(example).model_dump(mode='json') == example
+    example = schema['components']['schemas']['VariantPage']['examples'][0]
+    assert 'next_offset' in example and example['next_offset'] is None

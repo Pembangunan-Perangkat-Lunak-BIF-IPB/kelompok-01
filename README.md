@@ -2,9 +2,10 @@
 
 Backend FastAPI, SQLAlchemy, PostgreSQL, JWT, dan input FASTQ **single-end**.
 Branch ini: **`feature/be-result-api`**, dibangun dari M8 `100ba5c`.
-M8 PR #16 masih terbuka; M9 belum dipush. Setelah review, PR M9 sebaiknya
-sementara berbasis `feature/be-pipeline-runner` agar diff hanya berisi M9.
-Target integrasi akhir tetap `development`, setelah M8 masuk dan diff ditinjau ulang.
+Branch M9 sudah menyertakan baseline M8, sehingga cukup clone branch ini untuk
+mencoba Result API. Selama M8 PR #16 belum merged, PR M9 memakai base
+`feature/be-pipeline-runner` agar diff review hanya berisi M9. Target integrasi
+akhir tetap `development`, setelah M8 masuk dan diff ditinjau ulang.
 
 | Tersedia pada branch ini | Batas implementasi |
 | --- | --- |
@@ -28,10 +29,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[dev]'
 ```
-
-**Branch M9 saat ini masih lokal dan belum tersedia untuk clone anggota.**
-Contoh clone di atas berlaku sesudah publikasi disetujui; sebelum itu M8 yang
-sudah tersedia memakai `--branch feature/be-pipeline-runner`, tanpa Result API.
 
 Jika sudah memiliki clone, simpan pekerjaan lokal sebelum berpindah branch.
 Gunakan nama remote milik clone sendiri; contoh di atas menetapkan `github`.
@@ -382,11 +379,28 @@ page konsisten pada satu request. Request ringkasan dan tabel yang terpisah buka
 satu snapshot bersama. Offset besar dan exact count masih memerlukan benchmark
 pada data besar; ini bukan klaim performa genom penuh.
 
-Index M9 tersedia sebagai source migrasi `0004_m9_result_indexes`. Migrasi index
-baru diuji offline/SQLite, **belum diterapkan ke cluster fixture PostgreSQL M8**.
-API read-only juga diverifikasi pada schema M8 tersebut, karena index tidak
-mengubah kontrak kolom. Pada database anggota baru gunakan `alembic upgrade head`;
-pada database existing, tinjau target dan kebutuhan lock/maintenance sebelum DDL.
+Migrasi `0004_m9_result_indexes` sudah **di-apply melalui Alembic online pada
+database baru di cluster disposable terisolasi**, dari schema kosong sampai M9.
+Ketiga index diperiksa nama, kolom, serta status valid/ready. Login, upload,
+Job sintetis, dan Result API juga dicoba dengan PostgreSQL nyata. Database
+fixture M8 tetap pada revision M8, tidak dimigrasi atau diubah untuk pengujian ini.
+Ini belum merupakan benchmark dataset besar.
+
+Untuk database lokal anggota **baru dan kosong**, ikuti bagian 2–3 dan gunakan
+`python -m alembic upgrade head` sebelum bootstrap akun/reference. Jika database
+lokal milik sendiri sudah memakai M8, verifikasi target koneksi dan revision:
+
+```bash
+python -m alembic current
+# Setelah memastikan target adalah database lokal sendiri pada 0003_m8_pipeline:
+python -m alembic upgrade 0004_m9_result_indexes
+```
+
+Upgrade dari M8 hanya menambah tiga index; tidak perlu seed ulang akun/reference
+atau mengulang Job Completed. Setelah upgrade, jalankan kedua endpoint Result API
+pada Job lokal tersebut. CREATE INDEX biasa dapat menahan penulisan: tinjau
+maintenance/otorisasi sebelum menerapkannya pada database bersama. Jangan memakai
+`stamp` untuk menggantikan upgrade atau memigrasi database pengembang sebagai demo.
 
 ## 6. Pengujian yang terisolasi
 
@@ -431,8 +445,20 @@ Tambahan **8 pemeriksaan read-only PostgreSQL 18.6 nyata** pada fixture sintetis
 M8 lulus, termasuk count/page/filter dan penolakan akses. Dua screenshot Chrome
 berasal dari API Uvicorn yang benar-benar berjalan, dengan JSON diperbesar untuk
 keterbacaan. Tidak ada row fixture atau schema cluster M8 yang diubah. Index
-M9 belum diuji online atau dibenchmark pada dataset besar. Bukti tersimpan di
-luar repository dan tidak diperlukan untuk bootstrap anggota.
+M9 pada checkpoint awal belum diuji online. Bukti tersimpan di luar repository
+dan tidak diperlukan untuk bootstrap anggota.
+
+Verifikasi publikasi M9, 3 November 2026: **171 tests terarah passed, 0 failed**,
+dua peringatan dependency. Suite 831 tests sebelumnya tidak diulang seluruhnya.
+Satu mismatch contoh Swagger ditemukan dan diperbaiki: field nullable wajib
+`next_offset` kini tetap ditampilkan sebagai null pada halaman terakhir.
+Tambahan **11 pemeriksaan akhir PostgreSQL nyata** lulus pada database verifikasi
+baru: revision M9, tiga index valid/ready, hasil runner sintetis, Result API,
+filter/pagination, ownership, serta kontrak README/Swagger. Migrasi online lengkap
+dan alur login → upload → Job sintetis telah berjalan pada database baru itu.
+Pemeriksaan API terakhir read-only dan fixture M8 beserta fingerprint hasil tetap
+utuh. Database verifikasi dipertahankan tanpa DROP. Performa data besar dan
+alignment biologis belum diverifikasi.
 
 ## 7. Konfigurasi pipeline dan batas operasional
 

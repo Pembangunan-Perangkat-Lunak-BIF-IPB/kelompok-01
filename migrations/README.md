@@ -20,7 +20,10 @@ Mode offline tidak membaca `.env` dan tidak membuat koneksi.
   `variant(id_analysis, id_variant)`, `variant(id_analysis, variant_type, qual)`,
   dan `genotype(id_variant, id_sample)`. Tidak mengubah data, kolom, atau tabel.
   CREATE INDEX biasa dapat menahan penulisan; tinjau maintenance untuk database
-  existing. Belum diterapkan pada fixture PostgreSQL M8 saat checkpoint M9.
+  existing. Apply online dari database baru/kosong sampai M9 sudah diverifikasi
+  pada cluster disposable terisolasi. Ketiga index valid/ready dan query Result
+  API kompatibel. Database fixture PostgreSQL M8 tidak diubah; belum ada
+  benchmark performa data besar.
 
 Revision ditulis eksplisit, tidak dibuat dengan autogenerate terhadap database
 development. Indeks primary key tambahan yang sudah ada tidak dihapus.

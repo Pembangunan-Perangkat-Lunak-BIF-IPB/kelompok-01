@@ -11,7 +11,7 @@ from app.core.config import Settings
 from app.database import get_session_factory
 from app.schemas.auth import ErrorResponse
 from app.schemas.sample import SampleUploadResponse
-from app.schemas.submission import SubmissionRequest, SubmissionResponse
+from app.schemas.submission import SubmissionRequest, SubmissionResponse, SubmissionValidationError
 from app.services import jobs, submissions
 from app.services.pipeline import PipelineUnavailable, check_gate
 from app.services.submission_record import SubmissionBusy, SubmissionRecord
@@ -88,6 +88,14 @@ async def upload_sample(
                  "parameters, filename and bytes. Interrupted upload commits require reconciliation. "
                  "Queued replays can redispatch; workers claim once. Dispatch is in-process, not restart-durable."),
     responses={**{code: {"model": ErrorResponse} for code in (400, 401, 413, 415)},
+               422: {"model": SubmissionValidationError | ErrorResponse,
+                     "description": "Request validation errors, invalid FASTQ, or invalid Job configuration/reference",
+                     "content": {"application/json": {"examples": {
+                         "request_validation": {"value": {"detail": [{"loc": ["body"],
+                             "msg": "Invalid request.", "type": "request_validation_error"}]}},
+                         "invalid_fastq": {"value": {"detail": "Invalid upload or validation budget exceeded."}},
+                         "invalid_job": {"value": {"detail": "Invalid Job configuration or reference."}},
+                     }}}},
                409: {"model": SubmissionResponse | ErrorResponse,
                      "description": "Conflict, or a retained Sample awaiting Job creation"},
                503: {"model": SubmissionResponse | ErrorResponse,

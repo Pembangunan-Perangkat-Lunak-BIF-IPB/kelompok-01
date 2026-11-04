@@ -20,3 +20,15 @@ class SubmissionResponse(BaseModel):
     job: JobResponse | None = None
     dispatch_scheduled: bool = False
     detail: str | None = None
+
+
+class SubmissionValidationIssue(BaseModel):
+    loc: list[str | int]
+    msg: str
+    type: str
+
+
+class SubmissionValidationError(BaseModel):
+    """Document the existing sanitized RequestValidationError response."""
+
+    detail: list[SubmissionValidationIssue]

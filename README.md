@@ -1,16 +1,17 @@
 # GenoPath Backend: Auth, Job, dan Result API
 
 Backend FastAPI, SQLAlchemy, PostgreSQL, JWT, dan input FASTQ **single-end**.
-Branch integrasi registrasi: **`feature/be-auth-register-final`**, berbasis
-`development` yang sudah memuat M8 #16 dan M9 #17. Setelah PR registrasi di-merge,
-anggota dapat memakai `development`. Registrasi tidak memerlukan migrasi baru.
+Branch M8: **`feature/be-m8-bowtie2-e2e`**, berbasis `development` pada `d04a868`
+yang sudah memuat fondasi M8, Result API M9, dan registrasi. Perubahan ini tidak
+menambah migrasi. Contoh clone branch fitur berlaku setelah branch dipublikasikan;
+setelah PR di-merge, anggota dapat memakai `development` terbaru.
 
 | Tersedia pada branch ini | Batas implementasi |
 | --- | --- |
 | Register JSON, login JWT, password Argon2id, upload FASTQ/FASTQ.gz | Register membuat akun role `user`, tanpa token otomatis. Kebijakan registrasi deployment publik belum diputuskan. |
-| Pembuatan, polling, start, dan retry Job dengan ownership | Upload hanya menyimpan Sample; tidak otomatis menjalankan Job. |
-| Runner subprocess sintetis, persistensi Analysis/Variant/Genotype, rollback | VCF sintetis membuktikan alur software, bukan alignment atau variant calling biologis. |
-| Kontrak adapter alignment dan workflow Nextflow DSL2 | Toolchain dan pipeline biologis end-to-end belum diverifikasi. Aligner/reference belum diputuskan. |
+| Pembuatan, polling, start, dan retry Job dengan ownership | `/samples/upload` tetap menyimpan Sample saja. `/samples/upload-and-run` menambah jalur upload dan dispatch otomatis dengan parameter eksplisit. |
+| Runner sintetis dan biologis, persistensi Analysis/Variant/Genotype, rollback | Mode sintetis tetap membuktikan alur software saja; bukti biologis memakai tool nyata dan fixture kecil. |
+| Nextflow DSL2: fastp → Bowtie2 → SAMtools → BCFtools | Plain FASTQ/gzip dan indeks `.bt2`/`.bt2l` sudah diuji pada fixture 20 kbp. Full Garlic.V2 dan FASTQ 1 GB belum diuji. |
 | Result API: ringkasan, Variant/Genotype, pagination dan filter SQL | Download file dan sorting server dinamis belum tersedia. Data sintetis tetap diberi label `execution_mode=synthetic`. |
 
 ## 1. Clone dan Python environment
@@ -20,7 +21,7 @@ harus tersedia. PostgreSQL 18.6 pernah dipakai untuk pengujian terisolasi;
 kompatibilitas versi server lain belum diuji dalam checkpoint M8 ini.
 
 ```bash
-git clone --origin github --branch feature/be-auth-register-final \
+git clone --origin github --branch feature/be-m8-bowtie2-e2e \
   https://github.com/Pembangunan-Perangkat-Lunak-BIF-IPB/kelompok-01.git
 cd kelompok-01
 python3 -m venv .venv
@@ -121,7 +122,7 @@ migrasi, jalankan server dan gunakan `/auth/register`.
 Bootstrap berikut opsional untuk demo Job sintetis M8/M9 pada database baru yang
 masih kosong. Jalankan sebelum registrasi akun lain jika ingin mencoba kedua alur.
 Script membuat akun ber-role `user` dan satu reference fixture, serta menolak
-nama database lain, schema bukan M8, atau akun/reference yang sudah terisi;
+nama database lain, schema bukan head M9, atau akun/reference yang sudah terisi;
 tidak mengubah akun existing. Password akun diminta tersembunyi dan di-hash.
 
 ```bash
@@ -223,7 +224,8 @@ Seluruh Job API memakai JWT dan ownership. UUID sama dengan body sama
 mengembalikan Job yang sama; UUID sama dengan body berbeda mendapat 409.
 Satu Job `Queued`/`Running` per user diserialisasi dengan row lock PostgreSQL.
 Jangan upload ulang secara buta jika respons upload terputus atau 503: COMMIT
-Sample dapat sudah berhasil, dan upload belum memiliki idempotency key.
+Sample dapat sudah berhasil, dan endpoint M7 `/samples/upload` tidak memiliki
+idempotency key. Untuk submission otomatis dengan receipt, lihat bagian 7.
 
 Untuk fixture default ini, hasil terseleksi adalah **3 Variant dan 3 Genotype**:
 1 SNP, 1 InDel, dan 1 `other` (ALT campuran). GT default fixture `0/1`, FORMAT/DP
@@ -556,7 +558,15 @@ filter/pagination, ownership, serta kontrak README/Swagger. Migrasi online lengk
 dan alur login → upload → Job sintetis telah berjalan pada database baru itu.
 Pemeriksaan API terakhir read-only dan fixture M8 beserta fingerprint hasil tetap
 utuh. Database verifikasi dipertahankan tanpa DROP. Performa data besar dan
-alignment biologis belum diverifikasi.
+alignment biologis belum diverifikasi pada checkpoint M9 tersebut.
+
+Checkpoint M8, 4 November 2026: tiga eksekusi Nextflow nyata pada CP2 berhasil
+(FASTQ, FASTQ.gz, dan indeks `.bt2l` yang dibuat dari fixture kecil). CP3 memiliki
+69 pemeriksaan integrasi PostgreSQL nyata; CP4 memiliki 85, termasuk auto-trigger
+tanpa Start manual, replay, konkurensi UUID sama, dan kegagalan terkontrol.
+Regresi pra-commit CP4: **966 passed, 0 failed**. Ini bukti checkpoint lokal,
+bukan hasil CI atau QA independen. Toolchain, database disposable, log, dan
+screenshot lokal dalam `build/` tidak otomatis tersedia pada clone baru.
 
 ## 7. Konfigurasi pipeline dan batas operasional
 
@@ -567,34 +577,38 @@ alignment biologis belum diverifikasi.
 | `GENOPATH_PIPELINE_ROOT` | `data/jobs`, satu direktori UUID untuk setiap run. |
 | `GENOPATH_PIPELINE_ENABLED` | `false`, gate pembuatan/start Job. |
 | `GENOPATH_PIPELINE_ALLOW_SYNTHETIC` | `false`, gate tambahan mode sintetis. |
-| `GENOPATH_PIPELINE_THREADS` | `1`, batas konfigurasi 1–64. |
+| `GENOPATH_PIPELINE_THREADS` | `1`, schema 1–64; mode Nextflow hanya menerima 1–4. |
 | `GENOPATH_PIPELINE_TIMEOUT_SECONDS` | `3600`, timeout subprocess; tidak membatasi query DB. |
 | `GENOPATH_PIPELINE_ALIGNMENT_STRATEGY` | Tidak ada default, identifier strategi operator. |
 | `GENOPATH_PIPELINE_ALIGNMENT_ADAPTER` | Path executable adapter yang disetujui. |
+| `GENOPATH_PIPELINE_BOWTIE2_EXECUTABLE` | Path executable `bowtie2`. |
+| `GENOPATH_PIPELINE_BOWTIE2_INSPECT_EXECUTABLE` | Path executable `bowtie2-inspect`. |
+| `GENOPATH_PIPELINE_BOWTIE2_INDEX_PREFIX` | Prefix enam indeks `.bt2` atau `.bt2l`, tanpa suffix; wajib berada dalam reference root. |
 | `GENOPATH_PIPELINE_NEXTFLOW_EXECUTABLE` | Path executable Nextflow. |
 | `GENOPATH_PIPELINE_FASTP_EXECUTABLE` | Path executable fastp. |
 | `GENOPATH_PIPELINE_SAMTOOLS_EXECUTABLE` | Path executable SAMtools. |
 | `GENOPATH_PIPELINE_BCFTOOLS_EXECUTABLE` | Path executable BCFtools. |
 | `GENOPATH_PIPELINE_NEXTFLOW_PROFILE` | `local`, satu-satunya profile saat ini. |
 
-Mode `nextflow` memerlukan Java yang cocok dengan versi Nextflow, Nextflow
-(`nextflow.config` menetapkan minimal 24.10.0), fastp, SAMtools, BCFtools,
-reference/index yang cocok, serta adapter alignment. Toolchain belum lengkap
-pada checkpoint ini; tidak dipasang atau dijalankan oleh quickstart sintetis.
+Mode `nextflow` memerlukan Java, Nextflow (workflow menetapkan minimal 24.10.0),
+fastp, Bowtie2 termasuk `bowtie2-inspect`, SAMtools, BCFtools, dan reference/index
+yang cocok. Quickstart sintetis tidak memasang tool tersebut.
 
 Adapter menerima `--reads`, `--reference`, `--output`, `--sample-name`, dan
 `--threads`, lalu menghasilkan SAM dengan read-group sample yang sesuai.
-Adapter mengelola tool dan index strateginya sendiri. Downstream memakai SAM,
-BAM terurut/terindeks, dan VCF. Tidak ada adapter BWA-MEM2/Bowtie2 bawaan;
-perubahan strategi pada M10 tidak memerlukan Result API memahami command aligner.
-Kesesuaian ilmiah alternatif, reference, dan ploidy tetap perlu keputusan tim.
-`variant_ploidy` wajib diberikan, bukan default biologis.
+Adapter Bowtie2 bawaan adalah `app/services/bowtie2_adapter.py`; ia juga menerima
+executable Bowtie2/inspect dan prefix index secara eksplisit. Tidak ada indexing
+per Job. Adapter membandingkan sekuens/nama contig hasil rekonstruksi indeks
+dengan FASTA, bukan hanya filename. SAM memiliki read group sesuai `vcf_sample`.
+Downstream menghasilkan BAM terurut, indeks CSI, dan VCF teks. `variant_ploidy`
+wajib diberikan: Nextflow mendukung 1 atau 2; angka 2 pada panduan ini hanya
+untuk fixture. Persetujuan ilmiah reference/ploidy produksi tetap milik tim.
 
 Runner meluncurkan subprocess tanpa shell, membatasi timeout dan menghentikan
 grup proses pada timeout POSIX, serta tidak mewariskan environment kredensial.
-Environment subprocess minimal; konfigurasi tambahan seperti Java/Nextflow home
-masih perlu diverifikasi saat toolchain disiapkan. Workflow DSL2 di `pipeline/`
-belum diverifikasi eksekusinya, sehingga belum disebut pipeline biologis lengkap.
+Environment subprocess hanya memasok PATH sistem dan dua flag Nextflow; tidak
+mewariskan JAVA_HOME/HOME dari terminal backend. Gunakan wrapper eksplisit di
+bawah, seperti pada eksekusi biologis CP1–CP4, tanpa melonggarkan runner.
 
 Dispatch memakai FastAPI BackgroundTasks dalam proses. Ini belum queue tahan
 restart. Crash dapat menyisakan Job Queued/Running yang perlu rekonsiliasi
@@ -602,6 +616,14 @@ operator; tidak ada cancel, auto-resume, atau pengulangan Job Running otomatis.
 Direktori run gagal dipertahankan untuk review. Transaksi DB menulis Analysis,
 Variant, Genotype, dan status Completed bersama; filesystem/DB tidak atomik.
 File tersisa setelah transaksi gagal bukan hasil Completed.
+Receipt di `GENOPATH_PIPELINE_ROOT/.submissions` wajib dipertahankan bersama
+storage dan database. Receipt hilang tidak dapat direkonstruksi otomatis dan
+dapat menyebabkan Sample tambahan ketika upload diulang. File lock memerlukan
+filesystem Linux bersama yang mendukung `flock`; root terpisah antar-worker
+tidak aman untuk replay. Upload slot bersifat per proses. Batas Nextflow berlaku
+per workflow, bukan antrean resource global antar-user. Adapter membatasi address
+space 4 GiB, thread 1–4, pemeriksaan index 120 detik, dan alignment 600 detik.
+Ini batas smoke test M8, bukan konfigurasi final full genome M10.
 
 Parser `summarize_vcf` tetap menghitung record ALT mentah. Ingestion memakai
 satu Variant per record multiallelic (ALT dipertahankan), GT asli dan FORMAT/DP;
@@ -610,6 +632,303 @@ nol. FILTER wajib PASS jika `require_pass=true`. Raw counts dan selected counts
 terpisah dalam metadata. Belum ada normalisasi/left-alignment atau validasi alel
 terhadap reference. VCF UTF-8 tak terkompresi, tepat satu sample dengan nama
 cocok persis, dan batas input ingestion 1 GB.
+
+### 7.1 Toolchain QA Linux/WSL
+
+Versi yang berhasil dipakai CP1–CP4: **Temurin Java 21.0.13+9, Nextflow 25.10.9,
+fastp 1.0.1, Bowtie2 2.5.4, SAMtools 1.22.1, BCFtools 1.22**. Ini versi bukti,
+bukan klaim versi terbaru. Toolchain CP1 berupa instalasi lokal dalam `build/`
+yang diabaikan Git. Jangan menyalin path absolut developer ke mesin QA.
+
+Gunakan checkout/storage pada filesystem Linux WSL, bukan `/mnt/c` atau `/tmp`
+tmpfs. Periksa `free -h`, `df -h .`, dan `ulimit -a`; RAM WSL dapat berbeda dari
+RAM fisik Windows. Jangan mengubah limit/global config untuk melewati error.
+Contoh berikut hanya untuk mesin QA sendiri, setelah persetujuan pemasangan
+paket. Jika executable sudah tersedia dan sesuai, lewati instalasi:
+
+```bash
+apt-cache policy openjdk-21-jre-headless fastp bowtie2 samtools bcftools
+sudo apt update
+sudo apt install --no-upgrade openjdk-21-jre-headless fastp bowtie2 samtools bcftools curl ca-certificates
+java -version
+fastp --version
+bowtie2 --version
+bowtie2-build --version
+bowtie2-inspect --version
+samtools --version
+bcftools --version
+```
+
+Paket Ubuntu dapat memiliki patch/version berbeda, termasuk Java OpenJDK alih-alih
+Temurin; catat hasil dan verifikasi smoke test pada mesin itu. Jangan mencampur
+paket dari rilis Ubuntu lain atau melakukan upgrade distribusi. Untuk Temurin
+yang sama dengan bukti, gunakan [rilis resmi Adoptium](https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.13%2B9)
+dan verifikasi checksum upstream sebelum ekstraksi ke direktori lokal baru.
+
+Berikut memakai [distribusi standalone Nextflow](https://docs.seqera.io/nextflow/install)
+resmi, tanpa `curl | bash`. Jalankan dari root repository dengan `.venv` aktif,
+dalam terminal yang nantinya menjalankan backend. Root baru harus belum ada:
+
+```bash
+umask 077
+mkdir -p build
+export GENOPATH_QA_ROOT="$PWD/build/qa-m8-$(date +%Y%m%d-%H%M%S)"
+mkdir "$GENOPATH_QA_ROOT"
+mkdir "$GENOPATH_QA_ROOT"/{bin,home,nextflow-home,tmp,uploads,jobs}
+export GENOPATH_QA_JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
+test -x "$GENOPATH_QA_JAVA_HOME/bin/java"
+curl --fail --location --output "$GENOPATH_QA_ROOT/bin/nextflow-25.10.9-dist" \
+  https://github.com/nextflow-io/nextflow/releases/download/v25.10.9/nextflow-25.10.9-dist
+printf '%s  %s\n' 8f3e6efe3b700c298aedf45ba2d5ec0d17bd5f480362b1b46145ea6bfbe46987 \
+  "$GENOPATH_QA_ROOT/bin/nextflow-25.10.9-dist" | sha256sum --check
+chmod 700 "$GENOPATH_QA_ROOT/bin/nextflow-25.10.9-dist"
+python - <<'PY'
+import os
+import shlex
+from pathlib import Path
+
+root = Path(os.environ['GENOPATH_QA_ROOT']).resolve(strict=True)
+java = Path(os.environ['GENOPATH_QA_JAVA_HOME']).resolve(strict=True)
+environment = {
+    'PATH': '/usr/bin:/bin', 'HOME': str(root / 'home'),
+    'JAVA_HOME': str(java), 'NXF_JAVA_HOME': str(java),
+    'NXF_HOME': str(root / 'nextflow-home'), 'TMPDIR': str(root / 'tmp'),
+    'NXF_OPTS': '-Xms64m -Xmx512m', 'NXF_OFFLINE': 'true',
+    'NXF_DISABLE_CHECK_LATEST': 'true', 'NXF_PLUGINS_DEFAULT': 'false',
+    'NXF_PLUGINS_ALLOWED': '', 'NXF_ANSI_LOG': 'false', 'LANG': 'C.UTF-8',
+}
+command = ['/usr/bin/env', '-i', *[f'{k}={v}' for k, v in environment.items()],
+           str(root / 'bin/nextflow-25.10.9-dist')]
+wrapper = root / 'bin/nextflow'
+with wrapper.open('x') as stream:
+    stream.write('#!/bin/sh\nset -eu\nexec ' + shlex.join(command) + ' "$@"\n')
+wrapper.chmod(0o700)
+PY
+"$GENOPATH_QA_ROOT/bin/nextflow" -version
+```
+
+Checksum tersebut berasal dari artefak distribusi yang diverifikasi pada CP1.
+Jika tidak cocok, hentikan, jangan menonaktifkan verifikasi. Wrapper memberi
+[Java/cache environment eksplisit](https://docs.seqera.io/nextflow/reference/env-vars),
+tanpa membawa secret backend. Ia mengasumsikan tool Ubuntu ada pada `/usr/bin`
+atau `/bin`; instalasi lokal lain memerlukan wrapper/path dependensi yang
+disetujui operator. Jangan menambah inheritance environment pada runner.
+
+### 7.2 Fixture biologis dan konfigurasi backend QA
+
+Gunakan database **baru milik QA** dari bagian 2, terapkan `alembic upgrade head`
+bagian 3, lalu lewati bootstrap reference sintetis `tiny.fa` jika hanya mencoba
+jalur biologis. Jangan menggunakan database/cluster CP3/CP4 atau database developer.
+Gunakan `/auth/register` untuk membuat akun QA dan jangan memasukkan secret ke log.
+
+Helper berikut tidak memasang tool, membuat indeks, atau mengakses database.
+Ia menolak direktori output existing dan menghasilkan reference 20.000 bp,
+dua haplotype truth, 7.942 reads single-end 150 bp Q40, FASTQ/gzip, `truth.vcf`,
+serta `fixture.json` dengan checksum. Seed tetap 20261104, coverage nominal 59,6×.
+Truth VCF adalah oracle sintetis, **bukan** keluaran caller.
+
+```bash
+python -m scripts.generate_bowtie2_fixture --output-dir "$GENOPATH_QA_ROOT/fixture"
+mkdir "$GENOPATH_QA_ROOT/fixture/index"
+bowtie2-build --threads 2 --seed 20261104 "$GENOPATH_QA_ROOT/fixture/reference.fa" \
+  "$GENOPATH_QA_ROOT/fixture/index/fixture"
+bowtie2-inspect -s "$GENOPATH_QA_ROOT/fixture/index/fixture"
+
+export GENOPATH_UPLOAD_ROOT="$GENOPATH_QA_ROOT/uploads"
+export GENOPATH_REFERENCE_ROOT="$GENOPATH_QA_ROOT/fixture"
+export GENOPATH_PIPELINE_ROOT="$GENOPATH_QA_ROOT/jobs"
+export GENOPATH_PIPELINE_ENABLED=true
+export GENOPATH_PIPELINE_ALLOW_SYNTHETIC=false
+export GENOPATH_PIPELINE_THREADS=2
+export GENOPATH_PIPELINE_TIMEOUT_SECONDS=180
+export GENOPATH_PIPELINE_ALIGNMENT_STRATEGY=bowtie2
+export GENOPATH_PIPELINE_ALIGNMENT_ADAPTER="$PWD/app/services/bowtie2_adapter.py"
+export GENOPATH_PIPELINE_BOWTIE2_EXECUTABLE="$(command -v bowtie2)"
+export GENOPATH_PIPELINE_BOWTIE2_INSPECT_EXECUTABLE="$(command -v bowtie2-inspect)"
+export GENOPATH_PIPELINE_BOWTIE2_INDEX_PREFIX="$GENOPATH_QA_ROOT/fixture/index/fixture"
+export GENOPATH_PIPELINE_NEXTFLOW_EXECUTABLE="$GENOPATH_QA_ROOT/bin/nextflow"
+export GENOPATH_PIPELINE_FASTP_EXECUTABLE="$(command -v fastp)"
+export GENOPATH_PIPELINE_SAMTOOLS_EXECUTABLE="$(command -v samtools)"
+export GENOPATH_PIPELINE_BCFTOOLS_EXECUTABLE="$(command -v bcftools)"
+export GENOPATH_PIPELINE_NEXTFLOW_PROFILE=local
+```
+
+Prefix harus memiliki tepat enam file `.bt2` atau `.bt2l` yang tidak kosong,
+tidak boleh campuran. Prefix ini konfigurasi operator, bukan input path dari
+klien; reference lain harus cocok dengan indeks atau Job akan gagal. Tidak perlu
+memaksa format `.bt2l` pada fixture QA rutin. Angka timeout di atas untuk fixture
+kecil; jangan menggunakannya sebagai estimasi full genome. Gunakan path Linux
+tanpa karakter shell khusus dan tanpa symlink pada input/root storage.
+
+Karena Reference API belum ada, tambahkan tepat satu row pada **database QA baru**.
+Contoh ini memakai nama database bagian 2 dan memeriksa revision serta reference
+kosong sebelum insert. Jika bootstrap sintetis sudah dijalankan, jangan hapus
+row lama atau melewati guard; siapkan target QA baru secara sadar.
+
+```bash
+python - <<'PY'
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session
+from app.core.config import Settings
+from app.database import get_engine
+from app.models import ReferenceGenome
+from app.services.pipeline import confined_file
+
+settings = Settings()
+fasta = confined_file(settings.reference_root, 'reference.fa')
+engine = get_engine(settings.database_url)
+with Session(engine) as db, db.begin():
+    if db.scalar(text('SELECT current_database()')) != 'genopath_m8_local':
+        raise SystemExit('Ditolak: target bukan database QA baru dari bagian 2.')
+    if db.scalar(text('SELECT version_num FROM public.alembic_version')) != '0004_m9_result_indexes':
+        raise SystemExit('Ditolak: migrasi belum sampai head.')
+    if db.scalar(select(ReferenceGenome.id_reference_genome).limit(1)) is not None:
+        raise SystemExit('Ditolak: reference sudah terisi; jangan seed ulang.')
+    reference = ReferenceGenome(nama_genom='QA controlled 20kb, not Garlic.V2',
+                               versi='20261104', sumber='Deterministic QA fixture',
+                               path_fasta=str(fasta))
+    db.add(reference)
+    db.flush()
+    identifier = reference.id_reference_genome
+engine.dispose()
+print('Reference ID QA:', identifier)
+PY
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Simpan root/path konfigurasi untuk menjalankan ulang server. Jangan membuat root
+baru ketika memulihkan submission lama. Root dan receipt harus tetap sama.
+
+### 7.3 Satu submission otomatis dan pemeriksaan hasil
+
+Pada Swagger, login dan Authorize seperti bagian 4, lalu pilih
+`POST /samples/upload-and-run`. Multipart berisi tepat satu field `file` berupa
+`reads.fastq` atau `reads.fastq.gz`. **Sembilan query parameter wajib**:
+
+| Parameter | Nilai fixture / sumber |
+| --- | --- |
+| `id_reference_genome` | ID aktual dari bootstrap QA, jangan hardcode `1`. |
+| `request_id` | UUID baru; simpan untuk replay submission yang sama. |
+| `vcf_sample` | `m8_fixture_diploid` |
+| `parameter_qual` | `30` |
+| `parameter_dp` | `10` |
+| `require_pass` | `true` |
+| `execution_mode` | `nextflow` |
+| `variant_ploidy` | `2`, hanya untuk fixture ini. |
+| `alignment_strategy` | `bowtie2`, harus cocok dengan konfigurasi server. |
+
+Contoh HTTP berikut memakai `httpx` dari dependency dev. Jalankan di terminal
+kedua dari root clone dengan `.venv` aktif; masukkan root QA yang sama saat diminta.
+JWT hanya berada di memori. Password diminta tersembunyi, bukan argumen shell.
+Untuk UUID baru, jalankan `python -c 'import uuid; print(uuid.uuid4())'` dan simpan
+nilainya. Registrasi akun dilakukan sekali melalui `/auth/register`.
+
+```bash
+python - <<'PY'
+import getpass
+import json
+import time
+from pathlib import Path
+from uuid import UUID
+import httpx
+
+root = Path(input('Root QA yang sudah dibuat: ')).resolve(strict=True)
+request_id = str(UUID(input('UUID submission baru atau replay identik: ')))
+parameters = {
+    'id_reference_genome': int(input('Reference ID QA: ')), 'request_id': request_id,
+    'vcf_sample': 'm8_fixture_diploid', 'parameter_qual': 30, 'parameter_dp': 10,
+    'require_pass': 'true', 'execution_mode': 'nextflow', 'variant_ploidy': 2,
+    'alignment_strategy': 'bowtie2',
+}
+name = input('File fixture (reads.fastq atau reads.fastq.gz): ')
+if name not in ('reads.fastq', 'reads.fastq.gz'):
+    raise SystemExit('Pilih salah satu file fixture.')
+with httpx.Client(base_url='http://127.0.0.1:8000', timeout=240) as client:
+    login = client.post('/auth/login', json={
+        'username': input('Username QA: '), 'password': getpass.getpass('Password akun QA: '),
+    })
+    if login.status_code != 200:
+        raise SystemExit(f'Login gagal: HTTP {login.status_code}; token tidak ditampilkan.')
+    headers = {'Authorization': 'Bearer ' + login.json()['access_token']}
+    with (root / 'fixture' / name).open('rb') as stream:
+        response = client.post('/samples/upload-and-run', params=parameters, headers=headers,
+                               files={'file': (name, stream, 'application/octet-stream')})
+    body = response.json()
+    print('Submission HTTP', response.status_code, json.dumps(body))
+    if response.status_code != 202:
+        raise SystemExit('Periksa kebijakan error/replay di bawah sebelum mengulang.')
+    job_id = body['job']['id_job']
+    deadline = time.monotonic() + 240
+    while time.monotonic() < deadline:
+        status_response = client.get(f'/jobs/{job_id}', headers=headers)
+        status_response.raise_for_status()
+        status = status_response.json()
+        print('Job', job_id, status['status'])
+        if status['status'] in ('Completed', 'Failed'):
+            break
+        time.sleep(1)
+    else:
+        raise SystemExit('Polling timeout; periksa Job yang sama, jangan upload ulang.')
+    if status['status'] != 'Completed':
+        raise SystemExit('Job Failed; periksa pesan aman dan log run, jangan ganti UUID untuk upload ulang.')
+    for endpoint in ('result', 'variants'):
+        result = client.get(f'/jobs/{job_id}/{endpoint}', headers=headers)
+        result.raise_for_status()
+        print(endpoint, json.dumps(result.json()))
+PY
+```
+
+Tidak ada pemanggilan `/start`. HTTP **202** berarti submission diterima atau
+direplay; Job pada respons dapat masih `Queued`. Poll status hingga terminal.
+`dispatch_scheduled=true` berarti task dijadwalkan dalam proses, bukan selesai.
+`Completed` hanya ditulis bersama persistensi hasil. Result API memerlukan JWT
+pemilik; cocokkan Sample/Reference/Job/Analysis ID dari respons aktual.
+
+Expected result dengan threshold di atas: **2 Variant dan 2 Genotype, 1 SNP dan
+1 InDel, other 0**, pada `fixture_chr1`: SNP **5001 A>C** dan insertion
+**12001 A>ACGT**. Pada versi tool bukti: GT `0/1`, FORMAT/DP `60`, QUAL `222.406`,
+FILTER `PASS`. Truth menyimpan fase `0|1`, sedangkan caller menghasilkan GT
+unphased; jangan menuntut phase separator sama. QUAL dapat berubah jika versi
+tool berubah. Ini smoke test tool biologis pada input terkontrol, bukan validasi
+akurasi ilmiah atau kapasitas full genome. Untuk gzip gunakan UUID baru setelah
+Job pertama terminal; expected variants sama. Jangan memakai ulang UUID plain
+untuk file gzip karena fingerprint byte dan filename berbeda.
+
+Untuk memeriksa artefak lokal, query database QA sendiri dengan Job ID aktual:
+
+```sql
+-- Ganti 1 dengan Job ID dari respons submission.
+SELECT id_job, parameter_pipeline->>'run_id' AS run_id
+FROM public.job WHERE id_job = 1;
+```
+
+Direktori run adalah `GENOPATH_PIPELINE_ROOT/<run_id>`, bukan direktori terbaru
+yang ditebak. Pada direktori run itu:
+`samtools quickcheck -v sorted.bam`, `samtools view -H sorted.bam` (SO coordinate
+dan RG/SM sesuai sample), `samtools idxstats sorted.bam` dengan `sorted.bam.csi`,
+serta `bcftools view result.vcf`. Ingestion menyimpan `selected.vcf`; query SQL
+bagian 4 dan Result API harus menunjukkan jumlah/GT/DP yang sama. Raw VCF dapat
+memiliki FILTER `.`; workflow memberi `PASS` pada yang lolos dan
+`LowQualOrDepth` pada missing/di bawah QUAL atau FORMAT/DP. Ingestion mengecualikan
+missing QUAL/DP dan, jika `require_pass=true`, semua record selain PASS.
+
+Kebijakan error dan replay (jangan hanya memeriksa status HTTP):
+
+| Hasil | Tindakan |
+| --- | --- |
+| 202 `accepted` / `replayed` | Simpan ID; poll Job. Replay Completed/Failed tidak menjalankan ulang. |
+| 400 / 413 / 415 | Multipart rusak, batas resource, atau media type salah; periksa error dan keadaan submission sebelum mengulang. |
+| 401 | Login ulang, gunakan akun pemilik dan UUID submission yang sama jika melanjutkan. |
+| 422 | `detail` dapat berupa daftar validation error yang disanitasi atau string error FASTQ/konfigurasi. Input invalid tidak membuat Job; UUID yang sudah mendapat receipt `rejected` memerlukan UUID baru untuk koreksi. |
+| 409 dengan `detail` string | Konflik parameter/file UUID, lock sibuk, atau Job aktif. Jangan mengubah payload UUID yang sudah dipakai; poll/reconcile dahulu. |
+| 409/503 `sample_stored` | Sample dipertahankan. Perbaiki penyebab, lalu ulang dengan UUID, seluruh parameter, filename, dan byte file **identik**; jangan unggah ke M7 sebagai jalan pintas. |
+| 503 `reconciliation_required`, timeout, atau respons terputus | Hasil commit/dispatch dapat ambigu. Pertahankan receipt, file dan ID, periksa Job jika diketahui, minta operator merekonsiliasi. Jangan memakai UUID baru untuk mengulang upload. |
+
+Hashing membaca file per 1 MiB; multipart/upload tetap berbatas, tetapi ada satu
+pass pembacaan tambahan. Belum ada benchmark upload 1 GB. Pengujian SQLite/mocks
+default tidak menggantikan bukti PostgreSQL atau tool biologis. Konfirmasi PM/SA
+bahwa endpoint tambahan memenuhi auto-trigger masih diperlukan; endpoint M7 lama
+tetap upload-only dan FE belum diubah untuk memakai jalur baru.
 
 ## Troubleshooting dan referensi
 
@@ -636,6 +955,6 @@ cocok persis, dan batas input ingestion 1 GB.
 [Kontrak FE/QA M7](BACKEND_INTEGRATION_GUIDE.md) menjelaskan detail autentikasi,
 FASTQ, storage, dan error. Bagian M8/future pada panduan lama harus dibaca bersama
 README ini untuk status Job terbaru. [Prosedur Swagger M7](scripts/SWAGGER_DEMO.md)
-adalah tooling opt-in terpisah, bukan jalur setup M8. Registrasi dari Tahap A diintegrasikan pada branch auth final ini;
+adalah tooling opt-in terpisah, bukan jalur setup M8. Registrasi sudah tersedia;
 kebijakan pendaftaran deployment publik tetap belum diputuskan dan frontend
 tidak diubah.

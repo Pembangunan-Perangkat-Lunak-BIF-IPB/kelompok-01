@@ -13,6 +13,8 @@ from sqlalchemy.exc import OperationalError
 from app.core.security import create_access_token
 from app.database import get_session_factory
 from app.models import Analysis, Job, Sample, Variant
+from app.schemas.auth import ErrorResponse
+from app.schemas.submission import SubmissionValidationError
 from app.services import jobs, submissions
 from app.services.submission_record import SubmissionBusy, SubmissionRecord
 
@@ -112,6 +114,27 @@ def test_all_parameters_are_explicit_and_m7_body_stays_file_only(case):
     response = case.client.post("/samples/upload", headers=case.headers, files={"file": ("reads.fastq", FASTQ)})
     assert response.status_code == 201 and "job" not in response.json()
     assert count(case, Job) == 0
+
+
+@pytest.mark.parametrize("example", ["request_validation", "invalid_fastq", "invalid_job"])
+def test_openapi_422_describes_actual_error_shapes_and_examples(case, example):
+    operation = case.client.get("/openapi.json").json()["paths"][PATH]["post"]
+    content = operation["responses"]["422"]["content"]["application/json"]
+    assert {item["$ref"].rsplit("/", 1)[-1] for item in content["schema"]["anyOf"]} == {
+        "SubmissionValidationError", "ErrorResponse"}
+    if example == "request_validation":
+        actual = submit(case, parameter_dp=-1)
+        model = SubmissionValidationError
+    elif example == "invalid_fastq":
+        actual = submit(case, data=b"invalid")
+        model = ErrorResponse
+    else:
+        actual = submit(case, id_reference_genome=999)
+        model = ErrorResponse
+    expected = content["examples"][example]["value"]
+    assert actual.status_code == 422 and actual.json() == expected
+    assert model.model_validate(expected).model_dump() == expected
+    assert count(case, Sample) == 2 and count(case, Job) == 0
 
 
 @pytest.mark.parametrize("data", [b"invalid", b"@x\nACGT\n+\nI\n"])

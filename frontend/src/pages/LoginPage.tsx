@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Dna, Lock, Mail, Eye, EyeOff, User, ShieldCheck, ExternalLink, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { Dna, Lock, Mail, Eye, EyeOff, User, ShieldCheck, ExternalLink, ArrowLeft, Loader2, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../services/api';
 
@@ -8,31 +8,37 @@ const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdgawk5QzHe6_a
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  
+  // State Input Form
   const [username, setUsername] = useState('');
+  const [name, setName] = useState(''); // Field Nama Lengkap Peneliti
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     if (activeTab === 'login') {
-      const loginIdentifier = email.trim() || username.trim();
-      if (!loginIdentifier || !password.trim()) {
-        setErrorMessage('Username/email dan password tidak boleh kosong.');
+      // 1. Login strictly menggunakan Username + Password
+      if (!username.trim() || !password.trim()) {
+        setErrorMessage('Username dan password wajib diisi.');
         return;
       }
 
       setLoading(true);
 
       try {
-        await login({ username: loginIdentifier, password });
+        await login({ username: username.trim(), password });
         navigate('/analisis-baru');
       } catch (err) {
         if (err instanceof ApiError) {
@@ -44,26 +50,61 @@ export const LoginPage: React.FC = () => {
         setLoading(false);
       }
     } else {
-      setErrorMessage('Pendaftaran mandiri belum dibuka oleh sistem BE M7. Silakan hubungi Administrator untuk pembuatan akun.');
+      // 2. Registrasi Akun Baru (username, name, email, password)
+      if (!username.trim() || !name.trim() || !email.trim() || !password.trim()) {
+        setErrorMessage('Seluruh kolom formulir pendaftaran wajib diisi.');
+        return;
+      }
+
+      // Validasi kata sandi minimal 12 karakter
+      if (password.length < 12) {
+        setErrorMessage('Kata sandi minimal 12 karakter sesuai kebijakan keamanan backend.');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        // Eksekusi API Register
+        await register({
+          username: username.trim(),
+          name: name.trim(),
+          email: email.trim(),
+          password,
+        });
+
+        setSuccessMessage('Akun berhasil dibuat! Melakukan autentikasi otomatis...');
+
+        // Alur otomatis login setelah pendaftaran berhasil (201 Created)
+        await login({ username: username.trim(), password });
+        navigate('/analisis-baru');
+
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setErrorMessage(err.message);
+        } else {
+          setErrorMessage('Terjadi kesalahan saat pendaftaran akun baru.');
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   return (
-    // Penambahan: Latar utama dengan gradasi tema direktori global
     <div className="min-h-screen relative overflow-hidden flex flex-col justify-between p-4 md:p-6 font-sans text-slate-800 dark:text-slate-200 transition-colors duration-500 bg-gradient-to-br from-slate-100 via-blue-100/60 to-indigo-100/50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/40">
       
-      {/* Penambahan: Layer Motif Bawang Putih Berulang (Background Pattern) */}
-      {/* dark:invert merubah sketsa hitam menjadi garis putih di mode malam, opacity menjaga transparansi agar tidak mengganggu keterbacaan */}
+      {/* Background Pattern Bawang Putih */}
       <div 
         className="absolute inset-0 bg-repeat pointer-events-none z-0 opacity-[0.08] dark:opacity-[0.05] dark:invert transition-opacity duration-300"
         style={{ backgroundImage: "url('/garlic-pattern.png')", backgroundSize: '360px' }}
       ></div>
 
-      {/* Penambahan: Ambient Glow Orbs untuk efek kilau di balik panel kristal */}
+      {/* Ambient Glow Orbs */}
       <div className="fixed top-[-10%] left-[-10%] w-[45rem] h-[45rem] bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none z-0 animate-pulse"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[45rem] h-[45rem] bg-indigo-400/20 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none z-0 animate-pulse"></div>
 
-      {/* Konten Utama (Posisi z-10 di atas motif latar) */}
+      {/* Tombol Navigasi Kembali */}
       <div className="relative z-10 max-w-md w-full mx-auto mb-2">
         <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Kembali ke Beranda
@@ -72,7 +113,7 @@ export const LoginPage: React.FC = () => {
 
       <div className="relative z-10 max-w-md w-full mx-auto space-y-4">
         
-        {/* Header Kartu Institusi (Kristal) */}
+        {/* Header Kartu Institusi IPB */}
         <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
           <div className="p-2.5 glass-card rounded-xl text-blue-600 dark:text-blue-400">
             <Dna className="w-6 h-6" />
@@ -83,7 +124,7 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Kartu Utama Formulir Autentikasi (Kristal) */}
+        {/* Kartu Utama Formulir Autentikasi */}
         <div className="glass-card rounded-2xl p-6 space-y-5">
           
           {/* Badge Portal */}
@@ -101,7 +142,7 @@ export const LoginPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-1 glass-card p-1 rounded-xl text-xs font-semibold">
             <button
               type="button"
-              onClick={() => { setActiveTab('login'); setErrorMessage(null); }}
+              onClick={() => { setActiveTab('login'); setErrorMessage(null); setSuccessMessage(null); }}
               className={`py-2 rounded-lg transition-all cursor-pointer ${
                 activeTab === 'login' 
                   ? 'bg-white/80 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 shadow-sm' 
@@ -112,7 +153,7 @@ export const LoginPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('register'); setErrorMessage(null); }}
+              onClick={() => { setActiveTab('register'); setErrorMessage(null); setSuccessMessage(null); }}
               className={`py-2 rounded-lg transition-all cursor-pointer ${
                 activeTab === 'register' 
                   ? 'bg-white/80 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 shadow-sm' 
@@ -131,23 +172,33 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
+          {/* Alert Sukses */}
+          {successMessage && (
+            <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-xl text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           {/* Form Input */}
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+            
+            {/* TAB LOGIN */}
             {activeTab === 'login' && (
               <>
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Pengguna atau Alamat Email:</label>
-                    <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">UID / RFC-5322</span>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Pengguna (Username):</label>
+                    <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">USERNAME</span>
                   </div>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
                       required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="contoh: peneliti_garlic@ipb.ac.id atau rafif_al"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="contoh: rafif_al"
                       className="w-full glass-card rounded-xl pl-9 pr-3 py-2.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     />
                   </div>
@@ -183,7 +234,7 @@ export const LoginPage: React.FC = () => {
                 <div className="flex items-center gap-2 pt-1">
                   <input type="checkbox" id="remember" defaultChecked className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                   <label htmlFor="remember" className="text-slate-600 dark:text-slate-400 text-[11px] cursor-pointer">
-                    Ingat token sesi di peramban ini <span className="font-mono text-slate-400 dark:text-slate-500">(TTL: 72 Jam)</span>
+                    Ingat token sesi di peramban ini <span className="font-mono text-slate-400 dark:text-slate-500">(TTL: 4 Jam / 240 Menit)</span>
                   </label>
                 </div>
 
@@ -204,8 +255,10 @@ export const LoginPage: React.FC = () => {
               </>
             )}
 
+            {/* TAB REGISTER */}
             {activeTab === 'register' && (
               <>
+                {/* 1. Username */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Pengguna (Username):</label>
@@ -224,6 +277,26 @@ export const LoginPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* 2. Nama Lengkap Peneliti */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Lengkap Peneliti:</label>
+                    <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">FULL NAME</span>
+                  </div>
+                  <div className="relative">
+                    <UserCheck className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="contoh: Rafif Alfarrel Nugroho"
+                      className="w-full glass-card rounded-xl pl-9 pr-3 py-2.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Email */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Alamat Email:</label>
@@ -242,19 +315,21 @@ export const LoginPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* 4. Password Minimal 12 Karakter */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Buat Kata Sandi:</label>
-                    <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">MIN. 8 KARAKTER</span>
+                    <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold">MIN. 12 KARAKTER</span>
                   </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
+                      minLength={12}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
+                      placeholder="••••••••••••••••"
                       className="w-full glass-card rounded-xl pl-9 pr-9 py-2.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     />
                     <button
@@ -269,9 +344,17 @@ export const LoginPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/25 text-xs flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  disabled={loading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/25 text-xs flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:cursor-not-allowed"
                 >
-                  📝 Buat Akun Baru (Daftar)
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Mendaftarkan Akun Baru...</span>
+                    </>
+                  ) : (
+                    <span>📝 Buat Akun Baru (Daftar)</span>
+                  )}
                 </button>
               </>
             )}

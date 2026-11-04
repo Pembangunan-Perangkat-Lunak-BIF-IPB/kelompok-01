@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useState } from 'react';
-import { loginUser, type LoginPayload } from '../services/api';
+import { 
+  loginUser, 
+  registerUser, 
+  type LoginPayload, 
+  type RegisterPayload 
+} from '../services/api';
 
 export interface UserProfile {
   username: string;
   name?: string;
-  email?: string; // Menambahkan email agar Navbar.tsx tidak error
+  email?: string;
   role?: string;
   avatarUrl?: string;
 }
@@ -13,6 +18,7 @@ interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   login: (credentials: LoginPayload) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -32,9 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: LoginPayload) => {
     const result = await loginUser(credentials);
     
+    // Menggunakan data user dari respons backend jika tersedia, atau fallback ke username masukan
     const profile: UserProfile = {
-      username: credentials.username,
-      name: credentials.username,
+      username: result.user?.username || credentials.username,
+      name: result.user?.name || credentials.username,
+      email: result.user?.email,
       role: 'Peneliti Bioinformatika',
     };
 
@@ -43,6 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setToken(result.access_token);
     setUser(profile);
+  };
+
+  const register = async (payload: RegisterPayload) => {
+    await registerUser(payload);
   };
 
   const logout = () => {
@@ -58,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         token,
         login,
+        register,
         logout,
         isAuthenticated: !!token,
       }}

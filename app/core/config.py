@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     pipeline_threads: int = Field(default=1, ge=1, le=64)
     pipeline_alignment_strategy: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
     pipeline_alignment_adapter: Path | None = None
+    pipeline_bowtie2_executable: Path | None = None
+    pipeline_bowtie2_inspect_executable: Path | None = None
+    pipeline_bowtie2_index_prefix: Path | None = None
     pipeline_nextflow_executable: Path | None = None
     pipeline_fastp_executable: Path | None = None
     pipeline_samtools_executable: Path | None = None

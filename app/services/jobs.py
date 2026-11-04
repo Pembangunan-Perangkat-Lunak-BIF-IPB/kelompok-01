@@ -16,8 +16,9 @@ from app.models import Analysis, Job, ReferenceGenome, Sample, User
 from app.schemas.job import JobCreateRequest, JobResponse
 from app.services.pipeline import (
     ExecutionPlan, Executor, LocalExecutor, PipelineFailure, PipelineTimeout,
-    PipelineUnavailable, check_gate, confined_file, executable,
+    PipelineUnavailable, check_gate, confined_file, executable, validate_biological_plan,
 )
+from app.services.bowtie2_adapter import index_files
 from app.services.vcf_ingestion import ingest_result
 from app.services.vcf_summary import InvalidVcfError
 
@@ -84,10 +85,24 @@ def build_plan(db, settings, owner, request):
     if root.resolve() != root:
         raise PipelineUnavailable("Unsafe output root.")
     biological = request.execution_mode == "nextflow"
-    return ExecutionPlan(
+    bowtie = biological and settings.pipeline_alignment_strategy == "bowtie2"
+    prefix = settings.pipeline_bowtie2_index_prefix if bowtie else None
+    if bowtie:
+        try:
+            if prefix is None:
+                raise ValueError
+            prefix = prefix if prefix.is_absolute() else settings.reference_root.absolute() / prefix
+            for path in index_files(prefix):
+                confined_file(settings.reference_root, path)
+        except (OSError, ValueError):
+            raise PipelineUnavailable("Explicit reference-confined Bowtie2 index is required.") from None
+    plan = ExecutionPlan(
         request=request, run_id=run_id, reads=reads, reference=fasta, outdir=root / run_id,
         alignment_strategy=settings.pipeline_alignment_strategy if biological else "synthetic-no-alignment",
         alignment_adapter=executable(settings.pipeline_alignment_adapter) if biological else None,
+        bowtie2=executable(settings.pipeline_bowtie2_executable) if bowtie else None,
+        bowtie2_inspect=executable(settings.pipeline_bowtie2_inspect_executable) if bowtie else None,
+        bowtie2_index_prefix=prefix,
         nextflow=executable(settings.pipeline_nextflow_executable) if biological else None,
         fastp=executable(settings.pipeline_fastp_executable) if biological else None,
         samtools=executable(settings.pipeline_samtools_executable) if biological else None,
@@ -95,6 +110,9 @@ def build_plan(db, settings, owner, request):
         threads=settings.pipeline_threads, timeout_seconds=settings.pipeline_timeout_seconds,
         profile=settings.pipeline_nextflow_profile,
     )
+    if biological:
+        validate_biological_plan(plan)
+    return plan
 
 
 def create_job(factory, settings: Settings, owner: int, request: JobCreateRequest):

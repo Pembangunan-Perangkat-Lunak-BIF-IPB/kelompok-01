@@ -5,6 +5,8 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    Index,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -69,6 +71,7 @@ class Job(Base):
     waktu_mulai = Column(DateTime, nullable=True)
     waktu_selesai = Column(DateTime, nullable=True)
     pesan_error = Column(Text, nullable=True)
+    parameter_pipeline = Column(JSON, nullable=True)
 
     owner = relationship("User", back_populates="jobs")
     sample = relationship("Sample", back_populates="jobs")
@@ -88,6 +91,7 @@ class Analysis(Base):
     total_varian = Column(Integer, nullable=True)
     snp_count = Column(Integer, nullable=True)
     indel_count = Column(Integer, nullable=True)
+    other_count = Column(Integer, nullable=True)
     path_vcf = Column(String, nullable=True)
     path_csv = Column(String, nullable=True)
 
@@ -97,6 +101,10 @@ class Analysis(Base):
 
 class Variant(Base):
     __tablename__ = "variant"
+    __table_args__ = (
+        Index("ix_variant_analysis_page", "id_analysis", "id_variant"),
+        Index("ix_variant_analysis_type_qual", "id_analysis", "variant_type", "qual"),
+    )
 
     id_variant = Column(Integer, primary_key=True)
     id_analysis = Column(Integer, ForeignKey("analysis.id_analysis"), nullable=False)
@@ -105,6 +113,9 @@ class Variant(Base):
     ref_allele = Column(String, nullable=False)
     alt_allele = Column(String, nullable=False)
     qual = Column(Float, nullable=True)
+    variant_type = Column(String, nullable=True)
+    filter_status = Column(String, nullable=True)
+    info = Column(JSON, nullable=True)
 
     analysis = relationship("Analysis", back_populates="variants")
     genotypes = relationship("Genotype", back_populates="variant")
@@ -112,6 +123,7 @@ class Variant(Base):
 
 class Genotype(Base):
     __tablename__ = "genotype"
+    __table_args__ = (Index("ix_genotype_variant_sample", "id_variant", "id_sample"),)
 
     id_genotype = Column(Integer, primary_key=True)
     id_variant = Column(Integer, ForeignKey("variant.id_variant"), nullable=False)

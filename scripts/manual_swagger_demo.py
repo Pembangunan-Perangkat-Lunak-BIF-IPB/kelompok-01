@@ -1,4 +1,4 @@
-"""Opt-in M7 Swagger demo. See scripts/SWAGGER_DEMO.md before using any command.
+﻿"""Opt-in M7 Swagger demo. See scripts/SWAGGER_DEMO.md before using any command.
 
 Importing this module does not load Settings, connect, create files, or serve HTTP.
 Every command needs separate operator approval. No secret is accepted on the CLI.
@@ -58,10 +58,10 @@ def configured_state_root(path=None):
 @contextmanager
 def state_directory(path, create=False):
     """Walk every ancestor without following symlinks; create only the final leaf."""
-    descriptor = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    descriptor = os.open(path.anchor, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
     try:
         for component in path.parts[1:-1]:
-            child = os.open(component, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptor)
+            child = os.open(component, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=descriptor)
             os.close(descriptor)
             descriptor = child
         require(path.name, "state_root_cannot_be_filesystem_root")
@@ -72,7 +72,7 @@ def state_directory(path, create=False):
                 pass
             else:
                 os.fsync(descriptor)  # Persist the new state directory's parent entry.
-        child = os.open(path.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptor)
+        child = os.open(path.name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=descriptor)
         os.close(descriptor)
         descriptor = child
         private(os.fstat(descriptor), 0o700)
@@ -200,10 +200,10 @@ class Manifest:
         with state_directory(state_root, create=True) as parent:
             os.mkdir(root.name, mode=0o700, dir_fd=parent)  # Never reuse another run.
             os.fsync(parent)
-            directory = os.open(root.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+            directory = os.open(root.name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent)
             try:
                 os.mkdir("storage", mode=0o700, dir_fd=directory)
-                descriptor = os.open("server.lock", os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW,
+                descriptor = os.open("server.lock", os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0),
                                      0o600, dir_fd=directory)
                 os.close(descriptor)
                 username = "swagger_m7_" + run_id
@@ -212,7 +212,7 @@ class Manifest:
                          "root_identity": inode(os.fstat(directory)),
                          "storage_identity": inode(os.stat("storage", dir_fd=directory, follow_symlinks=False)),
                          "lock_identity": inode(os.stat("server.lock", dir_fd=directory, follow_symlinks=False))}
-                descriptor = os.open("manifest.jsonl", os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW,
+                descriptor = os.open("manifest.jsonl", os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0),
                                      0o600, dir_fd=directory)
                 try:
                     target = os.fdopen(descriptor, "w")
@@ -235,7 +235,7 @@ class Manifest:
             if self.state_root_identity is None:
                 self.state_root_identity = identity
             require(identity == self.state_root_identity, "state_root_replaced")
-            descriptor = os.open(self.root.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+            descriptor = os.open(self.root.name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent)
             try:
                 private(os.fstat(descriptor), 0o700)
                 yield descriptor
@@ -246,7 +246,7 @@ class Manifest:
     def opened(self, write=False):
         with self.lock, self.directory() as directory:
             flags = (os.O_RDWR | os.O_APPEND) if write else os.O_RDONLY
-            descriptor = os.open("manifest.jsonl", flags | os.O_NOFOLLOW, dir_fd=directory)
+            descriptor = os.open("manifest.jsonl", flags | getattr(os, "O_NOFOLLOW", 0), dir_fd=directory)
             try:
                 info = os.fstat(descriptor)
                 private(info, 0o600)
@@ -266,7 +266,7 @@ class Manifest:
                 state = replay(events)
                 require(inode(os.fstat(directory)) == state["created"]["root_identity"]
                         and self.root.name == PREFIX + state["created"]["run_id"], "root_identity_mismatch")
-                storage = os.open("storage", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
+                storage = os.open("storage", os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=directory)
                 try:
                     private(os.fstat(storage), 0o700)
                     require(inode(os.fstat(storage)) == state["created"]["storage_identity"], "storage_replaced")
@@ -303,7 +303,7 @@ class Manifest:
         """Held for the whole server lifetime; seed/cleanup cannot race a live server."""
         state = self.state()
         with self.directory() as directory:
-            descriptor = os.open("server.lock", os.O_RDWR | os.O_NOFOLLOW, dir_fd=directory)
+            descriptor = os.open("server.lock", os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), dir_fd=directory)
             try:
                 info = os.fstat(descriptor)
                 private(info, 0o600)
@@ -561,7 +561,7 @@ def verify(parameters, ledger, record=True):
         # This demo verifier deliberately handles small fixtures only, not 1 GB files.
         info = smoke.inspect_file(ledger.storage, row["key"])
         require(info["size"] == row["size"], "file_size_mismatch")
-        descriptor = os.open(ledger.storage / row["key"], os.O_RDONLY | os.O_NOFOLLOW)
+        descriptor = os.open(ledger.storage / row["key"], os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         with os.fdopen(descriptor, "rb") as source:
             suffix = ".fastq.gz" if row["key"].endswith(".gz") else ".fastq"
             validate_in_process(source, suffix, Settings(_env_file=None), Event())
@@ -617,7 +617,7 @@ def cleanup(parameters, ledger):
         # No filesystem deletion after any raised/uncertain COMMIT, even if rollback worked.
         read_database(parameters, ledger.state(), empty=True)
         with ledger.directory() as directory:
-            storage = os.open("storage", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
+            storage = os.open("storage", os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=directory)
             try:
                 for key, info in files.items():
                     require(smoke.inspect_file(ledger.storage, key) == info, "cleanup_file_identity_mismatch")
@@ -672,3 +672,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+

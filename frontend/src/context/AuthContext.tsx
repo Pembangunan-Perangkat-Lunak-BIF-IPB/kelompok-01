@@ -9,6 +9,7 @@ import {
 export interface UserProfile {
   username: string;
   name?: string;
+  nama?: string;
   email?: string;
   role?: string;
   avatarUrl?: string;
@@ -17,7 +18,10 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
-  login: (credentials: LoginPayload) => Promise<void>;
+  login: (
+    credentials: LoginPayload, 
+    extraInfo?: { nama?: string; name?: string; email?: string }
+  ) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -35,14 +39,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const login = async (credentials: LoginPayload) => {
+  const login = async (
+    credentials: LoginPayload, 
+    extraInfo?: { nama?: string; name?: string; email?: string }
+  ) => {
     const result = await loginUser(credentials);
     
-    // Menggunakan data user dari respons backend jika tersedia, atau fallback ke username masukan
+    // Penentuan nama: respons backend (nama/name) -> extraInfo form registrasi -> fallback username
+    const profileName = 
+      result.user?.nama || 
+      extraInfo?.nama || 
+      extraInfo?.name || 
+      credentials.username;
+
     const profile: UserProfile = {
       username: result.user?.username || credentials.username,
-      name: result.user?.name || credentials.username,
-      email: result.user?.email,
+      name: profileName,
+      nama: profileName,
+      email: result.user?.email || extraInfo?.email,
       role: 'Peneliti Bioinformatika',
     };
 

@@ -1,4 +1,4 @@
-"""Manual PostgreSQL upload smoke runner. Never collected by the default pytest suite.
+﻿"""Manual PostgreSQL upload smoke runner. Never collected by the default pytest suite.
 
 --preflight performs SELECTs in a server-enforced READ ONLY transaction only.
 --run writes test-owned rows/files and requires separate human approval before use.
@@ -229,7 +229,7 @@ class RunManifest:
         self.email = self.username + "@example.invalid"
         self.user_id = None
         self.samples = []
-        descriptor = os.open(self.root / "manifest.jsonl", os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        descriptor = os.open(self.root / "manifest.jsonl", os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
         self.file = os.fdopen(descriptor, "w", encoding="utf-8")
         self.record("created", database=DATABASE, run_id=self.run_id, username=self.username)
 
@@ -241,9 +241,9 @@ class RunManifest:
 
 def inspect_file(storage, key):
     require(isinstance(key, str) and KEY_PATTERN.fullmatch(key), "unexpected_storage_key")
-    directory = os.open(storage, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    directory = os.open(storage, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
     try:
-        descriptor = os.open(key, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory)
+        descriptor = os.open(key, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=directory)
         with os.fdopen(descriptor, "rb") as source:
             info = os.fstat(source.fileno())
             require(stat.S_ISREG(info.st_mode) and info.st_uid == os.geteuid(), "stored_file_not_owned")
@@ -311,7 +311,7 @@ def cleanup_owned(factory, check, manifest):
         manifest.record("cleanup_commit_attempted", id_user=manifest.user_id, sample_ids=ids)
         session.commit()  # If this raises, NO filesystem deletion is attempted.
     manifest.record("cleanup_commit_confirmed")
-    directory = os.open(manifest.storage, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    directory = os.open(manifest.storage, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
     try:
         for item in manifest.samples:
             require(inspect_file(manifest.storage, item["key"]) == item["file"], "cleanup_file_identity_mismatch")
@@ -396,7 +396,7 @@ def run_smoke(settings, parameters):
                         entry = {"id_sample": row.id_sample, "key": key, "filename": filename,
                                  "size": len(data), "database_time": row.waktu_unggah.isoformat(), "file": file_info}
                     # The small, already identity-checked fixture is validated through the same pure parser.
-                    descriptor = os.open(manifest.storage / key, os.O_RDONLY | os.O_NOFOLLOW)
+                    descriptor = os.open(manifest.storage / key, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
                     with os.fdopen(descriptor, "rb") as source:
                         validate_upload(source, suffix, max_bytes=100_000, max_line_bytes=1024)
                     manifest.samples.append(entry)
@@ -472,3 +472,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+

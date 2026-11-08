@@ -46,11 +46,8 @@ def run_migrations_online():
                     context.run_migrations()
         finally:
             engine.dispose()
-    except (SQLAlchemyError, RuntimeError):
-        raise CommandError(
-            "Migration failed. Verify PostgreSQL access, the M6 schema, "
-            "and the empty-user precondition. Connection details are not displayed."
-        ) from None
+    except (SQLAlchemyError, RuntimeError) as e:
+        raise e
 
 
 # Alembic installs its configuration while running a migration command.

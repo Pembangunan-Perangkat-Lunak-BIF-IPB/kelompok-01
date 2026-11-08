@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+import asyncio
+import inspect
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware  # [BARU] Import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import DBAPIError, TimeoutError as DatabaseTimeoutError
 
 from app.api.dependencies import bearer_scheme
@@ -19,7 +21,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application = FastAPI(title=settings.app_name, debug=settings.debug)
     application.state.settings = settings
 
-    # [BARU] Konfigurasi CORS agar React (port 5173) bisa berkomunikasi dengan backend
+    # Konfigurasi CORS agar React (port 5173) bisa berkomunikasi dengan backend
     application.add_middleware(
         CORSMiddleware,
         allow_origins=[
@@ -31,7 +33,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    application.add_exception_handler(RequestValidationError, invalid_request)
+    # Logging otomatis untuk melacak detail error 422 di terminal Uvicorn
+    async def debug_validation_exception_handler(request: Request, exc: RequestValidationError):
+        print("\n" + "=" * 60)
+        print(f"[DEBUG 422 VALIDATION ERROR] Path: {request.method} {request.url.path}")
+        print(f"[DEBUG 422 ERRORS]: {exc.errors()}")
+        print(f"[DEBUG 422 BODY]: {getattr(exc, 'body', None)}")
+        print("=" * 60 + "\n")
+        
+        res = invalid_request(request, exc)
+        if inspect.isawaitable(res):
+            return await res
+        return res
+
+    application.add_exception_handler(RequestValidationError, debug_validation_exception_handler)
+
     for error_type in (
         SecurityConfigurationError, DatabaseConfigurationError, DBAPIError, DatabaseTimeoutError
     ):
@@ -61,5 +77,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     application.openapi = openapi
     return application
+
 
 app = create_app()

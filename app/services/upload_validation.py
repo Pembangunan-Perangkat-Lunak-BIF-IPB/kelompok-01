@@ -12,7 +12,7 @@ import time
 from typing import BinaryIO, TypeVar
 
 from app.core.config import Settings
-from app.services.fastq import InvalidFastqError, UploadLimitError
+from app.services.fastq import InvalidFastqError, UploadLimitError, validate_upload
 from app.services.storage import LocalStorage, StagedUpload, StorageError, UploadMetadata
 
 
@@ -54,17 +54,35 @@ async def joined_thread(function: Callable[[], T], stop: Event | None = None) ->
 def validate_in_process(source: BinaryIO, suffix: str, settings: Settings, stop: Event) -> None:
     if stop.is_set():
         raise UploadCancelled()
-    # /proc reopens our stable descriptor read-only, without using a client path.
-    descriptor = os.open(f"/proc/self/fd/{source.fileno()}", os.O_RDONLY | os.O_CLOEXEC)
+
+    max_bytes = (
+        settings.upload_max_decompressed_bytes
+        if suffix == ".fastq.gz"
+        else settings.upload_max_bytes
+    )
+
+    # Jalur khusus Windows: modul 'resource' & pewarisan file descriptor Linux tidak tersedia di Windows.
+    # Jalankan validasi stream FASTQ secara langsung di worker thread.
+    if os.name == "nt":
+        source.seek(0)
+        validate_upload(
+            source,
+            suffix,
+            max_bytes=max_bytes,
+            max_line_bytes=settings.upload_max_line_bytes,
+        )
+        source.seek(0)
+        return
+
+    # Jalur Linux / POSIX: Jalankan validation_worker.py dalam subproses terisolasi
+    O_CLOEXEC = getattr(os, "O_CLOEXEC", 0)
+    descriptor = os.open(f"/proc/self/fd/{source.fileno()}", os.O_RDONLY | O_CLOEXEC)
     try:
-        max_bytes = (settings.upload_max_decompressed_bytes if suffix == ".fastq.gz"
-                     else settings.upload_max_bytes)
         command = [
             sys.executable, "-I", "-B", str(Path(__file__).with_name("validation_worker.py")),
             str(descriptor), suffix, str(max_bytes), str(settings.upload_max_line_bytes),
             str(settings.upload_validation_cpu_seconds),
         ]
-        # No inherited environment, shell, preexec_fn, or unbounded output pipe.
         with subprocess.Popen(
             command, pass_fds=(descriptor,), env={}, stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -85,12 +103,21 @@ def validate_in_process(source: BinaryIO, suffix: str, settings: Settings, stop:
             finally:
                 if process.poll() is None:
                     process.kill()
-                process.wait()  # Reap BEFORE allowing the storage context to clean up.
+                process.wait()
         if code == 2:
             raise InvalidFastqError("Invalid FASTQ or gzip file.")
         if code == 3:
             raise UploadLimitError("FASTQ data exceeds its resource limit.")
-        if code in (-signal.SIGXCPU, -signal.SIGKILL):
+        
+        SIGXCPU = getattr(signal, "SIGXCPU", None)
+        SIGKILL = getattr(signal, "SIGKILL", None)
+        budget_signals = []
+        if SIGXCPU is not None:
+            budget_signals.append(-SIGXCPU)
+        if SIGKILL is not None:
+            budget_signals.append(-SIGKILL)
+
+        if code in budget_signals:
             raise ValidationBudgetError("Validation resource budget exceeded.")
         if code != 0:
             raise StorageError("Validation worker unavailable.")

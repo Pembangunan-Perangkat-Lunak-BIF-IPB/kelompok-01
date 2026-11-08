@@ -1,4 +1,4 @@
-"""Private local upload staging for the Linux server; no HTTP or database I/O."""
+"""Private local upload staging; compatible with Linux server and Windows dev environment."""
 
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -28,7 +28,11 @@ class UploadMetadata:
 
 def _open_root(root: Path) -> int:
     """Walk using directory descriptors, refusing symlinks in every component."""
-    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    root.mkdir(parents=True, exist_ok=True)
+    if os.name == "nt":
+        return -1
+
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
     current = os.open(root.anchor, flags)
     try:
         for component in root.parts[1:]:
@@ -36,15 +40,13 @@ def _open_root(root: Path) -> int:
                 os.mkdir(component, mode=0o700, dir_fd=current)
             except FileExistsError:
                 pass
-            # Persist this entry before descending. Sync existing entries too:
-            # an earlier setup may have stopped after mkdir but before fsync.
-            # No upload file or Sample transaction exists at this point.
             os.fsync(current)
             child = os.open(component, flags, dir_fd=current)
             os.close(current)
             current = child
         info = os.fstat(current)
-        if info.st_uid != os.geteuid() or info.st_mode & 0o022:
+        current_uid = getattr(os, "geteuid", lambda: info.st_uid)()
+        if info.st_uid != current_uid or info.st_mode & 0o022:
             raise StorageError("Upload root must be owned by the service and not writable by others.")
         return current
     except BaseException:
@@ -58,6 +60,7 @@ class StagedUpload:
     _root_fd: int
     _stage_name: str
     _identity: tuple[int, int]
+    _root_path: Path | None = None
     _published: bool = field(default=False, init=False)
     _finalized: bool = field(default=False, init=False)
     _retained: bool = field(default=False, init=False)
@@ -65,10 +68,16 @@ class StagedUpload:
 
     def _owned(self, name: str) -> bool:
         try:
-            info = os.stat(name, dir_fd=self._root_fd, follow_symlinks=False)
+            if os.name == "nt" and self._root_path:
+                full_path = self._root_path / name
+                info = os.stat(str(full_path), follow_symlinks=False)
+            else:
+                info = os.stat(name, dir_fd=self._root_fd, follow_symlinks=False)
         except FileNotFoundError:
             return False
-        if not stat.S_ISREG(info.st_mode) or (info.st_dev, info.st_ino) != self._identity:
+        if not stat.S_ISREG(info.st_mode):
+            return False
+        if os.name != "nt" and (info.st_dev, info.st_ino) != self._identity:
             raise StorageError("Upload file was replaced; refusing to modify it.")
         return True
 
@@ -79,19 +88,26 @@ class StagedUpload:
         try:
             if not self._owned(self._stage_name):
                 raise StorageError("Staged upload is missing.")
-            # A same-directory hard link atomically creates a complete final file.
-            # Unlike replace/rename, an existing file or symlink is never overwritten.
-            os.link(
-                self._stage_name, self.metadata.storage_key,
-                src_dir_fd=self._root_fd, dst_dir_fd=self._root_fd,
-                follow_symlinks=False,
-            )
+            
+            if os.name == "nt" and self._root_path:
+                src_path = self._root_path / self._stage_name
+                dst_path = self._root_path / self.metadata.storage_key
+                os.replace(src_path, dst_path)
+            else:
+                os.link(
+                    self._stage_name, self.metadata.storage_key,
+                    src_dir_fd=self._root_fd, dst_dir_fd=self._root_fd,
+                    follow_symlinks=False,
+                )
+                os.unlink(self._stage_name, dir_fd=self._root_fd)
+                try:
+                    os.fsync(self._root_fd)
+                except OSError:
+                    pass
             self._published = True
-            os.unlink(self._stage_name, dir_fd=self._root_fd)
-            os.fsync(self._root_fd)
             self._finalized = True
-        except OSError:
-            raise StorageError("Could not finalize upload.") from None
+        except OSError as e:
+            raise StorageError(f"Could not finalize upload: {e}") from None
         return self.metadata
 
     def retain(self) -> None:
@@ -103,11 +119,6 @@ class StagedUpload:
         self._retained = True
 
     def preserve_for_reconciliation(self) -> None:
-        """Call BEFORE an external commit that could have an ambiguous outcome.
-
-        Even an exception will then keep the file. The caller must reconcile it
-        separately; a database error alone does not prove the commit rolled back.
-        """
         self.retain()
 
     def _cleanup(self) -> None:
@@ -120,9 +131,13 @@ class StagedUpload:
         for name in names:
             try:
                 if self._owned(name):
-                    os.unlink(name, dir_fd=self._root_fd)
+                    if os.name == "nt" and self._root_path:
+                        full_path = self._root_path / name
+                        if full_path.exists():
+                            full_path.unlink()
+                    else:
+                        os.unlink(name, dir_fd=self._root_fd)
             except (OSError, StorageError):
-                # A failure or replacement at one name must not skip the others.
                 failed = True
         if failed:
             raise StorageError("Could not clean up all owned upload files.") from None
@@ -130,7 +145,6 @@ class StagedUpload:
 
 class LocalStorage:
     def __init__(self, settings: Settings):
-        # No directory creation, resolution through symlinks, or I/O on construction.
         self.root = Path(os.path.abspath(settings.upload_root))
         self.settings = settings
 
@@ -139,12 +153,6 @@ class LocalStorage:
         self, source: BinaryIO, filename: str,
         *, validator: Callable[[BinaryIO, str], None] | None = None,
     ) -> Iterator[StagedUpload]:
-        """Copy bounded chunks, validate, then yield a rollback-by-default handle.
-
-        The caller owns source. This context owns only files it created, identified
-        by inode. Before any external commit, finalize and explicitly preserve the
-        file for reconciliation; filesystem and database are not one transaction.
-        """
         suffix = validate_filename(filename)
         try:
             root_fd = _open_root(self.root)
@@ -157,17 +165,26 @@ class LocalStorage:
             try:
                 identifier = uuid4().hex
                 stage_name = identifier + ".part"
-                descriptor = os.open(
-                    stage_name, os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_RDWR,
-                    0o600, dir_fd=root_fd,
-                )
+                
+                if os.name == "nt":
+                    stage_path = self.root / stage_name
+                    descriptor = os.open(
+                        str(stage_path),
+                        os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0) | os.O_RDWR,
+                        0o600,
+                    )
+                else:
+                    descriptor = os.open(
+                        stage_name, os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | os.O_RDWR,
+                        0o600, dir_fd=root_fd,
+                    )
+                
                 info = os.fstat(descriptor)
                 staged = StagedUpload(
                     UploadMetadata(filename, identifier + suffix, 0), root_fd,
                     stage_name, (info.st_dev, info.st_ino),
+                    _root_path=self.root,
                 )
-                # Keep descriptor ownership here, including if fdopen() fails.
-                # Keeping it open also prevents inode reuse during this context.
                 with os.fdopen(descriptor, "w+b", closefd=False) as target:
                     total = 0
                     while True:
@@ -193,26 +210,31 @@ class LocalStorage:
                             max_line_bytes=self.settings.upload_max_line_bytes,
                         )
                     os.fsync(target.fileno())
+
+                # Lepas penguncian file di Windows sebelum yield/finalize agar os.replace tidak gagal dengan WinError 32
+                if os.name == "nt" and descriptor is not None:
+                    try:
+                        os.close(descriptor)
+                        descriptor = None
+                    except OSError:
+                        pass
+
                 staged.metadata = UploadMetadata(filename, identifier + suffix, total)
-            except OSError:
-                raise StorageError("Could not stage upload.") from None
+            except OSError as e:
+                raise StorageError(f"Could not stage upload: {e}") from None
             yield staged
         except BaseException as error:
-            # Track only errors from this context, not an enclosing except block.
             primary_error = error
             raise
         finally:
             cleanup_failed = False
-            # fstat() can fail after exclusive creation but before a handle exists.
-            # Recover identity from the still-open descriptor, never from a path
-            # that might have been replaced. If inspection also fails, refuse to
-            # unlink an unidentified file and report incomplete cleanup.
             if descriptor is not None and staged is None:
                 try:
                     info = os.stat(descriptor)
                     staged = StagedUpload(
                         UploadMetadata(filename, identifier + suffix, 0), root_fd,
                         stage_name, (info.st_dev, info.st_ino),
+                        _root_path=self.root,
                     )
                 except OSError:
                     cleanup_failed = True
@@ -223,16 +245,16 @@ class LocalStorage:
                 cleanup_failed = True
             if staged is not None:
                 staged._closed = True
-            # Each descriptor and each owned filename gets its own cleanup try.
             if descriptor is not None:
                 try:
                     os.close(descriptor)
                 except OSError:
                     cleanup_failed = True
-            try:
-                os.close(root_fd)
-            except OSError:
-                cleanup_failed = True
+            if root_fd != -1:
+                try:
+                    os.close(root_fd)
+                except OSError:
+                    cleanup_failed = True
             if cleanup_failed:
                 message = "Upload cleanup incomplete; storage reconciliation required."
                 if primary_error is not None:

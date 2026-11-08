@@ -40,24 +40,30 @@ export const JobMonitoringPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Banner Peringatan Sistem */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-xs text-amber-900">
-        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-        <div>
+      <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl p-4 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200">
+        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <div className="max-w-prose [text-wrap:pretty]">
           <strong className="font-bold block mb-0.5">Peringatan Sistem (Batasan Konkurensi):</strong>
           Hanya 1 proses analisis aktif yang diizinkan per pengguna dalam satu waktu. Server membatasi penggunaan memori FM-index BWA-MEM2 untuk kestabilan server komputasi.
         </div>
       </div>
 
       {/* Header Dashboard */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
         <div>
-          <span className="text-[10px] font-mono font-bold text-blue-600 uppercase tracking-wider">GENOPATH DAEMON • MONITORING & STATUS PIPELINE</span>
-          <h1 className="text-2xl font-extrabold text-slate-900 mt-0.5">Dashboard Pemantauan Job Analisis</h1>
-          <p className="text-xs text-slate-500 mt-1">Kelola dan pantau status pipeline variant calling berkas FASTQ Anda secara real-time.</p>
+          <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
+            GENOPATH DAEMON • MONITORING & STATUS PIPELINE
+          </span>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1 tracking-tight">
+            Dashboard Pemantauan Job Analisis
+          </h1>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-prose [text-wrap:pretty]">
+            Kelola dan pantau status pipeline variant calling berkas FASTQ Anda secara real-time.
+          </p>
         </div>
         <button
           onClick={() => navigate('/analisis-baru')}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md shadow-blue-500/20 transition-all shrink-0"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2.5 rounded-lg text-xs shadow-sm transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Buat Analisis Baru
         </button>
@@ -65,46 +71,49 @@ export const JobMonitoringPage: React.FC = () => {
 
       {/* Grid Kartu Statistik Metrik */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        {/* Kartu 1 */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-colors">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">JOB AKTIF</span>
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">JOB AKTIF</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
           </div>
-          <h2 className="text-3xl font-black text-slate-900">1 Berjalan</h2>
-          <span className="inline-block mt-2 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[11px] font-semibold">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">1 Berjalan</h2>
+          <span className="inline-block mt-2 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60 rounded-md text-xs font-medium">
             Sedang Memetakan BWA-MEM2
           </span>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[11px] text-slate-400 font-mono">
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-500 dark:text-slate-400 font-mono">
             <span>Alokasi Thread: 8-Core</span>
             <span>RAM: 14.2 GB</span>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        {/* Kartu 2 */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-colors">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ANALISIS SELESAI</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">ANALISIS SELESAI</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <h2 className="text-3xl font-black text-slate-900">4 Berhasil</h2>
-          <span className="inline-block mt-2 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[11px] font-semibold">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">4 Berhasil</h2>
+          <span className="inline-block mt-2 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 rounded-md text-xs font-medium">
             Siap Diunduh
           </span>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[11px] text-slate-400 font-mono">
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-500 dark:text-slate-400 font-mono">
             <span>Arsip VCF: 4 Berkas</span>
             <span>Ukuran: 842.1 MB</span>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        {/* Kartu 3 */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-colors">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">TOTAL VARIAN DITEMUKAN</span>
-            <Dna className="w-4 h-4 text-blue-600" />
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">TOTAL VARIAN DITEMUKAN</span>
+            <Dna className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <h2 className="text-3xl font-black text-slate-900">14.820 Varian</h2>
-          <span className="inline-block mt-2 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-[11px] font-semibold">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">14.820 Varian</h2>
+          <span className="inline-block mt-2 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 rounded-md text-xs font-medium">
             Koleksi Seluruh Analisis
           </span>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[11px] text-slate-400 font-mono">
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-500 dark:text-slate-400 font-mono">
             <span>SNP: 11.204</span>
             <span>INDEL: 3.616</span>
           </div>
@@ -112,14 +121,17 @@ export const JobMonitoringPage: React.FC = () => {
       </div>
 
       {/* Filter & Bar Pencarian */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 text-xs transition-colors">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-600 text-[11px]">Status Job:</span>
+            <label htmlFor="status-filter" className="font-semibold text-slate-700 dark:text-slate-300 text-xs">
+              Status Job:
+            </label>
             <select
+              id="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-blue-500"
             >
               <option value="Semua">Semua Status (Aktif, Selesai, Gagal)</option>
               <option value="Running">Berjalan (Running)</option>
@@ -129,11 +141,14 @@ export const JobMonitoringPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-600 text-[11px]">Tipe Read:</span>
+            <label htmlFor="type-filter" className="font-semibold text-slate-700 dark:text-slate-300 text-xs">
+              Tipe Read:
+            </label>
             <select
+              id="type-filter"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-blue-500"
             >
               <option value="Semua">Semua FASTQ</option>
               <option value="Single-End">Single-End</option>
@@ -149,18 +164,18 @@ export const JobMonitoringPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari ID Job atau Nama Sampel..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
           />
         </div>
       </div>
 
       {/* Tabel Riwayat Eksekusi */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-bold text-xs text-slate-800 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-blue-600" /> Tabel Riwayat Eksekusi Pipeline GATK
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+          <h3 className="font-bold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Tabel Riwayat Eksekusi Pipeline GATK
           </h3>
-          <span className="text-[10px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold">
+          <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-semibold border border-slate-200 dark:border-slate-700">
             Auto-Refresh: 10s
           </span>
         </div>
@@ -168,7 +183,7 @@ export const JobMonitoringPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 font-mono text-slate-500 text-[11px]">
+              <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 font-mono text-slate-600 dark:text-slate-400 text-xs">
                 <th className="p-3.5">ID Job</th>
                 <th className="p-3.5">Nama Sampel</th>
                 <th className="p-3.5">Tipe FASTQ</th>
@@ -176,27 +191,27 @@ export const JobMonitoringPage: React.FC = () => {
                 <th className="p-3.5 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
               {filteredJobs.length > 0 ? (
                 filteredJobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3.5 font-mono font-bold text-blue-600">{job.id}</td>
-                    <td className="p-3.5 font-bold text-slate-800">{job.sampleName}</td>
-                    <td className="p-3.5 text-slate-500">{job.fastqType}</td>
+                  <tr key={job.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="p-3.5 font-mono font-bold text-blue-600 dark:text-blue-400">{job.id}</td>
+                    <td className="p-3.5 font-semibold text-slate-900 dark:text-slate-100">{job.sampleName}</td>
+                    <td className="p-3.5 text-slate-600 dark:text-slate-400">{job.fastqType}</td>
                     <td className="p-3.5">
                       {job.status === 'Running' && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                          <Clock className="w-3 h-3 animate-spin" /> {job.statusLabel}
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60">
+                          <Clock className="w-3.5 h-3.5 animate-spin" /> {job.statusLabel}
                         </span>
                       )}
                       {job.status === 'Completed' && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3" /> {job.statusLabel}
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> {job.statusLabel}
                         </span>
                       )}
                       {job.status === 'Failed' && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                          <AlertCircle className="w-3 h-3" /> {job.statusLabel}
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60">
+                          <AlertCircle className="w-3.5 h-3.5" /> {job.statusLabel}
                         </span>
                       )}
                     </td>
@@ -205,30 +220,30 @@ export const JobMonitoringPage: React.FC = () => {
                         <>
                           <button
                             onClick={() => navigate(`/report/${job.vcfReportId}`)}
-                            className="text-blue-600 hover:text-blue-800 font-bold hover:underline"
+                            className="text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
                           >
                             Lihat Hasil / Report
                           </button>
-                          <span className="text-slate-300">|</span>
-                          <button className="text-blue-600 hover:text-blue-800 font-bold hover:underline">
+                          <span className="text-slate-300 dark:text-slate-700">|</span>
+                          <button className="text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer">
                             VCF
                           </button>
                         </>
                       )}
                       {job.status === 'Failed' && (
-                        <button className="text-rose-600 hover:text-rose-800 font-bold hover:underline">
+                        <button className="text-rose-600 dark:text-rose-400 hover:underline font-semibold cursor-pointer">
                           Lihat Log Error
                         </button>
                       )}
                       {job.status === 'Running' && (
-                        <span className="text-slate-400 text-[11px]">Memproses...</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-xs">Memproses...</span>
                       )}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-slate-400 font-mono text-xs">
+                  <td colSpan={5} className="p-6 text-center text-slate-500 dark:text-slate-400 font-mono text-xs">
                     Tidak ada job yang sesuai dengan filter.
                   </td>
                 </tr>
@@ -240,3 +255,5 @@ export const JobMonitoringPage: React.FC = () => {
     </div>
   );
 };
+
+export default JobMonitoringPage;

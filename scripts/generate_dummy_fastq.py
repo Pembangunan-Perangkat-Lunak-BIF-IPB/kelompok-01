@@ -1,4 +1,4 @@
-"""Generate synthetic single-end FASTQ for upload tests, not biological validation."""
+﻿"""Generate synthetic single-end FASTQ for upload tests, not biological validation."""
 
 import argparse
 import random
@@ -64,3 +64,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

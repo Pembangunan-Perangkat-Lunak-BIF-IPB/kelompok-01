@@ -1,4 +1,4 @@
-"""Synthetic M8 smoke runner, guarded to an explicitly created isolated cluster.
+﻿"""Synthetic M8 smoke runner, guarded to an explicitly created isolated cluster.
 
 This script never reads .env/passfiles. Connection metadata comes from the
 non-secret manifest written when creating the new cluster; every connection
@@ -253,3 +253,4 @@ if __name__ == "__main__":
     parser.add_argument("--evidence-dir", required=True, type=Path)
     options = parser.parse_args()
     main(options.manifest, options.evidence_dir)
+

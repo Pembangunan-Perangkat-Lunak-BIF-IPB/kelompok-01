@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
-export default {
-  // Penambahan: Mengizinkan switch tema manual menggunakan class="dark" di <html>
-  darkMode: 'class',
+module.exports = {
+  darkMode: 'class', // <--- PENTING: Mengaktifkan mode gelap berbasis class .dark
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",

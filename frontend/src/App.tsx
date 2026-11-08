@@ -1,56 +1,36 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-// Penambahan: Impor ThemeProvider dari ThemeContext
-// Tujuannya: Memungkinkan seluruh komponen di dalam App mengakses state tema global
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { JobMonitoringPage } from './pages/JobMonitoringPage';
 import { NewAnalysisPage } from './pages/NewAnalysisPage';
+import { JobResultPage } from './pages/JobResultPage';
 
 export function App() {
   return (
-    // Penambahan: Membungkus seluruh aplikasi dengan <ThemeProvider> di hirarki terluar
-    // Tujuannya: Agar pengaturan tema langsung aktif di semua halaman termasuk Login dan Layout
     <ThemeProvider>
       <AuthProvider>
         <Router>
           <Routes>
-            {/* Halaman Autentikasi Login */}
+            {/* Halaman Autentikasi Login (Terpisah dari Layout Utama) */}
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Halaman Utama (Menggunakan Layout Navbar & Footer) */}
-            <Route
-              path="/"
-              element={
-                <Layout>
-                  <LandingPage />
-                </Layout>
-              }
-            />
+            {/* Wrapper Layout Utama (Merender Navbar, Outlet Konten, & Footer) */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/dashboard" element={<JobMonitoringPage />} />
+              <Route path="/analisis-baru" element={<NewAnalysisPage />} />
+              
+              {/* Alias Rute Laporan/Hasil Analisis untuk Mengakomodasi Seluruh Tombol Navigasi */}
+              <Route path="/jobs/:jobId" element={<JobResultPage />} />
+              <Route path="/jobs/:jobId/result" element={<JobResultPage />} />
+              <Route path="/report/:jobId" element={<JobResultPage />} />
+            </Route>
 
-            {/* Halaman Pemantauan Job / Status Pipeline */}
-            <Route
-              path="/dashboard"
-              element={
-                <Layout>
-                  <JobMonitoringPage />
-                </Layout>
-              }
-            />
-
-            {/* Halaman Unggah Sampel & Analisis Baru */}
-            <Route
-              path="/analisis-baru"
-              element={
-                <Layout>
-                  <NewAnalysisPage />
-                </Layout>
-              }
-            />
-
-            {/* Fallback Route: Pengalihan otomatis jika path URL tidak valid */}
+            {/* Fallback Route: Pengalihan Otomatis ke Beranda jika URL Tidak Ditemukan */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>

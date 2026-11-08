@@ -5,10 +5,9 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class JobCreateRequest(BaseModel):
+class JobParameters(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid", hide_input_in_errors=True)
 
-    id_sample: int = Field(gt=0, le=2**31 - 1)
     id_reference_genome: int = Field(gt=0, le=2**31 - 1)
     request_id: str = Field(description="Client-generated UUID, reused only for the same submission.")
     vcf_sample: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
@@ -22,6 +21,10 @@ class JobCreateRequest(BaseModel):
     @classmethod
     def canonical_request_id(cls, value: str) -> str:
         return str(UUID(value))
+
+
+class JobCreateRequest(JobParameters):
+    id_sample: int = Field(gt=0, le=2**31 - 1)
 
 
 class JobResponse(BaseModel):

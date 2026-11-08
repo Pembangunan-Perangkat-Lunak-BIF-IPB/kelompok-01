@@ -367,6 +367,7 @@ def test_openapi_exposes_http_bearer_and_json_login(case, app_factory):
         "/health", "/auth/register", "/auth/login", "/samples/upload", "/jobs", "/jobs/{id_job}",
         "/jobs/{id_job}/start", "/jobs/{id_job}/retry",
         "/jobs/{id_job}/result", "/jobs/{id_job}/variants",
+        "/samples/upload-and-run",
     }
     assert schema["components"]["securitySchemes"]["HTTPBearer"] == {
         "type": "http", "scheme": "bearer", "bearerFormat": "JWT",

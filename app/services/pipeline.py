@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.config import Settings
 from app.schemas.job import JobCreateRequest
+from app.services.bowtie2_adapter import index_files
 
 
 class PipelineUnavailable(ValueError):
@@ -55,6 +56,10 @@ class ExecutionPlan(BaseModel):
     outdir: Path
     alignment_strategy: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
     alignment_adapter: Path | None = None
+    # Optional additions preserve deserialization of stored version-1 Jobs.
+    bowtie2: Path | None = None
+    bowtie2_inspect: Path | None = None
+    bowtie2_index_prefix: Path | None = None
     nextflow: Path | None = None
     fastp: Path | None = None
     samtools: Path | None = None
@@ -93,6 +98,18 @@ def executable(value: Path | None) -> Path:
         raise PipelineUnavailable("Configured executable is unavailable or unsafe.") from None
 
 
+def validate_biological_plan(plan: ExecutionPlan) -> None:
+    if plan.request.variant_ploidy not in (1, 2) or not 1 <= plan.threads <= 4:
+        raise PipelineUnavailable("Nextflow requires ploidy 1 or 2 and at most four threads.")
+    if plan.alignment_strategy == "bowtie2":
+        if not plan.bowtie2_index_prefix or not plan.bowtie2 or not plan.bowtie2_inspect:
+            raise PipelineUnavailable("Explicit Bowtie2 tools and index are required for this Job.")
+        try:
+            index_files(plan.bowtie2_index_prefix)
+        except (ValueError, OSError):
+            raise PipelineUnavailable("Bowtie2 index is incomplete or invalid.") from None
+
+
 @dataclass(frozen=True)
 class PipelineResult:
     vcf: Path
@@ -111,6 +128,8 @@ class LocalExecutor:
     """
 
     def execute(self, plan: ExecutionPlan) -> PipelineResult:
+        if plan.request.execution_mode == "nextflow":
+            validate_biological_plan(plan)
         plan.outdir.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         if plan.outdir.parent.resolve() != plan.outdir.parent.absolute():
             raise PipelineFailure("Unsafe output directory.")
@@ -127,6 +146,10 @@ class LocalExecutor:
                 "alignment_adapter": str(plan.alignment_adapter), "fastp_executable": str(plan.fastp),
                 "samtools_executable": str(plan.samtools), "bcftools_executable": str(plan.bcftools),
                 "threads": plan.threads, "ploidy": plan.request.variant_ploidy,
+                "minimum_qual": plan.request.parameter_qual, "minimum_dp": plan.request.parameter_dp,
+                "bowtie2_executable": str(plan.bowtie2) if plan.bowtie2 else None,
+                "bowtie2_inspect_executable": str(plan.bowtie2_inspect) if plan.bowtie2_inspect else None,
+                "bowtie2_index_prefix": str(plan.bowtie2_index_prefix) if plan.bowtie2_index_prefix else None,
             }
             import json
             params_path = plan.outdir / "params.json"

@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -15,22 +14,50 @@ export function App() {
       <AuthProvider>
         <Router>
           <Routes>
-            {/* Halaman Autentikasi Login (Terpisah dari Layout Utama) */}
+            {/* Halaman Autentikasi Login */}
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Wrapper Layout Utama (Merender Navbar, Outlet Konten, & Footer) */}
-            <Route element={<Layout />}>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/dashboard" element={<JobMonitoringPage />} />
-              <Route path="/analisis-baru" element={<NewAnalysisPage />} />
-              
-              {/* Alias Rute Laporan/Hasil Analisis untuk Mengakomodasi Seluruh Tombol Navigasi */}
-              <Route path="/jobs/:jobId" element={<JobResultPage />} />
-              <Route path="/jobs/:jobId/result" element={<JobResultPage />} />
-              <Route path="/report/:jobId" element={<JobResultPage />} />
-            </Route>
+            {/* Halaman Beranda Utama */}
+            <Route
+              path="/"
+              element={
+                <Layout>
+                  <LandingPage />
+                </Layout>
+              }
+            />
 
-            {/* Fallback Route: Pengalihan Otomatis ke Beranda jika URL Tidak Ditemukan */}
+            {/* Halaman Pemantauan Job / Status Pipeline */}
+            <Route
+              path="/dashboard"
+              element={
+                <Layout>
+                  <JobMonitoringPage />
+                </Layout>
+              }
+            />
+
+            {/* Halaman Unggah Sampel & Analisis Baru */}
+            <Route
+              path="/analisis-baru"
+              element={
+                <Layout>
+                  <NewAnalysisPage />
+                </Layout>
+              }
+            />
+
+            {/* Halaman Hasil Analisis Varian */}
+            <Route
+              path="/jobs/:jobId/result"
+              element={
+                <Layout>
+                  <JobResultPage />
+                </Layout>
+              }
+            />
+
+            {/* Fallback Route: Pengalihan otomatis jika path URL tidak valid */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>

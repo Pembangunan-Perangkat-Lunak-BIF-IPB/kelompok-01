@@ -46,19 +46,45 @@ def now():
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def snapshot(db, job):
+STATUS_MAP = {
+    "queued": "Queued",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed",
+}
+
+def snapshot(db, job) -> JobResponse:
     configuration = job.parameter_pipeline or {}
     mode = configuration.get("request", {}).get("execution_mode")
-    return JobResponse(
-        id_job=job.id_job, id_sample=job.id_sample, id_reference_genome=job.id_reference_genome,
-        status=job.status, waktu_mulai=job.waktu_mulai.replace(tzinfo=timezone.utc) if job.waktu_mulai else None,
-        waktu_selesai=job.waktu_selesai.replace(tzinfo=timezone.utc) if job.waktu_selesai else None,
-        pesan_error=(job.pesan_error if job.pesan_error in SAFE_ERRORS else "Job failed; review server execution.")
-        if job.pesan_error else None, execution_mode=mode if mode in ("synthetic", "nextflow") else None,
-        has_result=job.status == "Completed" and db.scalar(
-            select(Analysis.id_analysis).where(Analysis.id_job == job.id_job)) is not None,
+    final_mode = mode if mode in ("synthetic", "nextflow") else "synthetic"
+    
+    # Normalisasi format status ke Title Case (mencegah ResponseValidationError)
+    raw_status = str(job.status or "").lower()
+    normalized_status = STATUS_MAP.get(raw_status, "Failed")
+
+    has_result = (
+        normalized_status == "Completed" 
+        and db.scalar(select(Analysis.id_analysis).where(Analysis.id_job == job.id_job)) is not None
     )
 
+    # Helper penanganan tzinfo
+    def to_utc(dt):
+        if dt is None:
+            return None
+        return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
+
+    return JobResponse(
+        id_job=job.id_job,
+        id_sample=job.id_sample,
+        id_reference_genome=job.id_reference_genome,
+        status=normalized_status,
+        waktu_mulai=to_utc(job.waktu_mulai),
+        waktu_selesai=to_utc(job.waktu_selesai),
+        pesan_error=(job.pesan_error if job.pesan_error in SAFE_ERRORS else "Job failed; review server execution.")
+        if job.pesan_error else None,
+        execution_mode=final_mode,
+        has_result=has_result,
+    )
 
 def owned_job(db, identifier, owner, *, lock=False):
     statement = select(Job).where(Job.id_job == identifier, Job.id_user == owner)
@@ -128,15 +154,29 @@ def create_job(factory, settings: Settings, owner: int, request: JobCreateReques
             if existing.parameter_pipeline["request"] != request.model_dump(mode="json"):
                 raise JobConflict("Submission UUID already belongs to different parameters.")
             return snapshot(db, existing)
-        active = db.scalar(select(Job.id_job).where(Job.id_user == owner, Job.status.in_(["Queued", "Running"])))
+        
+        # Pengecekan job aktif (Queued/Running)
+        active = db.scalar(select(Job.id_job).where(
+            Job.id_user == owner, 
+            Job.status.in_(["Queued", "Running", "QUEUED", "RUNNING"])
+        ))
         if active is not None:
             raise JobConflict("One active Job per user is allowed.")
+            
         plan = build_plan(db, settings, owner, request)
         job = Job(id_user=owner, id_sample=request.id_sample, id_reference_genome=request.id_reference_genome,
                   status="Queued", parameter_pipeline=plan.model_dump(mode="json"))
         db.add(job)
         db.flush()
         return snapshot(db, job)
+
+
+def list_jobs(factory, owner: int) -> list[JobResponse]:
+    """Mengambil seluruh Job milik user dan mengonversinya ke JobResponse melalui snapshot."""
+    with factory() as db:
+        statement = select(Job).where(Job.id_user == owner).order_by(Job.id_job.desc())
+        jobs_list = db.scalars(statement).all()
+        return [snapshot(db, job) for job in jobs_list]
 
 
 def get_job(factory, identifier, owner):
@@ -147,7 +187,7 @@ def get_job(factory, identifier, owner):
 def prepare_dispatch(factory, settings, identifier, owner):
     with factory() as db:
         job = owned_job(db, identifier, owner)
-        if job.status != "Queued":
+        if job.status not in ("Queued", "QUEUED"):
             raise JobConflict("Only a Queued Job can be started.")
         try:
             plan = ExecutionPlan.model_validate(job.parameter_pipeline)
@@ -160,7 +200,7 @@ def prepare_dispatch(factory, settings, identifier, owner):
 def retry_job(factory, settings, identifier, owner):
     with factory() as db:
         previous = owned_job(db, identifier, owner)
-        if previous.status != "Failed":
+        if previous.status not in ("Failed", "FAILED"):
             raise JobConflict("Only a Failed Job can be retried as a new Job.")
         try:
             request = ExecutionPlan.model_validate(previous.parameter_pipeline).request.model_copy(
@@ -173,7 +213,7 @@ def retry_job(factory, settings, identifier, owner):
 def fail_job(factory, identifier, message):
     with factory() as db, db.begin():
         job = db.scalar(select(Job).where(Job.id_job == identifier).with_for_update())
-        if job is None or job.status not in ("Queued", "Running"):
+        if job is None or job.status not in ("Queued", "Running", "QUEUED", "RUNNING"):
             return False
         job.status, job.waktu_selesai, job.pesan_error = "Failed", now(), message
         return True
@@ -183,7 +223,7 @@ def run_job(factory, settings: Settings, identifier: int, executor: Executor | N
     try:
         with factory() as db, db.begin():
             job = db.scalar(select(Job).where(Job.id_job == identifier).with_for_update())
-            if job is None or job.status != "Queued":
+            if job is None or job.status not in ("Queued", "QUEUED"):
                 return "not_claimed"
             plan = ExecutionPlan.model_validate(job.parameter_pipeline)
             check_gate(settings, plan.request.execution_mode)
@@ -197,12 +237,13 @@ def run_job(factory, settings: Settings, identifier: int, executor: Executor | N
                     or plan.outdir != settings.pipeline_root.absolute() / plan.run_id):
                 raise PipelineUnavailable("Stored Job inputs are inconsistent.")
             job.status, job.waktu_mulai, job.waktu_selesai, job.pesan_error = "Running", now(), None, None
-        # No database transaction is held while an external process is running.
+            
         result = (executor or LocalExecutor()).execute(plan)
+        
         with factory() as db, db.begin():
             job = db.scalar(select(Job).where(Job.id_job == identifier).with_for_update())
             sample = db.get(Sample, job.id_sample) if job is not None else None
-            if (job is None or job.status != "Running" or sample is None
+            if (job is None or job.status not in ("Running", "RUNNING") or sample is None
                     or sample.id_user != job.id_user or job.parameter_pipeline.get("run_id") != plan.run_id):
                 raise PipelineFailure("Job state changed before result completion.")
             ingest_result(db, job, plan, result)
@@ -224,5 +265,4 @@ def run_job(factory, settings: Settings, identifier: int, executor: Executor | N
         try:
             return "failed" if fail_job(factory, identifier, message) else "completion_unconfirmed"
         except SQLAlchemyError:
-            # Caller/monitor must reconcile; never pretend a status write succeeded.
             return "status_write_failed"

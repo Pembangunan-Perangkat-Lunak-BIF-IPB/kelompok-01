@@ -76,13 +76,21 @@ export interface UploadAndRunResponse {
 
 export interface JobResultSummary {
   id_job: number;
-  id_analysis: number;
+  id_analysis?: number;
   total_varian: number;
   snp_count: number;
   indel_count: number;
-  other_count: number;
+  other_count?: number;
   execution_mode?: string;
   created_at?: string;
+  // Properti tambahan untuk Metrik Dinamis & Audit Mutu
+  checksum?: string;
+  reference_genome?: string;
+  filter_params?: string;
+  alignment_rate?: number;
+  titv_ratio?: number;
+  mean_dp?: number;
+  vcf_status?: string;
 }
 
 export interface GenotypeItem {
@@ -108,6 +116,8 @@ export interface VariantQueryParams {
   limit?: number;
   offset?: number;
   variant_type?: string;
+  genotype?: string; // Ditambahkan untuk filter genotipe server-side
+  search?: string;   // Ditambahkan untuk pencarian kromosom/posisi server-side
   min_qual?: number;
   max_qual?: number;
 }
@@ -315,13 +325,11 @@ export async function uploadSample(file: File, token: string): Promise<SampleUpl
 }
 
 // 4. Endpoint Buat Job Manual: POST /api/jobs
-// Mengikuti persis Pydantic JobCreateRequest (strict=True, extra="forbid")
 export async function createJob(
   sampleId: number,
   token: string,
   options?: JobCreateOptions
 ): Promise<JobItem> {
-  // Pembersihan nama vcf_sample sesuai regex backend: ^[A-Za-z0-9][A-Za-z0-9_.-]*$
   const rawVcfName = options?.vcf_sample || `sample_${sampleId}`;
   const sanitizedVcfSample = rawVcfName
     .replace(/[^A-Za-z0-9_.-]/g, '_')
@@ -336,7 +344,7 @@ export async function createJob(
     parameter_qual: options?.parameter_qual ?? 30.0,
     parameter_dp: options?.parameter_dp ?? 10,
     require_pass: options?.require_pass ?? true,
-    execution_mode: options?.execution_mode ?? 'nextflow',
+    execution_mode: 'synthetic',
     variant_ploidy: options?.variant_ploidy ?? 2,
   };
 
@@ -366,25 +374,21 @@ export async function createJob(
   return data as JobItem;
 }
 
-// 5. Endpoint Upload & Auto-Run Pipeline (Opsi A: Dijalankan 2 Langkah Otomatis)
+// 5. Endpoint Upload & Auto-Run Pipeline
 export async function uploadAndRunSample(
   file: File,
   token: string,
   options?: JobCreateOptions
 ): Promise<UploadAndRunResponse> {
-  // Langkah 1: Unggah Berkas Sampel
   const sample = await uploadSample(file, token);
 
-  // Resolusi ID Sampel dari respon backend
   const targetSampleId = sample.id_sample ?? sample.sample_id ?? sample.id;
   if (!targetSampleId) {
     throw new ApiError(422, 'Gagal mendapatkan ID sampel dari respon pengunggahan berkas.');
   }
 
-  // Gunakan nama berkas tanpa ekstensi sebagai default vcf_sample name
   const cleanFileName = file.name.split('.')[0];
 
-  // Langkah 2: Buat Job Analisis Bioinformatika
   const job = await createJob(targetSampleId, token, {
     vcf_sample: cleanFileName,
     ...options,
@@ -469,6 +473,12 @@ export async function getJobVariants(
   if (params.offset !== undefined) query.append('offset', params.offset.toString());
   if (params.variant_type && params.variant_type !== 'ALL') {
     query.append('variant_type', params.variant_type.toLowerCase());
+  }
+  if (params.genotype && params.genotype !== 'ALL') {
+    query.append('genotype', params.genotype);
+  }
+  if (params.search && params.search.trim() !== '') {
+    query.append('search', params.search.trim());
   }
   if (params.min_qual !== undefined) query.append('min_qual', params.min_qual.toString());
   if (params.max_qual !== undefined) query.append('max_qual', params.max_qual.toString());

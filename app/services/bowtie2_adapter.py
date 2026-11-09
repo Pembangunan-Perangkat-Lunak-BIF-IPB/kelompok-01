@@ -9,9 +9,14 @@ import argparse
 import hashlib
 from pathlib import Path
 import re
-import resource
 import subprocess
 import tempfile
+
+# Fallback aman untuk sistem operasi Windows (di mana modul 'resource' tidak tersedia)
+try:
+    import resource
+except ImportError:
+    resource = None
 
 
 SUFFIXES = ("1", "2", "3", "4", "rev.1", "rev.2")
@@ -95,11 +100,14 @@ def main():
     parser.add_argument("--sample-name", required=True)
     parser.add_argument("--threads", required=True, type=int)
     args = parser.parse_args()
-    # M8 local execution budget; full-reference capacity is a separate checkpoint.
-    budget = 4 * 1024**3
-    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-    limit = min(budget, hard) if hard != resource.RLIM_INFINITY else budget
-    resource.setrlimit(resource.RLIMIT_AS, (min(soft, limit) if soft >= 0 else limit, hard))
+
+    # M8 local execution budget; hanya diterapkan jika OS mendukung modul resource (Unix/Linux)
+    if resource is not None:
+        budget = 4 * 1024**3
+        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+        limit = min(budget, hard) if hard != resource.RLIM_INFINITY else budget
+        resource.setrlimit(resource.RLIMIT_AS, (min(soft, limit) if soft >= 0 else limit, hard))
+
     align(reads=args.reads, reference=args.reference, output=args.output,
           sample=args.sample_name, threads=args.threads, prefix=args.index_prefix,
           bowtie2=args.bowtie2, inspector=args.bowtie2_inspect)

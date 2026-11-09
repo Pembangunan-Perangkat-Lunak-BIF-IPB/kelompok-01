@@ -4,7 +4,21 @@ The receipt is written BEFORE Sample persistence. An interrupted/ambiguous
 upload is never automatically retried. Keep receipts for operator reconciliation.
 """
 
-import fcntl
+try:
+    import fcntl
+except ImportError:
+    # Dummy object agar tidak crash di Windows
+    class DummyFcntl:
+        LOCK_EX = 0
+        LOCK_SH = 0
+        LOCK_NB = 0
+        LOCK_UN = 0
+
+        @staticmethod
+        def flock(fd, operation):
+            pass  # Di Windows, penguncian file di-bypass untuk pengujian lokal
+
+    fcntl = DummyFcntl()
 import json
 import os
 import stat

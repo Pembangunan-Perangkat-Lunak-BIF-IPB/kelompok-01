@@ -42,6 +42,13 @@ def create(payload: JobCreateRequest, owner: Owner, factory: Factory, settings: 
     return invoke(jobs.create_job, factory, settings, owner, payload)
 
 
+@router.get("", response_model=list[JobResponse], responses=ERRORS,
+            summary="List all owned Jobs for current user",
+            description="Retrieve all Jobs belonging to the authenticated user.")
+def list_jobs(owner: Owner, factory: Factory):
+    return invoke(jobs.list_jobs, factory, owner)
+
+
 @router.get("/{id_job}", response_model=JobResponse, responses=ERRORS,
             summary="Poll an owned Job status (not the M9 Result API)")
 def status(id_job: JobId, owner: Owner, factory: Factory):

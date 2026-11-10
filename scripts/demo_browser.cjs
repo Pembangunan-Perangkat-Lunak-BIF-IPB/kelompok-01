@@ -7,7 +7,11 @@ const root = process.env.GENOPATH_DEMO_ROOT || path.resolve(__dirname, '..');
 const base = process.env.GENOPATH_DEMO_URL || 'http://localhost:3000';
 const fixture = path.join(root, '.runtime', 'fixture');
 const localEvidence = path.join(root, '.runtime', 'evidence');
-const evidence = base.startsWith('https://') ? path.join(localEvidence, 'public') : localEvidence;
+const defaultParameters = process.env.GENOPATH_DEFAULT_PARAMETERS === '1';
+const expectedQual = defaultParameters ? 30 : 25;
+const expectedDp = defaultParameters ? 10 : 8;
+const evidenceRoot = base.startsWith('https://') ? path.join(localEvidence, 'public') : localEvidence;
+const evidence = defaultParameters ? path.join(evidenceRoot, 'default') : evidenceRoot;
 fs.mkdirSync(evidence, { recursive: true });
 const credentials = JSON.parse(fs.readFileSync(path.join(root, '.runtime', 'browser-private.json')));
 const checks = [];
@@ -188,9 +192,15 @@ async function review(page) {
     await page.locator('#fastq').setInputFiles(inputPath);
     await page.locator('#reference').selectOption('1');
     await page.locator('#ploidy').selectOption('2');
-    await page.getByRole('switch').click();
-    await page.locator('#qual').fill('25');
-    await page.locator('#dp').fill('8');
+    if (defaultParameters) {
+      assert.equal(await page.getByRole('switch').getAttribute('aria-checked'), 'false');
+      assert.equal(await page.locator('#qual').count(), 0);
+      assert.equal(await page.locator('#dp').count(), 0);
+    } else {
+      await page.getByRole('switch').click();
+      await page.locator('#qual').fill(String(expectedQual));
+      await page.locator('#dp').fill(String(expectedDp));
+    }
     assert.equal(submissions, 0);
     pass('file selection/configuration sends no submission');
     const accepted = page.waitForResponse(r => r.url().includes('/samples/upload-and-run'));
@@ -216,8 +226,8 @@ async function review(page) {
     }, id);
     assert.equal(result.summary.status, 'Completed');
     assert.equal(result.summary.execution_mode, 'nextflow');
-    assert.equal(result.summary.parameters.parameter_qual, 25);
-    assert.equal(result.summary.parameters.parameter_dp, 8);
+    assert.equal(result.summary.parameters.parameter_qual, expectedQual);
+    assert.equal(result.summary.parameters.parameter_dp, expectedDp);
     assert.equal(result.summary.counts.total_variants, 2);
     assert.equal(result.summary.reference.sumber, 'genopath:synthetic-fixture');
     assert.deepEqual(result.variants.items.map(v => v.position).sort((a,b)=>a-b), [5001, 12001]);
@@ -302,8 +312,39 @@ async function review(page) {
     for (const suffix of ['', '/result', '/variants', '/vcf', '/csv']) assert.equal((await api(anonymousPage, '/api/jobs/' + id + suffix, { headers: { Authorization: 'Bearer ' + token } })).status, 404);
     pass('anonymous rejection and cross-user ownership');
     await anonymous.close();
+    let invalidFastq = null;
+    if (defaultParameters) {
+      const ownJobIds = () => page.evaluate(async () => {
+        const response = await fetch('/api/jobs', { headers: { Authorization: 'Bearer ' + localStorage.getItem('access_token') } });
+        if (!response.ok) throw new Error('Cannot verify own Job history.');
+        return (await response.json()).map(job => job.id_job);
+      });
+      const before = await ownJobIds();
+      await page.goto(base + '/analisis-baru');
+      const postsBefore = submissions;
+      await page.locator('#fastq').setInputFiles({
+        name: 'invalid.fastq', mimeType: 'application/octet-stream', buffer: Buffer.from('@invalid\nAC\n+\nI\n'),
+      });
+      await page.locator('#reference').selectOption('1');
+      await page.locator('#ploidy').selectOption('2');
+      assert.equal(submissions, postsBefore);
+      const rejected = page.waitForResponse(r => r.url().includes('/samples/upload-and-run'));
+      await page.getByRole('button', { name: 'Jalankan Analisis', exact: true }).click();
+      assert.equal((await rejected).status(), 422);
+      await page.getByRole('alert').waitFor();
+      await page.waitForFunction(() => !document.querySelector('#reference').disabled);
+      assert.ok(page.url().endsWith('/analisis-baru'));
+      assert.deepEqual(await ownJobIds(), before);
+      await page.screenshot({ path: path.join(evidence, 'invalid-fastq.png'), fullPage: true, animations: 'disabled' });
+      await page.locator('#fastq').setInputFiles(inputPath);
+      assert.equal(submissions, postsBefore + 1);
+      assert.equal(await page.getByRole('button', { name: 'Jalankan Analisis', exact: true }).isEnabled(), true);
+      invalidFastq = { status: 422, no_extra_job: true, configuration_unlocked: true, corrected_file_ready_without_post: true };
+      pass('invalid FASTQ rejected in browser without an extra Job; corrected input can be selected safely');
+    }
     fs.writeFileSync(path.join(evidence, 'browser-e2e.json'), JSON.stringify({
       checks, job_id: id, statuses: [...statuses], counts: result.summary.counts, parameters: result.summary.parameters, exports, replay,
+      parameter_mode: defaultParameters ? 'default' : 'advanced', invalid_fastq: invalidFastq,
       execution_mode: 'nextflow', input_kind: 'controlled synthetic fixture', biological_validation: false,
       browser: browser.version(), url: base,
       public_gate_password_entry_verified: false,

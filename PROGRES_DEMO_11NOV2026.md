@@ -2,7 +2,7 @@
 
 **Tahap 2B: freeze lokal selesai; tunnel publik aktif setelah approval pengguna.**
 URL aktif: https://namely-year-father-fifth.trycloudflare.com
-Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pemasukan password final di halaman HTTPS dan akses dari jaringan/perangkat independen masih menunggu konfirmasi pengguna.
+Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
 
 ## Git dan batas perubahan
 
@@ -10,7 +10,7 @@ Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikas
 - Branch: codex/demo-integration-20261110
 - Basis backend development e0b94af; snapshot frontend Azril ca03a33, diport selektif.
 - A/B: 85fc09b, aaa136b, 7ba500f, d0e1258. Build/lint, 39 FE test dan 657 BE targeted test adalah bukti sesi A/B.
-- 2B: b6d16f9 ekspor backend, 665f019 integrasi ekspor FE, 76cec73 runtime/gate, b67d21d adaptasi visual. HEAD juga mencakup checkpoint verifikasi/dokumentasi freeze ini.
+- 2B: b6d16f9 ekspor backend, 665f019 integrasi ekspor FE, 76cec73 runtime/gate, b67d21d adaptasi visual, 1b2b1ea freeze lokal, 6f1747a verifikasi alur publik. HEAD juga mencakup checkpoint rehearsal Default dan konfirmasi jaringan pengguna ini.
 - Main worktree tetap feature/be-m8-bowtie2-e2e@3a90689 dan bersih; stash@{0} 102de01 dipertahankan. Remote github. Tidak ada push, merge, PR, perubahan branch tim, atau modifikasi dokumen resmi.
 - Git worktree valid. Attachment Codex belum mengenali path setelah perpindahan dari managed path; gunakan path eksplisit di atas.
 - Secret, database, dataset/index, binary, cache, dan artefak tidak dikomit. .runtime/, .tools/, .test-artifacts/ diabaikan Git. File rahasia mode 0600; private-value scan staged content PASS.
@@ -52,7 +52,7 @@ Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikas
 - Gate ditegakkan server pada halaman, assets, dan seluruh API termasuk register/login/upload/start/download. Bukan guard JavaScript.
 - Argon2id, signed HttpOnly/Secure/SameSite cookie, CSRF, batas 6 percobaan/IP/menit dan 30 global/menit. Traversal static, favicon CSRF, tampered cookie, expiry, rotasi password dan fail-closed diuji.
 - Password final ditetapkan pengguna dengan input tersamar 12–128 karakter, dua kali. Raw password tidak disimpan. Hash/key pada .runtime/gate.json; rotasi tidak perlu restart.
-- CLI menguji password lokal dan menyimpan hanya sesi yang benar-benar diterbitkan server pada file privat .runtime/gate-check-session.json untuk pengujian HTTPS otomatis. Ini bukan bukti pemasukan password pada URL publik; langkah tersebut tetap harus diuji di browser publik.
+- CLI menguji password lokal dan menyimpan hanya sesi yang benar-benar diterbitkan server pada file privat .runtime/gate-check-session.json untuk pengujian HTTPS otomatis. Pengujian otomatis tersebut terpisah dari konfirmasi pengguna yang memasukkan password final melalui formulir HTTPS publik pada PC dan HP.
 - cloudflared portable resmi versi 2026.10.7 tersedia di .tools/, SHA-256 cocok digest release. Tidak memasang service, mengubah firewall/OS, atau mengubah konfigurasi sistem. Tunnel diaktifkan setelah persetujuan khusus pengguna.
 - Launcher menolak password sementara, memeriksa revision gate yang berjalan serta digest binary sebelum publikasi.
 - Approval aktivasi publik diterima pada percakapan ini. Tunnel aktif sejak 10 November 2026 sekitar 20.14 WIB, hanya menuju server loopback 3000. Database dan backend port 8000 tidak dibuka ke internet. Metrics cloudflared tetap loopback 20241.
@@ -63,7 +63,10 @@ Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikas
 - Job #7: 2 Variant/2 Genotype PostgreSQL; VCF unduhan 3.345 byte identik dengan selected.vcf pipeline dan seluruh CHROM/POS/REF/ALT/QUAL/GT/DP cocok database. CSV 167 byte berisi 2 record, filter SNP 1 record. Parameter file Nextflow nyata QUAL 25/DP 8, 2 thread, ploidi 2.
 - Browser HTTPS juga memverifikasi hasil kosong Job #4, Failed Job #5 dan refresh, upload/config mobile serta homepage tanpa menjalankan pipeline ulang.
 - Bukti publik terpisah pada .runtime/evidence/public/: browser-e2e.json, browser-review.json, postgres-export-check.json, api-gate-check.json, result-render-check.json, tunnel-status.json, screenshot dan file ekspor. Bukti localhost sebelumnya tetap dipertahankan.
-- Batas pembuktian: pengujian otomatis melewati edge Cloudflare dari Windows pada PC yang sama. Pemasukan password final pada formulir HTTPS publik serta jaringan/perangkat Azril belum diklaim PASS. Pengguna sudah diminta memeriksa melalui incognito atau HP data seluler.
+- Konfirmasi pengguna: Chrome Incognito PC menerima password demo dan menampilkan login GenoPath; Chrome HP melalui Wi-Fi hotspot berbasis data seluler menerima password dan membuka GenoPath dari jaringan berbeda. Keduanya PASS berdasarkan laporan pengguna, bukan hasil otomatis agen. Bukti ringkas tersimpan terpisah pada .runtime/evidence/public/user-network-confirmation.json. Field password-entry pada JSON test otomatis tetap menjelaskan cakupan otomatis, tidak menggantikan konfirmasi pengguna ini.
+- Rehearsal Default melalui URL publik: Job #8, Advanced tetap tertutup, QUAL 30/DP 10 benar-benar masuk file parameter Nextflow, Completed dengan 2 Variant/2 Genotype. Download VCF identik artefak pipeline; VCF/CSV/filter/replay/ownership/refresh/mobile/dark PASS.
+- FASTQ dengan panjang sekuens dan quality tidak cocok ditolak 422 melalui UI publik. PostgreSQL membuktikan hanya 1 Sample dan 1 Job milik akun rehearsal tersebut, tanpa tambahan dari upload invalid. Formulir kembali terbuka dan pemilihan file koreksi tidak mengirim POST otomatis. Bukti disimpan pada .runtime/evidence/public/default/, terpisah dari Job #7 dan bukti localhost.
+- Batas pembuktian: pipeline penuh otomatis diuji dari PC melalui edge Cloudflare; pengujian pengguna di HP membuktikan HTTPS, password gate dan halaman GenoPath, bukan keseluruhan pipeline di HP. Rehearsal langsung oleh Azril belum diklaim selesai. PID server/tunnel dan URL diverifikasi tetap sama, tanpa restart.
 
 ## UI dan validasi
 
@@ -85,7 +88,9 @@ Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikas
 | Live PostgreSQL + Nextflow fixture plain/gzip | PASS |
 | Browser VCF/CSV, filter, ownership, replay, mobile, empty/failed | PASS |
 | Cloudflare HTTPS dan browser E2E melalui URL publik dari PC host | PASS, Job #7 |
-| Public password entry/perangkat atau jaringan independen/PC sleep policy | Menunggu konfirmasi atau belum terverifikasi |
+| Browser publik mode Default dan FASTQ invalid | PASS, Job #8, QUAL 30/DP 10; invalid 422 tanpa Sample/Job tambahan |
+| Password gate HTTPS PC Incognito + HP jaringan data seluler | PASS berdasarkan konfirmasi pengguna |
+| PC sleep policy/full pipeline di HP/rehearsal langsung Azril | Belum terverifikasi |
 | Full Garlic.V2/1 GB/annotation/Impeccable | SKIP, di luar freeze |
 
 Dua warning deprecation BE berasal dari Starlette/httpx/anyio. Tidak mengklaim test historis sebagai current run atau mengakumulasi pengulangan menjadi jumlah test unik.
@@ -115,4 +120,4 @@ BackgroundTasks bukan antrean durable: restart saat Job aktif memerlukan rekonsi
 - Contoh ini hanya pembuktian teknis sintetis; tidak memvalidasi Garlic.V2. Upload maksimal 10 MiB dan satu Job aktif global. Jika sibuk, tunggu Job aktif selesai.
 - Jangan restart tunnel yang masih sehat; URL berubah bila tunnel dibuat ulang. Tidak ada pesan WhatsApp/email yang dikirim otomatis.
 
-Tindakan manual tersisa: uji password final pada URL HTTPS, idealnya dari perangkat/jaringan lain; bagikan URL/password secara privat kepada Azril; jaga PC/WSL/PostgreSQL/jaringan tetap hidup dan tidak sleep. Password final dan approval tidak perlu diulang.
+Tindakan manual tersisa: bagikan URL/password secara privat kepada Azril untuk rehearsal; jaga PC/WSL/PostgreSQL/jaringan tetap hidup dan tidak sleep. Pengujian password/network, penetapan password final, dan approval tidak perlu diulang. Tidak ada kebutuhan restart tunnel atau perubahan URL saat ini.

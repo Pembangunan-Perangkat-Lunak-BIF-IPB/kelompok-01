@@ -84,3 +84,10 @@ class TokenResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+class ProfileResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id_user: int
+    username: str
+    nama: str

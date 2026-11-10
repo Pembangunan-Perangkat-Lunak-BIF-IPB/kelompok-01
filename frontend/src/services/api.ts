@@ -85,7 +85,7 @@ async function request<T>(path: string, token?: string, init: RequestInit = {}):
       : 'Koneksi ke server terputus. Coba muat ulang.');
   }
   const data: unknown = await response.json().catch(() => null);
-  if (response.status === 401 && token) {
+  if (response.status === 401 && token && localStorage.getItem('access_token') === token) {
     localStorage.removeItem('access_token'); localStorage.removeItem('user_info');
     window.dispatchEvent(new Event('genopath:unauthorized'));
   }
@@ -189,4 +189,14 @@ async function authenticatedDownload(url: string, token: string): Promise<{ blob
   const filename = candidate && candidate.length <= 180 && !Array.from(candidate).some(c => c === '/' || c === '\\' || c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127) ? candidate : null;
   try { return { blob: await response.blob(), filename }; }
   catch { throw new ApiError(0, 'Unduhan tidak lengkap. Coba kembali.'); }
+}
+
+export interface AccountProfile { id_user: number; username: string; nama: string }
+export async function getCurrentProfile(token: string, signal?: AbortSignal): Promise<AccountProfile> {
+  const profile = await request<AccountProfile>('/auth/me', token, { signal });
+  if (!Number.isSafeInteger(profile.id_user) || typeof profile.username !== 'string' || !profile.username ||
+      typeof profile.nama !== 'string' || !profile.nama.trim()) {
+    throw new ApiError(503, 'Profil akun tidak dapat dimuat.');
+  }
+  return profile;
 }

@@ -364,7 +364,7 @@ def test_openapi_exposes_http_bearer_and_json_login(case, app_factory):
     production_app = app_factory(Settings(_env_file=None))
     schema = production_app.openapi()
     assert set(schema["paths"]) == {
-        "/health", "/auth/register", "/auth/login", "/samples/upload", "/jobs", "/jobs/{id_job}",
+        "/health", "/auth/register", "/auth/login", "/auth/me", "/samples/upload", "/jobs", "/jobs/{id_job}",
         "/jobs/{id_job}/start", "/jobs/{id_job}/retry",
         "/jobs/{id_job}/result", "/jobs/{id_job}/variants",
         "/samples/upload-and-run", "/jobs/options", "/jobs/{id_job}/vcf", "/jobs/{id_job}/csv",

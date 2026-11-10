@@ -7,14 +7,14 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_settings
+from app.api.dependencies import get_settings, get_current_user
 from app.api.errors import authentication_error
 from app.core.config import Settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.database import get_db
 from app.models import User
 from app.schemas.auth import (
-    ErrorResponse, LoginRequest, RegisterRequest, RegisterResponse, TokenResponse,
+    ProfileResponse, ErrorResponse, LoginRequest, RegisterRequest, RegisterResponse, TokenResponse,
 )
 
 
@@ -109,3 +109,11 @@ def login(
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
     return TokenResponse(access_token=token)
+
+
+@router.get("/me", response_model=ProfileResponse, responses={401: {"model": ErrorResponse}},
+            summary="Read only the authenticated account's persistent profile")
+def me(current_user: Annotated[User, Depends(get_current_user)], response: Response) -> ProfileResponse:
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["Pragma"] = "no-cache"
+    return ProfileResponse.model_validate(current_user)

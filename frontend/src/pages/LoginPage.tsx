@@ -77,11 +77,7 @@ export const LoginPage: React.FC = () => {
         setSuccessMessage('Akun berhasil dibuat! Melakukan autentikasi otomatis...');
         setActiveTab('login');
 
-        // 2. Oper nama & email ke fungsi login agar tersimpan di AuthContext & localStorage user_info
-        await login(
-          { username: username.trim(), password },
-          { nama: nama.trim(), email: email.trim() }
-        );
+        await login({ username: username.trim(), password });
 
         navigate(destination, { replace: true });
 

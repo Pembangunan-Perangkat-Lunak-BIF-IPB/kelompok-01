@@ -13,9 +13,9 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
+  profileLoading?: boolean;
   login: (
-    credentials: LoginPayload, 
-    extraInfo?: { nama?: string; name?: string; email?: string }
+    credentials: LoginPayload
   ) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;

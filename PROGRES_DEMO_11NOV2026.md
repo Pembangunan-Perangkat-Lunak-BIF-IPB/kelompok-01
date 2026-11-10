@@ -4,6 +4,16 @@
 URL aktif: https://namely-year-father-fifth.trycloudflare.com
 Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
 
+## Bugfix profil: nama lengkap setelah login ulang
+
+- Penyebab pasti: login hanya mengembalikan JWT. Frontend sebelumnya membentuk nama dari extraInfo formulir registrasi, lalu fallback ke credentials.username pada login biasa. Tidak ada pembacaan profil persisten; Navbar ikut menggunakan username sebagai fallback display name.
+- Tambah GET /auth/me dengan guard get_current_user yang sudah ada. JWT menentukan akun; respons hanya id_user, username dan nama dari database, private/no-store. Tidak menerima ID akun untuk memilih profil. Kontrak register/login lama dan schema database tidak berubah.
+- AuthContext mengambil profil backend setelah login dan saat memulihkan token pada refresh/browser lain. Cache user_info lama tidak dipercaya; extraInfo formulir dihapus dari alur login. Navbar menggunakan nama backend, tanpa mengarang nama dari username. Protected route menunggu pemulihan profil; request lama dibatalkan/diabaikan setelah logout atau pergantian sesi. Respons 401 dari token lama tidak menghapus sesi token baru.
+- PASS production build, ESLint, 53 frontend tests dan 140 targeted backend tests (profile/auth/register). Inventaris OpenAPI diperbarui untuk endpoint additive. Dua warning deprecation Starlette/httpx/anyio tetap ada.
+- PASS browser Edge nyata melalui URL publik yang sama: register dengan nama lengkap, logout/login ulang, refresh termasuk cache profil salah, context browser baru tanpa cache profil, dua akun/context terpisah, JWT hilang/invalid, field profil minimal dan no-store. Total submission POST 0, tidak menjalankan pipeline. Bukti pada .runtime/profile-fix/browser-check.json dan screenshot; logs pada .test-artifacts/profile-*.log.
+- Deploy terkontrol setelah memastikan tidak ada Job aktif, graceful restart hanya service demo dan penggantian frontend HTML atomik setelah aset tersedia. Cloudflare/hostname/hash gate/JWT tidak diubah, tidak ada migrasi schema. Identitas analisis, hasil, pipeline dan mekanisme ekspor tidak disentuh. Fallback build sebelum bugfix ada pada .runtime/profile-fix/dist-before/.
+- Perbaikan ini disimpan pada satu checkpoint lokal setelah 802f900. Tidak push/merge/PR. Pengguna cukup refresh halaman dan login kembali bila perlu untuk melihat nama persisten.
+
 ## Tahap 2C.2: identitas analisis dan cleanup final
 
 - Backend 87b3638; frontend fungsional 19531ba; cleanup visual dan validasi 68cb927. Setelah seluruh implementasi/test/commit selesai dan tree bersih, branch lokal di-rename dari codex/demo-integration-20261110 ke feature/fe-be-integration-demo. Target sebelumnya tidak ada dan HEAD/history dipertahankan; tidak membuat branch tambahan. Pembaruan nama branch ini disimpan pada commit dokumentasi terakhir.

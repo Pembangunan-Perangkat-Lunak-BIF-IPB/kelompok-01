@@ -11,8 +11,9 @@ import { NewAnalysisPage } from './pages/NewAnalysisPage';
 import { JobResultPage } from './pages/JobResultPage';
 
 function Authenticated({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profileLoading } = useAuth();
   const location = useLocation();
+  if (profileLoading) return <p role="status">Memuat profil…</p>;
   if (!isAuthenticated) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   return <Layout>{children}</Layout>;
 }

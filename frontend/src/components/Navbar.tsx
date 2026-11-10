@@ -14,7 +14,7 @@ export const Navbar: React.FC = () => {
     { label: 'Analisis Baru', path: '/analisis-baru' },
   ];
 
-  const displayName = user?.nama || user?.name || user?.username || 'Peneliti';
+  const displayName = user?.nama || user?.name || 'Profil';
   const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (

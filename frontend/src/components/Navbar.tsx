@@ -14,14 +14,11 @@ export const Navbar: React.FC = () => {
     { label: 'Analisis Baru', path: '/analisis-baru' },
   ];
 
-  // Prioritas Tampilan: Nama Lengkap Peneliti (nama / name) -> Fallback ke Username
   const displayName = user?.nama || user?.name || user?.username || 'Peneliti';
   const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm transition-all duration-300">      {/* Bar Atas Informasi Server */}
-
-      {/* Navigasi Utama */}
+    <header className="fixed top-0 z-50 w-full bg-white/45 dark:bg-slate-900/55 backdrop-blur-xl border-b border-white/50 dark:border-slate-800/60 shadow-lg shadow-black/5 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo GenoPath */}
         <Link to="/" className="flex items-center gap-3 group">
@@ -31,14 +28,16 @@ export const Navbar: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black text-lg tracking-tight text-slate-900 dark:text-slate-100">GenoPath</span>
-              <span className="glass-card text-blue-700 dark:text-blue-400 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200/60 dark:border-blue-800/60">v1.0</span>
+              <span className="bg-blue-500/10 dark:bg-blue-400/10 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-300/40 dark:border-blue-700/40 backdrop-blur-md">
+                v1.0
+              </span>
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 -mt-0.5">Pipeline Bioinformatika Allium sativum</p>
+            <p className="text-[10px] text-slate-600 dark:text-slate-400 -mt-0.5 font-medium">Pipeline Bioinformatika Allium sativum</p>
           </div>
         </Link>
 
         {/* Menu Navigasi Tengah */}
-        <nav className="flex items-center gap-1 glass-card p-1 rounded-xl">
+        <nav className="flex items-center gap-1 bg-white/30 dark:bg-slate-800/40 backdrop-blur-md p-1 rounded-xl border border-white/40 dark:border-slate-700/40">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -47,8 +46,8 @@ export const Navbar: React.FC = () => {
                 to={item.path}
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   isActive
-                    ? 'bg-white/90 dark:bg-slate-700/90 text-blue-600 dark:text-blue-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                    ? 'bg-white/80 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 shadow-sm backdrop-blur-md'
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 {item.label}
@@ -63,9 +62,7 @@ export const Navbar: React.FC = () => {
 
           {isAuthenticated && user ? (
             <div className="flex items-center gap-3">
-              {/* Kartu Profil Pengguna */}
-              <div className="flex items-center gap-2.5 glass-card px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                {/* Avatar Inisial / Foto */}
+              <div className="flex items-center gap-2.5 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/50 dark:border-slate-700/50">
                 <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt={displayName} className="w-full h-full rounded-lg object-cover" />
@@ -74,21 +71,19 @@ export const Navbar: React.FC = () => {
                   )}
                 </div>
 
-                {/* Detail Nama Lengkap & Username */}
                 <div className="flex flex-col text-left">
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
                     {displayName}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 leading-tight">
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 leading-tight">
                     @{user.username}
                   </span>
                 </div>
               </div>
 
-              {/* Tombol Logout */}
               <button
                 onClick={logout}
-                className="p-2 border border-rose-200 dark:border-rose-900/50 bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition-colors cursor-pointer"
+                className="p-2 border border-rose-200/60 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-950/40 backdrop-blur-md text-rose-600 dark:text-rose-400 hover:bg-rose-100/80 dark:hover:bg-rose-900/60 rounded-xl transition-colors cursor-pointer"
                 title="Keluar / Logout"
               >
                 <LogOut className="w-4 h-4" />
@@ -97,7 +92,7 @@ export const Navbar: React.FC = () => {
           ) : (
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md shadow-blue-500/20 transition-all"
+              className="inline-flex items-center gap-2 bg-blue-600/90 hover:bg-blue-600 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md shadow-blue-500/20 backdrop-blur-md transition-all"
             >
               <LogIn className="w-4 h-4" />
               <span>Masuk / Daftar</span>
@@ -108,3 +103,5 @@ export const Navbar: React.FC = () => {
     </header>
   );
 };
+
+export default Navbar;

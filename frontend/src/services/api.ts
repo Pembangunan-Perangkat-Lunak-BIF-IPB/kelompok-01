@@ -5,7 +5,7 @@ export interface LoginPayload {
   password: string;
 }
 
-// 1. Skema Registrasi: Menggunakan 'nama' sesuai backend Pydantic
+// Skema Registrasi: Menggunakan 'nama' sesuai backend Pydantic
 export interface RegisterPayload {
   username: string;
   nama: string;
@@ -20,7 +20,7 @@ export interface TokenResponse {
     id: string;
     username: string;
     nama?: string;
-    name?: string; // Menghindari TS2339 error jika BE me-return 'name'
+    name?: string; // Fallback jika BE mengembalikan 'name'
     email?: string;
   };
 }
@@ -37,12 +37,12 @@ export interface SampleUploadResponse {
 }
 
 export interface JobItem {
-  id_job?: number;
-  job_id?: number;
-  id?: number;
+  id_job?: number | string;
+  job_id?: number | string;
+  id?: number | string;
   id_sample?: number;
   sample_id?: number;
-  status: 'Queued' | 'Running' | 'Completed' | 'Failed' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  status: 'Queued' | 'Running' | 'Completed' | 'Failed' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | string;
   waktu_mulai?: string | null;
   waktu_selesai?: string | null;
   pesan_error?: string | null;
@@ -58,32 +58,50 @@ export interface JobCreateOptions {
   vcf_sample?: string;
   parameter_qual?: number;
   parameter_dp?: number;
+  min_qual?: number;
+  min_dp?: number;
+  custom_flags?: string;
+  is_advanced?: boolean;
   require_pass?: boolean;
   execution_mode?: 'synthetic' | 'nextflow';
   variant_ploidy?: number;
+  library_type?: string;
+  reference_genome?: string;
 }
 
-// Skema untuk endpoint otomatisasi (Kombinasi Upload + Create Job)
+// Skema untuk endpoint otomatisasi (Upload + Create + Start Job)
 export interface UploadAndRunResponse {
   request_id?: string;
   submission_status?: string;
   sample?: SampleUploadResponse;
   job?: JobItem;
-  id_job?: number;
+  id_job?: number | string;
   id_sample?: number;
   status?: string;
 }
 
+// Skema Kontrak Hasil BE M9 (Menggunakan struktur counts)
+export interface JobResultCounts {
+  total_variants: number;
+  snps: number;
+  indels: number;
+  other: number;
+}
+
 export interface JobResultSummary {
-  id_job: number;
+  id_job?: number | string;
+  job_id?: number | string;
   id_analysis?: number;
-  total_varian: number;
-  snp_count: number;
-  indel_count: number;
+  status?: string;
+  // Kontrak Resmi Backend M9
+  counts?: JobResultCounts;
+  // Fallback compatibility jika properti dibaca langsung di root
+  total_varian?: number;
+  snp_count?: number;
+  indel_count?: number;
   other_count?: number;
   execution_mode?: string;
   created_at?: string;
-  // Properti tambahan untuk Metrik Dinamis & Audit Mutu
   checksum?: string;
   reference_genome?: string;
   filter_params?: string;
@@ -106,32 +124,31 @@ export interface VariantItem {
   position: number;
   ref_allele: string;
   alt_allele: string;
-  qual: number;
-  variant_type: 'snp' | 'indel' | 'other';
+  qual: number | null; // Null-safe sesuai audit (dapat bernilai null)
+  variant_type: 'snp' | 'indel' | 'other' | string;
   filter_status: string;
-  genotypes: GenotypeItem[];
+  genotypes?: GenotypeItem[];
 }
 
+// Hanya mengirim parameter yang didukung BE (Mencegah HTTP 422)
 export interface VariantQueryParams {
   limit?: number;
   offset?: number;
-  variant_type?: string;
-  genotype?: string; // Ditambahkan untuk filter genotipe server-side
-  search?: string;   // Ditambahkan untuk pencarian kromosom/posisi server-side
+  variant_type?: string; // 'snp' | 'indel' | 'other'
   min_qual?: number;
   max_qual?: number;
 }
 
 export interface JobVariantsResponse {
-  id_job: number;
-  id_analysis: number;
+  id_job?: number | string;
+  id_analysis?: number;
   items: VariantItem[];
   total: number;
   limit: number;
   offset: number;
-  returned: number;
-  has_more: boolean;
-  next_offset: number | null;
+  returned?: number;
+  has_more?: boolean;
+  next_offset?: number | null;
 }
 
 // Custom ApiError (Mendukung erasableSyntaxOnly TypeScript)
@@ -148,7 +165,6 @@ export class ApiError extends Error {
 
 // --- Helper Utilities ---
 
-// Generator UUID v4 untuk memenuhi validasi canonical_request_id pada backend
 function generateUUID(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -160,7 +176,6 @@ function generateUUID(): string {
   });
 }
 
-// Helper Parser Detail Error FastAPI
 function parseDetailError(detail: any, defaultMsg: string): string {
   if (!detail) return defaultMsg;
   if (typeof detail === 'string') return detail;
@@ -181,7 +196,6 @@ function parseDetailError(detail: any, defaultMsg: string): string {
 
 // --- Endpoints Autentikasi ---
 
-// 1. Endpoint Register: POST /api/auth/register
 export async function registerUser(payload: RegisterPayload): Promise<void> {
   const response = await fetch('/api/auth/register', {
     method: 'POST',
@@ -220,7 +234,6 @@ export async function registerUser(payload: RegisterPayload): Promise<void> {
   }
 }
 
-// 2. Endpoint Login: POST /api/auth/login
 export async function loginUser(payload: LoginPayload): Promise<TokenResponse> {
   const response = await fetch('/api/auth/login', {
     method: 'POST',
@@ -255,7 +268,6 @@ export async function loginUser(payload: LoginPayload): Promise<TokenResponse> {
 
 // --- Endpoints Sample & Job Lifecycle (M8) ---
 
-// 3. Endpoint Upload FASTQ Manual (M7): POST /api/samples/upload
 export async function uploadSample(file: File, token: string): Promise<SampleUploadResponse> {
   const filename = file.name.toLowerCase();
   const isValidFastq = filename.endsWith('.fastq') || filename.endsWith('.fastq.gz');
@@ -324,7 +336,7 @@ export async function uploadSample(file: File, token: string): Promise<SampleUpl
   return data as SampleUploadResponse;
 }
 
-// 4. Endpoint Buat Job Manual: POST /api/jobs
+// Di dalam src/services/api.ts pada fungsi createJob
 export async function createJob(
   sampleId: number,
   token: string,
@@ -341,10 +353,11 @@ export async function createJob(
     id_reference_genome: options?.id_reference_genome ?? 1,
     request_id: options?.request_id || generateUUID(),
     vcf_sample: sanitizedVcfSample,
-    parameter_qual: options?.parameter_qual ?? 30.0,
-    parameter_dp: options?.parameter_dp ?? 10,
+    parameter_qual: options?.min_qual ?? options?.parameter_qual ?? 30.0,
+    parameter_dp: options?.min_dp ?? options?.parameter_dp ?? 10,
     require_pass: options?.require_pass ?? true,
-    execution_mode: 'synthetic',
+    // MENGGUNAKAN PIPELINE BIOINFORMATIKA RIIL
+    execution_mode: 'nextflow',
     variant_ploidy: options?.variant_ploidy ?? 2,
   };
 
@@ -373,13 +386,40 @@ export async function createJob(
 
   return data as JobItem;
 }
+// Poin Audit 1: Pemicu Eksekusi Job (Start Pipeline Nextflow/BCFtools)
+export async function startJob(jobId: string | number, token: string): Promise<JobItem> {
+  const response = await fetch(`/api/jobs/${jobId}/start`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
 
-// 5. Endpoint Upload & Auto-Run Pipeline
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_info');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login?expired=1';
+      }
+    }
+    const message = parseDetailError(data?.detail, 'Gagal memicu eksekusi pipeline job.');
+    throw new ApiError(response.status, message);
+  }
+
+  return data as JobItem;
+}
+
+// Poin Audit 1: Workflow Utuh (Upload -> Create -> Start)
 export async function uploadAndRunSample(
   file: File,
   token: string,
   options?: JobCreateOptions
 ): Promise<UploadAndRunResponse> {
+  // 1. Upload file FASTQ
   const sample = await uploadSample(file, token);
 
   const targetSampleId = sample.id_sample ?? sample.sample_id ?? sample.id;
@@ -389,24 +429,35 @@ export async function uploadAndRunSample(
 
   const cleanFileName = file.name.split('.')[0];
 
+  // 2. Buat Job (Status: Queued)
   const job = await createJob(targetSampleId, token, {
     vcf_sample: cleanFileName,
     ...options,
   });
 
   const jobId = job.id_job ?? job.job_id ?? job.id;
+  if (!jobId) {
+    throw new ApiError(422, 'Gagal mendapatkan ID job dari respon pembuatan job.');
+  }
+
+  // 3. Poin Audit 1 Fix: Panggil /start agar pipeline berjalan di server (Status: Running)
+  let startedJob = job;
+  try {
+    startedJob = await startJob(jobId, token);
+  } catch (err) {
+    console.warn('Job berhasil dibuat, namun auto-start gagal dipicu:', err);
+  }
 
   return {
     sample,
-    job,
+    job: startedJob,
     id_job: jobId,
     id_sample: targetSampleId,
-    status: job.status,
+    status: startedJob.status || job.status,
     submission_status: 'SUCCESS',
   };
 }
 
-// 6. Endpoint Daftar Job User: GET /api/jobs
 export async function getJobs(token: string): Promise<JobItem[]> {
   const response = await fetch('/api/jobs', {
     method: 'GET',
@@ -435,7 +486,6 @@ export async function getJobs(token: string): Promise<JobItem[]> {
 
 // --- Endpoints Result API (M9) ---
 
-// 7. Endpoint Ringkasan Analisis Job: GET /api/jobs/{id_job}/result
 export async function getJobResult(jobId: string | number, token: string): Promise<JobResultSummary> {
   const response = await fetch(`/api/jobs/${jobId}/result`, {
     method: 'GET',
@@ -462,7 +512,7 @@ export async function getJobResult(jobId: string | number, token: string): Promi
   return data as JobResultSummary;
 }
 
-// 8. Endpoint Daftar Varian & Genotype: GET /api/jobs/{id_job}/variants
+// Poin Audit 5: Pembersihan Parameter Query Varian yang Tidak Didukung BE
 export async function getJobVariants(
   jobId: string | number,
   params: VariantQueryParams,
@@ -474,14 +524,10 @@ export async function getJobVariants(
   if (params.variant_type && params.variant_type !== 'ALL') {
     query.append('variant_type', params.variant_type.toLowerCase());
   }
-  if (params.genotype && params.genotype !== 'ALL') {
-    query.append('genotype', params.genotype);
-  }
-  if (params.search && params.search.trim() !== '') {
-    query.append('search', params.search.trim());
-  }
   if (params.min_qual !== undefined) query.append('min_qual', params.min_qual.toString());
   if (params.max_qual !== undefined) query.append('max_qual', params.max_qual.toString());
+
+  // REMOVED: genotype dan search disingkirkan agar tidak menyebabkan HTTP 422 di FastAPI Backend
 
   const response = await fetch(`/api/jobs/${jobId}/variants?${query.toString()}`, {
     method: 'GET',
@@ -506,4 +552,20 @@ export async function getJobVariants(
   }
 
   return data as JobVariantsResponse;
+}
+
+// Helper Opsional: Mengunduh Berkas VCF (Poin Audit 7)
+export async function downloadJobVcf(jobId: string | number, token: string): Promise<Blob> {
+  const response = await fetch(`/api/jobs/${jobId}/vcf`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, 'Berkas VCF tidak ditemukan atau belum selesai diproses.');
+  }
+
+  return await response.blob();
 }

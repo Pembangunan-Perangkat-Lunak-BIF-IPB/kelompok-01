@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 // Pengimporan berkas dari src/assets/ (Tetap dipertahankan 100%)
 import uchihaImg from '../assets/Uchiha.jpg';
@@ -27,79 +27,92 @@ const TEAM_DATA: TeamMember[] = [
 export const TeamSection: React.FC = () => {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [animatingChar, setAnimatingChar] = useState<{ memberId: string; charIdx: number } | null>(null);
+  
+  // Tipe data timer ramah lingkungan browser (Vite React)
+  const animTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const handleMemberClick = (member: TeamMember) => {
-    if (focusedId === member.id) {
-      setFocusedId(null);
-      return;
-    }
+  const clearAnimTimeouts = () => {
+    animTimeoutsRef.current.forEach((t) => clearTimeout(t));
+    animTimeoutsRef.current = [];
+  };
 
+  // Pemicu otomatis saat kursor diarahkan ke kartu nama (Hover Entry)
+  const handleMouseEnter = (member: TeamMember) => {
     setFocusedId(member.id);
+    clearAnimTimeouts();
 
-    // Animasi perbesar huruf satu per satu dari kiri ke kanan
     const chars = member.name.split('');
     chars.forEach((_, idx) => {
-      setTimeout(() => {
+      const t = setTimeout(() => {
         setAnimatingChar({ memberId: member.id, charIdx: idx });
       }, idx * 60);
+      animTimeoutsRef.current.push(t);
     });
 
-    setTimeout(() => {
+    const resetT = setTimeout(() => {
       setAnimatingChar(null);
     }, chars.length * 60 + 200);
+    animTimeoutsRef.current.push(resetT);
+  };
+
+  // Pemicu reset saat kursor keluar dari kartu nama (Hover Exit)
+  const handleMouseLeave = () => {
+    setFocusedId(null);
+    setAnimatingChar(null);
+    clearAnimTimeouts();
   };
 
   return (
     <section className="max-w-5xl mx-auto pt-4 pb-16">
-      {/* Header Judul di Luar Foto */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-4 border-b border-slate-300 dark:border-slate-800 pb-3 gap-2 transition-colors">
-        <div>
-          {/* Heading Utama (Level 2) */}
-          <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-            <span className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full inline-block" />
+      
+      {/* Header Judul di Luar Foto (Theme-Aware Frosted Badge) */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-4 border-b border-white/60 dark:border-slate-800/80 pb-3 gap-2 transition-colors">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-white/90 dark:border-slate-800/80 shadow-md backdrop-blur-md">
+          <span className="w-2.5 h-2.5 bg-blue-600 dark:bg-blue-400 rounded-full inline-block animate-pulse" />
+          <h2 className="text-xs font-black font-mono tracking-wider text-slate-950 dark:text-slate-100 uppercase">
             Tim Pengembang Proyek Praktikum
           </h2>
-          {/* Sub-header dinaikkan dari 11px ke text-xs (12px) & kontras ditingkatkan */}
-          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium ml-4 mt-0.5">
-            Program Studi Bioinformatika — IPB University
-          </p>
+          <span className="text-slate-400 font-normal">|</span>
+          <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">
+            Bioinformatika IPB
+          </span>
         </div>
-        {/* Badge dinaikkan dari 10px ke text-xs (12px) */}
-        <span className="text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-bold uppercase w-fit">
+
+        <span className="text-xs font-mono text-slate-950 dark:text-slate-100 bg-white/90 dark:bg-slate-900/90 px-3 py-1 rounded-xl border border-white/90 dark:border-slate-800/80 font-bold uppercase w-fit shadow-md backdrop-blur-md">
           KONTRIBUTOR MAHASISWA
         </span>
       </div>
 
       {/* Frame Foto Utama & Layer Interaktif */}
-      <div className="relative rounded-2xl overflow-hidden shadow-xl bg-slate-950 border border-slate-800 min-h-[440px] flex flex-col justify-end transition-colors">
+      <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-slate-900 dark:bg-slate-950 border border-white/80 dark:border-slate-800/80 min-h-[460px] flex flex-col justify-end transition-all duration-300">
         
         {/* Layer Foto Utama & Cutout per Anggota */}
         <div className="absolute inset-0 w-full h-full bg-slate-950">
           <img
             src={uchihaImg} 
             alt="Tim GenoPath"
-            className={`w-full h-full object-cover object-top transition-all duration-500 ${
-              focusedId !== null ? 'blur-md brightness-50 scale-105' : 'blur-0 brightness-100 scale-100'
+            className={`w-full h-full object-cover object-top transition-all duration-500 ease-out ${
+              focusedId !== null ? 'blur-md brightness-50 dark:brightness-50 scale-105' : 'blur-0 brightness-100 scale-100'
             }`}
           />
 
-          {/* Layer PNG Transparan Cutout per Anggota */}
+          {/* Layer PNG Transparan Cutout per Anggota (Aktif saat Hover) */}
           {TEAM_DATA.map((member) => (
             <img
               key={member.id}
               src={member.cutoutUrl}
               alt={member.name}
-              className={`absolute inset-0 w-full h-full object-cover object-top pointer-events-none transition-all duration-500 ${
-                focusedId === member.id ? 'opacity-100 scale-105 brightness-110' : 'opacity-0 scale-100'
+              className={`absolute inset-0 w-full h-full object-cover object-top pointer-events-none transition-all duration-500 ease-out ${
+                focusedId === member.id ? 'opacity-100 scale-105 brightness-105 dark:brightness-110' : 'opacity-0 scale-100'
               }`}
             />
           ))}
 
-          {/* Gradasi Gelap di Sisi Bawah Kartu Nama */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent pointer-events-none" />
+          {/* Gradasi Gelap di Sisi Bawah Foto */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent pointer-events-none" />
         </div>
 
-        {/* Baris Kartu Anggota di Bagian Bawah Gambar */}
+        {/* Baris Kartu Anggota (Dynamic Light & Dark Theme Adaptability) */}
         <div className="relative z-20 p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {TEAM_DATA.map((member) => {
             const isSelected = focusedId === member.id;
@@ -108,22 +121,23 @@ export const TeamSection: React.FC = () => {
             return (
               <div
                 key={member.id}
-                onClick={() => handleMemberClick(member)}
-                className={`rounded-xl p-3 transition-all duration-300 cursor-pointer select-none backdrop-blur-md ${
+                onMouseEnter={() => handleMouseEnter(member)}
+                onMouseLeave={handleMouseLeave}
+                className={`rounded-2xl p-3 transition-all duration-300 cursor-pointer select-none backdrop-blur-2xl ${
                   isSelected
-                    ? 'bg-slate-900/95 border-2 border-blue-500 ring-2 ring-blue-500/20 -translate-y-2 scale-105 z-30 shadow-2xl'
+                    ? 'bg-white/95 dark:bg-slate-900/95 border-2 border-blue-600 dark:border-blue-500 ring-4 ring-blue-500/30 -translate-y-2 scale-105 z-30 shadow-2xl'
                     : isBlurred
-                    ? 'bg-slate-900/40 opacity-40 blur-[1px] scale-95 border border-slate-800'
-                    : 'bg-slate-900/80 hover:bg-slate-900/95 border border-slate-800 hover:border-slate-700 hover:-translate-y-1 hover:shadow-lg'
+                    ? 'bg-white/40 dark:bg-slate-900/40 opacity-40 blur-[1px] scale-95 border border-white/30 dark:border-slate-800'
+                    : 'bg-white/85 dark:bg-slate-900/80 hover:bg-white/95 dark:hover:bg-slate-900/95 border border-white/90 dark:border-slate-800/80 hover:border-blue-500/50 hover:-translate-y-1 shadow-lg hover:shadow-2xl'
                 }`}
               >
-                {/* NIM: Dinaikkan dari 8px ke text-xs (12px) */}
-                <span className="text-xs font-mono text-slate-400 block mb-1">
+                {/* NIM (Kontras Siang & Malam) */}
+                <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 block mb-1 font-bold">
                   {member.nim}
                 </span>
 
-                {/* Nama Anggota: Menggunakan <h3> (Mengoreksi aksesibilitas skipped-heading h2 -> h3) */}
-                <h3 className="font-bold text-xs text-slate-100 leading-snug min-h-[32px] [word-break:keep-all]">
+                {/* Nama Anggota dengan Animasi Gelombang Huruf */}
+                <h3 className="font-extrabold text-xs text-slate-950 dark:text-slate-100 leading-snug min-h-[32px] [word-break:keep-all]">
                   {member.name.split('').map((char, charIdx) => {
                     const isCharAnimating =
                       animatingChar?.memberId === member.id &&
@@ -134,7 +148,7 @@ export const TeamSection: React.FC = () => {
                         key={charIdx}
                         className={`inline-block transition-transform duration-200 ${
                           isCharAnimating
-                            ? 'scale-125 text-blue-400 font-black -translate-y-0.5'
+                            ? 'scale-125 text-blue-600 dark:text-blue-400 font-black -translate-y-0.5'
                             : 'scale-100'
                         }`}
                       >
@@ -144,8 +158,8 @@ export const TeamSection: React.FC = () => {
                   })}
                 </h3>
 
-                {/* Peran / Role: Dinaikkan dari 9.5px ke text-xs (12px) */}
-                <p className="text-xs text-blue-400 font-medium mt-1">
+                {/* Peran / Role (Kontras Siang & Malam) */}
+                <p className="text-[11px] text-blue-700 dark:text-blue-400 font-mono font-bold mt-1">
                   {member.role}
                 </p>
               </div>

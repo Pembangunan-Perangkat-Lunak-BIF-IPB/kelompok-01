@@ -4,11 +4,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000', // Menggunakan IP 127.0.0.1 langsung untuk IPv4
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''), // Mengubah /api/auth/login -> /auth/login
+        rewrite: (path) => path.replace(/^\/api/, ''), // Memotong /api -> /samples/upload
       },
     },
   },

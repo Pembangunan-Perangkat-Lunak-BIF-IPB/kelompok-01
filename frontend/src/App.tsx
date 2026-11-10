@@ -37,6 +37,16 @@ export function App() {
               }
             />
 
+            {/* POIN AUDIT 6 FIX: Rute Pemantauan Spesifik Job (Direct link dari Upload / Dashboard) */}
+            <Route
+              path="/jobs/:jobId"
+              element={
+                <Layout>
+                  <JobMonitoringPage />
+                </Layout>
+              }
+            />
+
             {/* Halaman Unggah Sampel & Analisis Baru */}
             <Route
               path="/analisis-baru"
@@ -47,7 +57,7 @@ export function App() {
               }
             />
 
-            {/* Halaman Hasil Analisis Varian */}
+            {/* Halaman Hasil Analisis Varian (M9) */}
             <Route
               path="/jobs/:jobId/result"
               element={

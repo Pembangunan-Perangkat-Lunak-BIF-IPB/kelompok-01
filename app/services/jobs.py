@@ -14,6 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.core.config import Settings
 from app.models import Analysis, Job, ReferenceGenome, Sample, User
 from app.schemas.job import JobCreateRequest, JobResponse
+from app.schemas.job_options import JobOptions, ReferenceOption
 from app.services.pipeline import (
     ExecutionPlan, Executor, LocalExecutor, PipelineFailure, PipelineTimeout,
     PipelineUnavailable, check_gate, confined_file, executable, validate_biological_plan,
@@ -137,6 +138,31 @@ def create_job(factory, settings: Settings, owner: int, request: JobCreateReques
         db.add(job)
         db.flush()
         return snapshot(db, job)
+
+
+def list_jobs(factory, owner):
+    with factory() as db:
+        rows = db.scalars(select(Job).where(Job.id_user == owner).order_by(Job.id_job.desc())).all()
+        return [snapshot(db, job) for job in rows]
+
+
+def analysis_options(factory, settings):
+    references = []
+    with factory() as db:
+        for reference in db.scalars(select(ReferenceGenome).order_by(ReferenceGenome.id_reference_genome)):
+            try:
+                confined_file(settings.reference_root, reference.path_fasta)
+            except PipelineUnavailable:
+                continue
+            references.append(ReferenceOption(
+                id_reference_genome=reference.id_reference_genome, nama_genom=reference.nama_genom,
+                versi=reference.versi, sumber=reference.sumber,
+            ))
+    # Enabled is a configuration flag, not a claim that tools/indexes passed preflight.
+    return JobOptions(pipeline_enabled=settings.pipeline_enabled,
+                      alignment_strategy=settings.pipeline_alignment_strategy,
+                      upload_max_bytes=settings.upload_max_bytes,
+                      variant_ploidies=[1, 2], references=references)
 
 
 def get_job(factory, identifier, owner):

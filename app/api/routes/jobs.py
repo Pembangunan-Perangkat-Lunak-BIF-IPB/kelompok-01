@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path as PathParameter
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path as PathParameter, Response
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_settings, get_upload_owner_id
@@ -9,6 +9,7 @@ from app.core.config import Settings
 from app.database import get_session_factory
 from app.schemas.auth import ErrorResponse
 from app.schemas.job import JobCreateRequest, JobResponse
+from app.schemas.job_options import JobOptions
 from app.services import jobs
 from app.services.pipeline import PipelineUnavailable
 
@@ -40,6 +41,20 @@ ERRORS = {code: {"model": ErrorResponse} for code in (401, 404, 409, 503)}
              description="No execution is launched here. Supply reference, QUAL, FORMAT/DP, ploidy, and exact VCF sample mapping. Server gates default closed.")
 def create(payload: JobCreateRequest, owner: Owner, factory: Factory, settings: Configuration):
     return invoke(jobs.create_job, factory, settings, owner, payload)
+
+
+@router.get("", response_model=list[JobResponse], responses=ERRORS,
+            summary="List only the authenticated user's Jobs")
+def list_owned(owner: Owner, factory: Factory, response: Response):
+    response.headers["Cache-Control"] = "private, no-store"
+    return invoke(jobs.list_jobs, factory, owner)
+
+
+@router.get("/options", response_model=JobOptions, responses=ERRORS,
+            summary="Read public reference choices and biological submission constraints")
+def options(owner: Owner, factory: Factory, settings: Configuration, response: Response):
+    response.headers["Cache-Control"] = "private, no-store"
+    return invoke(jobs.analysis_options, factory, settings)
 
 
 @router.get("/{id_job}", response_model=JobResponse, responses=ERRORS,

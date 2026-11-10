@@ -13,4 +13,13 @@ Scope sesi: Checkpoint A dan B; tanpa live E2E PostgreSQL/Nextflow, tunnel, atau
 
 ## Checkpoint B
 
-Sedang dikerjakan. Hasil pemeriksaan dan commit akan dilengkapi setelah validasi.
+- Backend: GET /jobs dengan ownership dan urutan terbaru; GET /jobs/options terautentikasi hanya mengembalikan reference tersedia beserta constraint, tanpa path internal. Respons baru private, no-store.
+- Guard JWT, FASTQ, storage, receipt/flock, sanitasi error, dan runner tetap dari baseline backend.
+- Regresi targeted awal: **656 PASS**, dua warning deprecation Starlette/httpx/anyio. Tidak memakai database utama; fixture SQLite/temporary files.
+- Build awal frontend: **PASS**. Lint setelah normalisasi NBSP dan pemisahan context/hooks: **PASS**. Pengujian frontend awal: **34 PASS**.
+- FAIL awal telah diperbaiki: direktori induk --basetemp belum dibuat; assertion inventaris OpenAPI belum mencakup /jobs/options; indentation NBSP pada salinan frontend tidak lolos lint.
+- Perbaikan frontend dan validasi akhir masih berlangsung.
+
+## Commit lokal
+
+- 85fc09b — feat(fe): integrasikan frontend Azril dengan baseline backend GenoPath (Checkpoint A).

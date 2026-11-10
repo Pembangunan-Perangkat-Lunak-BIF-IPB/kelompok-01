@@ -14,3 +14,5 @@ build/
 dist/
 docs/
 .vscode/
+.tools/
+.test-artifacts/

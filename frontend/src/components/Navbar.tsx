@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Dna, LogIn, LogOut } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth';
 import { ThemeToggle } from './ThemeToggle';
 
 export const Navbar: React.FC = () => {
@@ -39,7 +39,7 @@ export const Navbar: React.FC = () => {
         {/* Menu Navigasi Tengah */}
         <nav className="flex items-center gap-1 bg-white/30 dark:bg-slate-800/40 backdrop-blur-md p-1 rounded-xl border border-white/40 dark:border-slate-700/40">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname.startsWith('/jobs/'));
             return (
               <Link
                 key={item.path}

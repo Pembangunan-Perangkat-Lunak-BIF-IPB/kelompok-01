@@ -1,33 +1,11 @@
-import React, { createContext, useContext, useState } from 'react';
-import { 
-  loginUser, 
-  registerUser, 
-  type LoginPayload, 
-  type RegisterPayload 
+import React, { useEffect, useState } from 'react';
+import {
+  loginUser,
+  registerUser,
+  type LoginPayload,
+  type RegisterPayload
 } from '../services/api';
-
-export interface UserProfile {
-  username: string;
-  name?: string;
-  nama?: string;
-  email?: string;
-  role?: string;
-  avatarUrl?: string;
-}
-
-interface AuthContextType {
-  user: UserProfile | null;
-  token: string | null;
-  login: (
-    credentials: LoginPayload, 
-    extraInfo?: { nama?: string; name?: string; email?: string }
-  ) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext, type UserProfile } from './auth';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => {
@@ -35,33 +13,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [user, setUser] = useState<UserProfile | null>(() => {
-    const savedUser = localStorage.getItem('user_info');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const saved = JSON.parse(localStorage.getItem('user_info') || 'null') as UserProfile | null;
+      return saved && typeof saved.username === 'string' && saved.username ? saved : null;
+    } catch { return null; }
   });
 
   const login = async (
-    credentials: LoginPayload, 
+    credentials: LoginPayload,
     extraInfo?: { nama?: string; name?: string; email?: string }
   ) => {
     const result = await loginUser(credentials);
-    
-    // Penentuan nama: respons backend (nama/name) -> extraInfo form registrasi -> fallback username
-    const profileName = 
-      result.user?.nama || 
-      extraInfo?.nama || 
-      extraInfo?.name || 
-      credentials.username;
+
+    const profileName = extraInfo?.nama || extraInfo?.name || credentials.username;
 
     const profile: UserProfile = {
-      username: result.user?.username || credentials.username,
+      username: credentials.username,
       name: profileName,
       nama: profileName,
-      email: result.user?.email || extraInfo?.email,
-      role: 'Peneliti Bioinformatika',
+      email: extraInfo?.email,
     };
 
-    localStorage.setItem('access_token', result.access_token);
-    localStorage.setItem('user_info', JSON.stringify(profile));
+    try {
+      localStorage.setItem('access_token', result.access_token);
+      localStorage.setItem('user_info', JSON.stringify(profile));
+    } catch {
+      localStorage.removeItem('access_token'); localStorage.removeItem('user_info');
+      throw new Error('Sesi tidak dapat disimpan di peramban. Periksa izin penyimpanan.');
+    }
 
     setToken(result.access_token);
     setUser(profile);
@@ -78,6 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  useEffect(() => {
+    const expired = () => { setToken(null); setUser(null); };
+    window.addEventListener('genopath:unauthorized', expired);
+    return () => window.removeEventListener('genopath:unauthorized', expired);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -86,18 +71,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
-        isAuthenticated: !!token,
+        isAuthenticated: !!token && !!user,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth harus digunakan di dalam AuthProvider');
-  }
-  return context;
 };

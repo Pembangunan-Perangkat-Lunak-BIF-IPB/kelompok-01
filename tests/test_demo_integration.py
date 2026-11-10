@@ -1,11 +1,13 @@
 """Checkpoint B HTTP contracts; SQLite and private temporary files only."""
 
 from uuid import uuid4
+from pathlib import Path
 
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
 from app.core.security import create_access_token
 from app.database import get_session_factory
-from app.models import Job, ReferenceGenome
+from app.models import Analysis, Job, ReferenceGenome, Sample
 from app.services import jobs
 
 
@@ -74,3 +76,44 @@ def test_invalid_auth_requests_do_not_log_credentials(m8_case, app_factory, caps
         assert response.status_code == 422
         output = capsys.readouterr()
         assert "private-test-marker" not in output.out + output.err + response.text
+
+
+def test_frontend_nextflow_parameters_persist_before_dispatch_without_running_tools(m8_case, app_factory, monkeypatch):
+    """Real HTTP/upload/SQLite; tool paths/index bytes are fixtures, runner is stubbed."""
+    case = m8_case
+    settings = case.settings
+    settings.pipeline_alignment_strategy = "bowtie2"
+    for field in ("alignment_adapter", "nextflow_executable", "fastp_executable",
+                  "samtools_executable", "bcftools_executable", "bowtie2_executable",
+                  "bowtie2_inspect_executable"):
+        setattr(settings, "pipeline_" + field, Path("/bin/true"))
+    prefix = settings.reference_root / "contract"
+    settings.pipeline_bowtie2_index_prefix = prefix
+    for suffix in ("1", "2", "3", "4", "rev.1", "rev.2"):
+        Path(f"{prefix}.{suffix}.bt2").write_bytes(b"contract fixture, not a biological index")
+    dispatched = []
+
+    def capture_dispatch(factory, configuration, identifier):
+        with factory() as db:
+            job = db.get(Job, identifier)
+            assert job.status == "Queued"
+            dispatched.append(job.parameter_pipeline["request"])
+    monkeypatch.setattr(jobs, "run_job", capture_dispatch)
+    parameters = {
+        "request_id": str(uuid4()), "id_reference_genome": 1, "vcf_sample": "contract_sample",
+        "parameter_qual": 17.5, "parameter_dp": 0, "require_pass": "true",
+        "variant_ploidy": 1, "execution_mode": "nextflow", "alignment_strategy": "bowtie2",
+    }
+    with make_client(case, app_factory) as client:
+        for expected in ("accepted", "replayed"):
+            response = client.post("/samples/upload-and-run", params=parameters, headers=auth(case),
+                                   files={"file": ("reads.fastq", b"@r\nACGT\n+\nIIII\n")})
+            assert response.status_code == 202, response.text
+            assert response.json()["submission_status"] == expected
+            assert response.json()["dispatch_scheduled"] is True
+    assert all(row["parameter_qual"] == 17.5 and row["parameter_dp"] == 0
+               and row["variant_ploidy"] == 1 and row["execution_mode"] == "nextflow" for row in dispatched)
+    with case.factory() as db:
+        assert db.scalar(select(func.count()).select_from(Sample)) == 3  # Two fixture Samples plus one upload.
+        assert db.scalar(select(func.count()).select_from(Job)) == 1
+        assert db.scalar(select(func.count()).select_from(Analysis)) == 0

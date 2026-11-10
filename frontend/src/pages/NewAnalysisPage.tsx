@@ -1,441 +1,166 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { 
-  UploadCloud, 
-  FolderOpen, 
-  FileText, 
-  Trash2, 
-  Loader2,
-  AlertCircle,
-  PlayCircle,
-  Lock,
-  Unlock,
-  RotateCcw
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { uploadAndRunSample, ApiError, type UploadAndRunResponse } from '../services/api';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { UploadCloud, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
+import { useAuth } from '../context/auth';
+import { ApiError, getJobOptions, submitAnalysis, validateFile, type JobOptions, type SubmissionResponse } from '../services/api';
+import { clearDraft, loadDraft, makeParameters, matchesFile, saveDraft, type SubmissionDraft } from '../services/submissionDraft';
 
-export const NewAnalysisPage: React.FC = () => {
+export function NewAnalysisPage() {
+  const { token, user } = useAuth();
+  const username = user?.username || '';
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { token, isAuthenticated } = useAuth();
-
-  // State Pengunggahan File & Error
-  const [isDragging, setIsDragging] = useState(false);
+  const inFlight = useRef(false);
+  const [restored] = useState(() => {
+    try { return { draft: loadDraft(username), error: '' }; }
+    catch (error) { return { draft: null, error: (error as Error).message }; }
+  });
+  const [draft, setDraft] = useState<SubmissionDraft | null>(restored.draft);
+  const [file, setFile] = useState<File | null>(null);
+  const [reference, setReference] = useState(String(restored.draft?.parameters.id_reference_genome ?? ''));
+  const [ploidy, setPloidy] = useState(String(restored.draft?.parameters.variant_ploidy ?? ''));
+  const [qual, setQual] = useState(String(restored.draft?.parameters.parameter_qual ?? 30));
+  const [dp, setDp] = useState(String(restored.draft?.parameters.parameter_dp ?? 10));
+  const [advanced, setAdvanced] = useState(Boolean(restored.draft));
+  const [options, setOptions] = useState<JobOptions | null>(null);
+  const [optionsError, setOptionsError] = useState('');
+  const [reload, setReload] = useState(0);
+  const [error, setError] = useState('');
+  const [partial, setPartial] = useState<SubmissionResponse | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [uploadResult, setUploadResult] = useState<UploadAndRunResponse | null>(null);
 
-  // --- STATE PARAMETER VARIANT CALLING & THRESHOLD ---
-  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
-  const [minQual, setMinQual] = useState<number | string>(30.0);
-  const [minDp, setMinDp] = useState<number | string>(10);
+  useEffect(() => {
+    if (!token) return;
+    const controller = new AbortController();
+    getJobOptions(token, controller.signal).then(data => {
+      if (!controller.signal.aborted) { setOptions(data); setOptionsError(''); }
+    }).catch(reason => {
+      if (!controller.signal.aborted) setOptionsError(reason instanceof Error ? reason.message : 'Konfigurasi tidak dapat dimuat.');
+    });
+    return () => controller.abort();
+  }, [token, reload]);
 
-  const processFileUpload = async (file: File) => {
-    if (!token) {
-      setErrorMessage('Silakan masuk / login terlebih dahulu untuk mengunggah sampel.');
-      return;
-    }
-
-    const filename = file.name.toLowerCase();
-    const isValidFastq = filename.endsWith('.fastq') || filename.endsWith('.fastq.gz');
-
-    if (!isValidFastq) {
-      setErrorMessage('Format berkas tidak didukung. Harap pilih berkas dengan ekstensi .fastq atau .fastq.gz');
-      return;
-    }
-
-    if (file.size > 1_000_000_000) {
-      setErrorMessage('Ukuran berkas melebihi batas maksimum 1 GB.');
-      return;
-    }
-
-    setSelectedFile(file);
-    setUploading(true);
-    setErrorMessage(null);
-    setUploadResult(null);
-
+  const locked = Boolean(draft) || uploading;
+  const configured = options?.pipeline_enabled && options.alignment_strategy === 'bowtie2';
+  const selectFile = (candidate: File) => {
+    if (inFlight.current || draft?.reconciliation || restored.error) return;
     try {
-      // Payload parameter dikirim ke backend FastAPI
-      const optionsPayload = {
-        library_type: 'SE', // Default SE
-        reference_genome: 'Garlic.V2 (ASM12345v1)', // Default Reference
-        min_qual: minQual === '' ? 0 : Number(minQual),
-        min_dp: minDp === '' ? 1 : Number(minDp),
-        custom_flags: '',
-        is_advanced: isAdvancedMode,
+      validateFile(candidate, options?.upload_max_bytes);
+      if (draft && !matchesFile(draft, candidate)) throw new Error('Pilih kembali berkas yang sama dengan submission tertunda (nama, ukuran, waktu modifikasi).');
+      setFile(candidate); setError('');
+    } catch (reason) { setError((reason as Error).message); }
+  };
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (inFlight.current || !token || !file || !configured || draft?.reconciliation || restored.error) return;
+    inFlight.current = true;
+    setError(''); setPartial(null);
+    let active: SubmissionDraft;
+    try {
+      active = draft ?? {
+        parameters: makeParameters({ reference, ploidy, qual, dp, filename: file.name }),
+        file: { name: file.name, size: file.size, lastModified: file.lastModified }, reconciliation: false,
       };
-
-      // Mengunggah file dan memicu job pipeline
-      const result = await uploadAndRunSample(file, token, optionsPayload as any);
-      setUploadResult(result);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setErrorMessage(err.message);
-      } else if (err instanceof Error) {
-        setErrorMessage(err.message);
-      } else {
-        setErrorMessage('Terjadi kesalahan jaringan saat mengunggah berkas.');
+      // Persist the UUID BEFORE sending. Reload/retry must never silently create a new submission.
+      saveDraft(username, active);
+      setDraft(active); setUploading(true);
+      const result = await submitAnalysis(file, token, active.parameters);
+      try { clearDraft(username); } catch { /* A retained accepted UUID can safely replay. */ }
+      navigate('/jobs/' + result.job!.id_job, { state: {
+        notification: result.dispatch_scheduled ? 'Submission diterima dan eksekusi dijadwalkan. Pantau status Job.' : 'Submission ditemukan kembali. Status ditampilkan dari server.',
+      } });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Pengiriman belum dapat dipastikan.');
+      if (reason instanceof ApiError && reason.submission) {
+        setPartial(reason.submission);
+        if (reason.submission.submission_status === 'reconciliation_required') {
+          const blocked = { ...active!, reconciliation: true };
+          setDraft(blocked);
+          try { saveDraft(username, blocked); } catch { /* Keep the blocked in-memory state. */ }
+        }
+      } else if (reason instanceof ApiError && [413, 422].includes(reason.status)) {
+        // Rejected content/configuration is definitive; a corrected upload needs a new UUID.
+        try { clearDraft(username); setDraft(null); } catch { /* Retain identity if storage fails. */ }
       }
-    } finally {
-      setUploading(false);
-    }
+    } finally { inFlight.current = false; setUploading(false); }
   };
+  const inputClass = 'w-full glass-card rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 disabled:opacity-60';
+  const selectedReference = options?.references.find(item => item.id_reference_genome === Number(reference));
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFileUpload(e.target.files[0]);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFileUpload(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleResetFile = () => {
-    setUploadResult(null);
-    setSelectedFile(null);
-    setErrorMessage(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  // Reset Parameter ke Presets Default IPB
-  const handleResetParameters = () => {
-    setMinQual(30.0);
-    setMinDp(10);
-  };
-
-  // Helper ID & Meta
-  const jobId = 
-    uploadResult?.job?.id_job ?? 
-    uploadResult?.job?.job_id ?? 
-    uploadResult?.job?.id ?? 
-    uploadResult?.id_job;
-
-  const fileNameDisplay = 
-    uploadResult?.sample?.nama_berkas ?? 
-    (uploadResult?.sample as any)?.original_name ?? 
-    selectedFile?.name ?? 
-    'sampel.fastq';
-
-  const fileSizeDisplay = 
-    uploadResult?.sample?.ukuran_berkas ?? 
-    (uploadResult?.sample as any)?.size_bytes ?? 
-    selectedFile?.size ?? 
-    0;
-
-  const handleSubmitAnalysis = () => {
-    if (jobId) {
-      navigate(`/jobs/${jobId}`);
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
-  return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      
-      {/* --- HEADER HALAMAN --- */}
-      <div className="text-center space-y-3 pt-2">
-        <h1 className="text-3xl md:text-4xl font-black text-slate-950 dark:text-white tracking-tight drop-shadow-md">
-          Mulai Analisis Varian Baru
-        </h1>
-
-        <div className="max-w-xl mx-auto bg-white/30 dark:bg-slate-900/45 backdrop-blur-2xl p-4 rounded-2xl border border-white/50 dark:border-slate-700/60 shadow-xl">
-          <p className="text-xs md:text-sm text-slate-950 dark:text-slate-100 font-extrabold leading-relaxed">
-            Unggah berkas mentah FASTQ dan atur parameter threshold variant calling untuk deteksi varian genomik otomatis di server IPB.
-          </p>
+  return <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    <header className="text-center space-y-3 pt-2">
+      <h1 className="text-3xl font-black">Mulai Analisis Varian Baru</h1>
+      <p className="glass-card rounded-2xl p-4 text-sm">Pilih FASTQ single-end, tentukan konfigurasi, lalu jalankan analisis.</p>
+    </header>
+    {(restored.error || optionsError || error) && <div role="alert" className="glass-card rounded-xl p-4 text-rose-800 dark:text-rose-300">
+      {restored.error || optionsError || error}
+      {optionsError && <button type="button" className="underline ml-3" onClick={() => setReload(value => value + 1)}>Muat ulang konfigurasi</button>}
+    </div>}
+    {!options && !optionsError && <p role="status">Memuat pilihan reference…</p>}
+    {options && !configured && <p role="status" className="glass-card rounded-xl p-4">Eksekusi biologis belum diaktifkan atau aligner Bowtie2 belum dikonfigurasi oleh operator.</p>}
+    {options && options.references.length === 0 && <p className="glass-card rounded-xl p-4">Belum ada reference yang tersedia pada server. Operator perlu menyiapkannya sebelum analisis.</p>}
+    <form onSubmit={submit} className="space-y-6">
+      <section className="glass-card rounded-3xl p-6 space-y-4">
+        <h2 className="font-bold text-blue-700 dark:text-blue-300">01 · Input FASTQ single-end</h2>
+        <div className="border-2 border-dashed border-blue-400 rounded-2xl p-6 space-y-3"
+          onDragOver={event => event.preventDefault()} onDrop={event => {
+            event.preventDefault(); if (event.dataTransfer.files[0]) selectFile(event.dataTransfer.files[0]);
+          }}>
+          <UploadCloud aria-hidden="true" className="w-8 h-8 text-blue-600" />
+          <label htmlFor="fastq" className="block text-sm font-semibold">{draft ? 'Pilih kembali FASTQ yang sama untuk melanjutkan submission' : 'Pilih atau seret berkas FASTQ'}</label>
+          <input id="fastq" type="file" accept=".fastq,.fastq.gz" disabled={uploading || draft?.reconciliation || Boolean(restored.error)}
+            onChange={event => { if (event.target.files?.[0]) selectFile(event.target.files[0]); }} className="block w-full text-sm" />
+          <p className="text-xs">.fastq / .fastq.gz · Maksimum {((options?.upload_max_bytes ?? 1_000_000_000) / 1_000_000).toLocaleString('id-ID')} MB. Validasi isi dilakukan server saat dikirim.</p>
+          {file && <p className="text-sm break-all">{file.name} · {(file.size / 1_000_000).toFixed(2)} MB · Belum berarti analisis berjalan.</p>}
         </div>
-      </div>
-
-      {/* --- SEKSI 01: SAMPLE SEQUENCE INPUT (FASTQ) --- */}
-      <div className="bg-white/30 dark:bg-slate-900/45 backdrop-blur-2xl rounded-3xl p-6 border border-white/50 dark:border-slate-700/60 shadow-xl space-y-5">
-        <div className="flex items-center justify-between border-b border-white/40 dark:border-slate-800 pb-3">
-          <span className="text-xs font-mono font-black text-blue-700 dark:text-blue-400 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-blue-600/20 text-blue-800 dark:text-blue-300 flex items-center justify-center font-bold">01</span>
-            INPUT SEKUENS SAMPEL (FASTQ)
-          </span>
-          <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-900 dark:text-blue-300 font-mono text-[10px] font-black border border-blue-400/40">
-            REQUIRED
-          </span>
-        </div>
-
-        {/* Peringatan Belum Login */}
-        {!isAuthenticated && (
-          <div className="p-4 bg-amber-500/20 border border-amber-500/40 backdrop-blur-md rounded-2xl text-amber-950 dark:text-amber-200 text-xs font-black flex items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>Anda belum masuk ke akun. Silakan login terlebih dahulu untuk mengunggah sampel.</span>
-            </div>
-            <Link to="/login" className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-3.5 py-1.5 rounded-xl text-xs transition-colors shrink-0 shadow-md">
-              Masuk / Login
-            </Link>
+      </section>
+      <section className="glass-card rounded-3xl p-6 space-y-4">
+        <h2 className="font-bold text-blue-700 dark:text-blue-300">02 · Konfigurasi analisis</h2>
+        <fieldset disabled={locked} className="space-y-4">
+          <div><label htmlFor="reference" className="block text-sm font-semibold mb-1">Genom reference</label>
+            <select id="reference" required className={inputClass} value={reference} onChange={event => setReference(event.target.value)}>
+              <option value="">Pilih reference yang tersedia</option>
+              {options?.references.map(item => <option key={item.id_reference_genome} value={item.id_reference_genome}>{item.nama_genom}{item.versi ? ' · ' + item.versi : ''} (#{item.id_reference_genome})</option>)}
+            </select>
+            {selectedReference?.sumber && <p className="text-xs mt-1">Sumber: {selectedReference.sumber}</p>}
           </div>
-        )}
-
-        {/* Hidden Input File */}
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleFileInputChange} 
-          accept=".fastq,.gz,.fastq.gz"
-          className="hidden" 
-          disabled={uploading || !isAuthenticated}
-        />
-
-        {/* Dropzone Area */}
-        {!uploadResult ? (
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all backdrop-blur-md flex flex-col items-center justify-center ${
-              isDragging 
-                ? 'border-blue-500 bg-blue-500/25 scale-[1.01]' 
-                : 'border-blue-500/50 dark:border-blue-400/40 bg-white/30 dark:bg-slate-800/40 hover:bg-white/50 dark:hover:bg-slate-800/60'
-            }`}
-          >
-            {uploading ? (
-              <div className="space-y-3 py-4">
-                <Loader2 className="w-10 h-10 text-blue-600 dark:text-blue-400 animate-spin mx-auto" />
-                <h3 className="text-sm font-black text-slate-950 dark:text-white">
-                  Mengunggah Berkas & Memicu Pipeline Bioinformatika...
-                </h3>
-                <p className="text-xs text-slate-950 dark:text-slate-200 font-mono font-bold">
-                  {selectedFile?.name} ({(selectedFile ? selectedFile.size / (1024 * 1024) : 0).toFixed(2)} MB)
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="p-4 rounded-2xl bg-blue-600/20 text-blue-700 dark:text-blue-300 backdrop-blur-md border border-blue-500/30 shadow-inner mb-3">
-                  <UploadCloud className="w-8 h-8" />
-                </div>
-
-                <h3 className="text-sm font-black text-slate-950 dark:text-white mb-1">
-                  Seret & lepas berkas sekuensing FASTQ ke sini, atau telusuri berkas lokal
-                </h3>
-                <p className="text-xs font-mono font-extrabold text-slate-950 dark:text-slate-200 mb-5">
-                  Ukuran Maksimum: <code className="font-black text-blue-800 dark:text-blue-300">1.0 GB</code> • Ekstensi: <code className="font-black text-blue-800 dark:text-blue-300">.fastq</code>, <code className="font-black text-blue-800 dark:text-blue-300">.fastq.gz</code>
-                </p>
-
-                <button
-                  type="button"
-                  disabled={!isAuthenticated}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 bg-blue-600/90 hover:bg-blue-600 disabled:bg-slate-400/60 dark:disabled:bg-slate-700/60 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <FolderOpen className="w-4 h-4" /> Telusuri Berkas Komputer
-                </button>
-              </>
-            )}
+          <div><label htmlFor="ploidy" className="block text-sm font-semibold mb-1">Ploidi untuk variant calling</label>
+            <select id="ploidy" required value={ploidy} className={inputClass} onChange={event => setPloidy(event.target.value)}>
+              <option value="">Pilih sesuai dataset</option>
+              {options?.variant_ploidies.map(value => <option key={value} value={value}>{value}</option>)}
+            </select><p className="text-xs mt-1">Parameter caller harus sesuai dataset; tidak disimpulkan otomatis dari FASTQ.</p>
           </div>
-        ) : (
-          /* State Berkas Terunggah */
-          <div className="border-2 border-dashed border-emerald-500/60 bg-emerald-500/20 backdrop-blur-md rounded-3xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-500/50">
-                  <FileText className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-950 dark:text-white font-mono">{fileNameDisplay}</h4>
-                  <p className="text-[11px] text-slate-950 dark:text-slate-200 font-extrabold mt-0.5">
-                    Ukuran Terkompresi: {(fileSizeDisplay / (1024 * 1024)).toFixed(2)} MB • Status: <strong className="text-emerald-800 dark:text-emerald-300">QUEUED</strong>
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleResetFile}
-                className="p-2 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Pesan Error Upload / Validasi */}
-        {errorMessage && (
-          <div className="p-3.5 bg-rose-500/20 border border-rose-500/40 backdrop-blur-md rounded-2xl text-rose-950 dark:text-rose-200 text-xs font-black flex items-center gap-2 shadow-sm">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        {/* --- PANEL SAKLAR DEFAULT / ADVANCE --- */}
-        <div className="pt-2 border-t border-white/40 dark:border-slate-800">
-          <div className="p-4 rounded-2xl bg-white/20 dark:bg-slate-800/40 border border-white/40 dark:border-slate-700/50 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl border backdrop-blur-md transition-colors ${
-                isAdvancedMode 
-                  ? 'bg-amber-500/20 text-amber-900 dark:text-amber-300 border-amber-500/40' 
-                  : 'bg-blue-600/20 text-blue-900 dark:text-blue-300 border-blue-400/40'
-              }`}>
-                {isAdvancedMode ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-              </div>
-              <div>
-                <h3 className="text-xs font-black text-slate-950 dark:text-white font-mono uppercase tracking-wider">
-                  {isAdvancedMode ? 'MODE ADVANCE (KUSTOMISASI PARAMETER)' : 'MODE DEFAULT (PRESET BIOINFORMATIKA IPB)'}
-                </h3>
-                <p className="text-[11px] text-slate-900 dark:text-slate-200 font-extrabold">
-                  {isAdvancedMode 
-                    ? 'Parameter threshold dan alokasi pipeline dapat disesuaikan manual.' 
-                    : 'Seluruh parameter terkunci pada konfigurasi standar direkomendasikan lab.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Toggle Switch */}
-            <div className="flex items-center gap-3 shrink-0">
-              <span className={`text-xs font-mono font-black ${!isAdvancedMode ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500'}`}>
-                Default
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  const nextMode = !isAdvancedMode;
-                  setIsAdvancedMode(nextMode);
-                  if (!nextMode) handleResetParameters();
-                }}
-                className={`w-14 h-7 rounded-full p-1 transition-colors backdrop-blur-md border border-white/50 dark:border-slate-700/60 relative ${
-                  isAdvancedMode ? 'bg-amber-500' : 'bg-slate-400 dark:bg-slate-700'
-                }`}
-              >
-                <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
-                  isAdvancedMode ? 'translate-x-7' : 'translate-x-0'
-                }`} />
-              </button>
-              <span className={`text-xs font-mono font-black ${isAdvancedMode ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500'}`}>
-                Advance
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- SEKSI 02: VARIANT CALLING & QUALITY THRESHOLDS (HANYA MUNCUL DI MODE ADVANCE) --- */}
-      {isAdvancedMode && (
-        <div className="bg-white/30 dark:bg-slate-900/45 backdrop-blur-2xl rounded-3xl p-6 border border-white/50 dark:border-slate-700/60 shadow-xl space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="flex items-center justify-between border-b border-white/40 dark:border-slate-800 pb-3">
-            <span className="text-xs font-mono font-black text-blue-700 dark:text-blue-400 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-blue-600/20 text-blue-800 dark:text-blue-300 flex items-center justify-center font-bold">02</span>
-              VARIANT CALLING & QUALITY THRESHOLDS
-            </span>
-            <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-950 dark:text-amber-300 font-mono text-[10px] font-black border border-amber-500/40">
-              Advance Mode Active
-            </span>
-          </div>
-
-          {/* Input Min QUAL & Min DP */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            {/* Minimum Quality Score (QUAL) */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-[11px] font-mono font-black text-slate-950 dark:text-slate-100 uppercase">
-                  Minimum Quality Score (QUAL):
-                </label>
-                <span className="text-[10px] font-mono text-slate-700 dark:text-slate-400 font-extrabold">Range: ≥ 0.0</span>
-              </div>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={minQual}
-                  onChange={(e) => setMinQual(e.target.value)}
-                  placeholder="30.0"
-                  className="w-full bg-white/40 dark:bg-slate-800/60 border border-white/60 dark:border-slate-700 rounded-xl px-4 py-2.5 pr-28 text-xs font-black text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 backdrop-blur-md shadow-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setMinQual(30.0)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono font-black px-2.5 py-1 rounded-lg bg-amber-500/25 hover:bg-amber-500/40 text-amber-950 dark:text-amber-200 border border-amber-500/40 transition-colors cursor-pointer flex items-center gap-1"
-                  title="Klik untuk mereset ke QUAL 30.0"
-                >
-                  {Number(minQual) === 30 ? (
-                    'Preset (30.0)'
-                  ) : (
-                    <>
-                      <RotateCcw className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Reset (30.0)
-                    </>
-                  )}
-                </button>
-              </div>
-              <p className="text-[10px] font-mono text-slate-900 dark:text-slate-200 font-bold">
-                Batas skor Phred variant quality (QUAL ≥ 0. Default: 30.0). Nilai tidak boleh negatif.
-              </p>
-            </div>
-
-            {/* Minimum Read Depth (DP) */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-[11px] font-mono font-black text-slate-950 dark:text-slate-100 uppercase">
-                  Minimum Read Depth (DP):
-                </label>
-                <span className="text-[10px] font-mono text-slate-700 dark:text-slate-400 font-extrabold">Range: ≥ 1</span>
-              </div>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="1"
-                  value={minDp}
-                  onChange={(e) => setMinDp(e.target.value)}
-                  placeholder="10"
-                  className="w-full bg-white/40 dark:bg-slate-800/60 border border-white/60 dark:border-slate-700 rounded-xl px-4 py-2.5 pr-24 text-xs font-black text-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 backdrop-blur-md shadow-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setMinDp(10)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono font-black px-2.5 py-1 rounded-lg bg-slate-300/60 hover:bg-slate-400/60 dark:bg-slate-700/60 dark:hover:bg-slate-600/60 text-slate-950 dark:text-slate-100 border border-slate-400/40 transition-colors cursor-pointer flex items-center gap-1"
-                  title="Klik untuk mereset ke DP 10"
-                >
-                  {Number(minDp) === 10 ? (
-                    'Preset (10)'
-                  ) : (
-                    <>
-                      <RotateCcw className="w-3 h-3 text-slate-600 dark:text-slate-300" /> Reset (10)
-                    </>
-                  )}
-                </button>
-              </div>
-              <p className="text-[10px] font-mono text-slate-900 dark:text-slate-200 font-bold">
-                Batas kedalaman pembacaan sekuens minimal per lokasi varian (DP ≥ 1. Default: 10). Harus lebih besar dari nol.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- TOMBOL AKSI UTAMA --- */}
-      <div className="flex justify-end pt-2">
-        <button
-          type="button"
-          onClick={handleSubmitAnalysis}
-          disabled={!uploadResult}
-          className="flex items-center justify-center gap-2 bg-blue-600/90 hover:bg-blue-600 disabled:bg-slate-400/60 dark:disabled:bg-slate-700/60 text-white font-black px-8 py-3.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed"
-        >
-          <PlayCircle className="w-4 h-4" /> Jalankan Pipeline Analisis
+          <button type="button" role="switch" aria-checked={advanced} aria-controls="thresholds" onClick={() => {
+            setAdvanced(!advanced); if (advanced) { setQual('30'); setDp('10'); }
+          }} className="glass-card px-4 py-2 rounded-xl text-sm">Advanced QUAL/DP: {advanced ? 'Aktif' : 'Nonaktif'}</button>
+          {advanced ? <div id="thresholds" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label htmlFor="qual" className="block text-sm mb-1">Minimum QUAL</label>
+              <input id="qual" type="number" min="0" step="any" required value={qual} onChange={event => setQual(event.target.value)} className={inputClass} /></div>
+            <div><label htmlFor="dp" className="block text-sm mb-1">Minimum FORMAT/DP</label>
+              <input id="dp" type="number" min="0" max="2147483647" step="1" required value={dp} onChange={event => setDp(event.target.value)} className={inputClass} /></div>
+            <p className="text-xs sm:col-span-2">Varian dengan QUAL/DP hilang dikecualikan, termasuk pada threshold nol. Ini parameter seleksi analisis, bukan filter tampilan.</p>
+          </div> : <p className="text-sm">Preset seleksi: QUAL ≥ 30, FORMAT/DP ≥ 10, FILTER=PASS.</p>}
+        </fieldset>
+      </section>
+      <section className="glass-card rounded-2xl p-5 space-y-2 text-sm">
+        <h2 className="font-bold">Ringkasan sebelum dikirim</h2>
+        <p>Reference: {selectedReference?.nama_genom ?? (reference ? '#' + reference : 'Belum dipilih')} · Ploidi: {ploidy || 'Belum dipilih'}</p>
+        <p>Single-end · Bowtie2 / Nextflow · QUAL ≥ {qual} · FORMAT/DP ≥ {dp} · FILTER=PASS</p>
+        {draft && <div role="status" className="space-y-2 break-all">
+          <p>UUID submission: <code>{draft.parameters.request_id}</code></p>
+          <p>{draft.reconciliation ? 'Hasil pengiriman memerlukan rekonsiliasi operator. Jangan membuat UUID baru atau mengunggah ulang.' : 'Konfigurasi dikunci. Pengiriman ulang memakai UUID dan berkas yang sama agar tidak membuat Sample kedua.'}</p>
+        </div>}
+        {partial?.sample && <p>Sample tersimpan: #{partial.sample.id_sample}.</p>}
+        {partial?.job && <Link className="text-blue-700 dark:text-blue-300 underline" to={'/jobs/' + partial.job.id_job}>Periksa Job #{partial.job.id_job}</Link>}
+      </section>
+      <div className="flex flex-wrap justify-end gap-3">
+        {!draft && <button type="button" disabled={uploading} className="glass-card px-4 py-3 rounded-xl text-sm" onClick={() => { setQual('30'); setDp('10'); }}><RotateCcw className="inline w-4 h-4 mr-1" />Reset threshold</button>}
+        <button type="submit" disabled={!file || !reference || !ploidy || !configured || uploading || draft?.reconciliation || Boolean(restored.error)}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-500 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2">
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
+          {uploading ? 'Mengunggah dan memvalidasi…' : draft ? 'Kirim ulang submission yang sama' : 'Jalankan Analisis'}
         </button>
       </div>
-
-    </div>
-  );
-};
-
+    </form>
+  </div>;
+}
 export default NewAnalysisPage;

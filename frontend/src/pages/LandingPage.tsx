@@ -6,7 +6,7 @@ import { TeamSection } from '../components/TeamSection';
 export const LandingPage: React.FC = () => {
   return (
     <div className="space-y-12">
-      
+
       {/* --- HERO SECTION --- */}
       <section className="text-center space-y-6 pt-2">
         {/* Badge Status Pipeline Frosted */}
@@ -14,7 +14,7 @@ export const LandingPage: React.FC = () => {
           <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping" />
           <span>Pipeline Bioinformatika Allium sativum</span>
           <span className="text-slate-400 dark:text-slate-600">|</span>
-          <span className="text-slate-950 dark:text-slate-100">BUILD: v1.0-STABLE / NEXTFLOW & FASTAPI</span>
+          <span className="text-slate-950 dark:text-slate-100">VERSI INTEGRASI DEMO / NEXTFLOW & FASTAPI</span>
         </div>
 
         {/* Judul Utama High-Contrast */}
@@ -25,7 +25,7 @@ export const LandingPage: React.FC = () => {
         {/* Subtitle Hero Frosted Glass */}
         <div className="max-w-2xl mx-auto bg-white/30 dark:bg-slate-900/45 backdrop-blur-2xl p-4.5 rounded-2xl border border-white/50 dark:border-slate-700/60 shadow-xl">
           <p className="text-xs md:text-sm text-slate-950 dark:text-slate-100 font-extrabold leading-relaxed">
-            Otomatisasi pemrosesan genomik <span className="italic text-blue-700 dark:text-blue-400">Allium sativum</span> (Bawang Putih) mulai dari kontrol kualitas FASTQ, pemetaan referensi Garlic.V2 via Bowtie2, hingga ekstraksi varian ke PostgreSQL dan berkas VCF/CSV.
+            Otomatisasi pemrosesan genomik <span className="italic text-blue-700 dark:text-blue-400">Allium sativum</span> (Bawang Putih) mulai dari kontrol kualitas FASTQ, pemetaan terhadap reference yang dipilih via Bowtie2, hingga penyimpanan varian dan peninjauan hasil.
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export const LandingPage: React.FC = () => {
           </div>
           <div className="hidden sm:block text-slate-400 dark:text-slate-600">|</div>
           <div>
-            <span>Genom Referensi: <strong className="text-blue-900 dark:text-blue-300 font-black">Garlic.V2 (ASM12345v1)</strong></span>
+            <span>Genom Referensi: <strong className="text-blue-900 dark:text-blue-300 font-black">Dipilih dari reference tersedia pada server</strong></span>
           </div>
           <div className="hidden sm:block text-slate-400 dark:text-slate-600">|</div>
           <div>
@@ -100,12 +100,12 @@ export const LandingPage: React.FC = () => {
               </div>
               <h3 className="font-black text-sm text-slate-950 dark:text-white">Kontrol Kualitas & Trimming</h3>
               <p className="text-xs text-slate-950 dark:text-slate-200 leading-relaxed font-extrabold">
-                fastp v0.23+: Pemotongan sekuens adapter, eliminasi low-quality reads, evaluasi Q20/Q30.
+                fastp: Pemotongan sekuens adapter, eliminasi low-quality reads, evaluasi Q20/Q30.
               </p>
             </div>
             <div className="pt-2">
               <span className="inline-block px-2.5 py-1 rounded-lg bg-white/40 dark:bg-slate-800/60 text-slate-950 dark:text-slate-100 font-mono text-[10px] font-black border border-white/50 dark:border-slate-700/60 backdrop-blur-md">
-                TOOL: fastp -q 20 -u 30
+                TOOL: fastp (konfigurasi server)
               </span>
             </div>
           </div>
@@ -119,7 +119,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <h3 className="font-black text-sm text-slate-950 dark:text-white">Pemetaan Referensi</h3>
               <p className="text-xs text-slate-950 dark:text-slate-200 leading-relaxed font-extrabold">
-                Bowtie2 & SAMtools: Pemetaan ke Garlic.V2 (ASM12345v1), konversi BAM, coordinate sorting, & pengindeksan.
+                Bowtie2 & SAMtools: Pemetaan ke reference terpilih, konversi BAM, sorting, dan indexing CSI.
               </p>
             </div>
             <div className="pt-2">
@@ -138,7 +138,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <h3 className="font-black text-sm text-slate-950 dark:text-white">Calling Varian & Ingestion</h3>
               <p className="text-xs text-slate-950 dark:text-slate-200 leading-relaxed font-extrabold">
-                BCFtools: Pemanggilan varian (QUAL≥30, DP≥10), ingest DB tb_genomic_variants, & ekspor VCF/CSV.
+                BCFtools: Pemanggilan dan seleksi varian berdasarkan konfigurasi, lalu penyimpanan hasil ke basis data.
               </p>
             </div>
             <div className="pt-2">
@@ -157,14 +157,14 @@ export const LandingPage: React.FC = () => {
             <ArrowRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span className="px-2 py-0.5 rounded bg-white/40 dark:bg-slate-800/60 font-black text-slate-950 dark:text-slate-100 backdrop-blur-md border border-white/40 dark:border-slate-700/50">[FASTP QC]</span>
             <ArrowRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span className="px-2 py-0.5 rounded bg-white/40 dark:bg-slate-800/60 font-black text-slate-950 dark:text-slate-100 backdrop-blur-md border border-white/40 dark:border-slate-700/50">[BOWTIE2 BAM/BAI]</span>
+            <span className="px-2 py-0.5 rounded bg-white/40 dark:bg-slate-800/60 font-black text-slate-950 dark:text-slate-100 backdrop-blur-md border border-white/40 dark:border-slate-700/50">[BOWTIE2 BAM/CSI]</span>
             <ArrowRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span className="px-2 py-0.5 rounded bg-white/40 dark:bg-slate-800/60 font-black text-slate-950 dark:text-slate-100 backdrop-blur-md border border-white/40 dark:border-slate-700/50">[BCFTOOLS VCF]</span>
             <ArrowRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-950 dark:text-emerald-300 font-black border border-emerald-500/40 backdrop-blur-md">DB POSTGRESQL</span>
           </div>
           <span className="text-[11px] text-blue-800 dark:text-blue-300 font-black">
-            ENGINE: Nextflow DSL2 / Local Synthetic
+            ENGINE: Nextflow DSL2 (single-end)
           </span>
         </div>
       </section>
@@ -196,18 +196,18 @@ export const LandingPage: React.FC = () => {
               <tbody className="divide-y divide-white/30 dark:divide-slate-800/50 text-slate-950 dark:text-slate-200">
                 <tr className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="py-3 px-4 font-black text-blue-700 dark:text-blue-400">01.</td>
-                  <td className="py-3 px-4 font-extrabold">Buka menu "Analisis Baru". Unggah berkas Single-End FASTQ (.fastq / .fastq.gz).</td>
-                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">id_sample & request_id (UUIDv4)</td>
+                  <td className="py-3 px-4 font-extrabold">Buka menu "Analisis Baru" dan pilih berkas Single-End FASTQ (.fastq / .fastq.gz).</td>
+                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">Berkas terpilih; belum dikirim</td>
                 </tr>
                 <tr className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="py-3 px-4 font-black text-blue-700 dark:text-blue-400">02.</td>
-                  <td className="py-3 px-4 font-extrabold">Sistem memverifikasi ukuran berkas (maks 1 GB) dan mengonfirmasi pembuatan Job analisis di backend FastAPI.</td>
-                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">id_job (Status: QUEUED)</td>
+                  <td className="py-3 px-4 font-extrabold">Pilih reference dan ploidi sesuai dataset, lalu periksa parameter QUAL dan FORMAT/DP.</td>
+                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">Konfigurasi sebelum eksekusi</td>
                 </tr>
                 <tr className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="py-3 px-4 font-black text-blue-700 dark:text-blue-400">03.</td>
-                  <td className="py-3 px-4 font-extrabold">Pengaturan parameter eksekusi pipeline: Threshold QUAL minimal (default: 30.0), Kedalaman Baca (DP minimal: 10x), & Mode Eksekusi (synthetic / nextflow).</td>
-                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">parameter_pipeline (JSON)</td>
+                  <td className="py-3 px-4 font-extrabold">Tekan Jalankan Analisis untuk mengirim berkas dan konfigurasi. Server memvalidasi input dan menjadwalkan Job.</td>
+                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">Job dan status dari server</td>
                 </tr>
                 <tr className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="py-3 px-4 font-black text-blue-700 dark:text-blue-400">04.</td>
@@ -216,8 +216,8 @@ export const LandingPage: React.FC = () => {
                 </tr>
                 <tr className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="py-3 px-4 font-black text-blue-700 dark:text-blue-400">05.</td>
-                  <td className="py-3 px-4 font-extrabold">Buka "Laporan Analisis Varian" untuk mengunduh VCF (.vcf.gz), ekspor CSV, atau telusuri tabel varian PostgreSQL.</td>
-                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">Laporan Varian & File Download</td>
+                  <td className="py-3 px-4 font-extrabold">Buka hasil untuk meninjau tabel dan ekspor halaman aktif ke CSV. Download VCF belum tersedia.</td>
+                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">Tabel hasil & CSV halaman aktif</td>
                 </tr>
               </tbody>
             </table>

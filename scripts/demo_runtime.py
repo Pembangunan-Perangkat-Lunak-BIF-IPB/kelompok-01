@@ -201,6 +201,15 @@ def set_gate_password():
                             follow_redirects=False)
         if result.status_code != 303:
             raise RuntimeError
+        # Keep only the legitimately issued session for automated HTTPS checks,
+        # never the raw password. This private file is ignored by Git.
+        session_cookie = result.cookies.get("genopath_demo_access")
+        if not session_cookie:
+            raise RuntimeError
+        private_write(RUNTIME / "gate-check-session.json", {
+            "cookie": session_cookie, "revision": result.headers.get("x-demo-gate-revision"),
+            "obtained_by": "password verification on loopback",
+        })
         print("Password final tersimpan sebagai hash dan login gate lokal PASS. Tidak perlu restart web/tunnel.")
     except Exception:
         print("Hash password final tersimpan privat; uji gate perlu diulang saat web lokal aktif.")

@@ -15,6 +15,16 @@ const user = credentials.username + '_' + runSuffix;
 const otherUser = credentials.other_username + '_' + runSuffix;
 
 async function unlock(page) {
+  if (base.startsWith('https://')) {
+    // Reuse a real issued session from masked local password verification.
+    // This checks public session enforcement, not password entry on public HTTPS.
+    const session = JSON.parse(fs.readFileSync(path.join(root, '.runtime', 'gate-check-session.json')));
+    await page.context().addCookies([{ name: 'genopath_demo_access', value: session.cookie,
+      url: base, httpOnly: true, secure: true, sameSite: 'Lax' }]);
+    await page.goto(base + '/login');
+    assert.equal(await page.locator('#demo-password').count(), 0);
+    return;
+  }
   await page.locator('#demo-password').fill(credentials.gate_test_password);
   await page.getByRole('button', { name: 'Buka GenoPath', exact: true }).click();
   await page.locator('#demo-password').waitFor({ state: 'hidden' });
@@ -258,6 +268,8 @@ async function review(page) {
       checks, job_id: id, statuses: [...statuses], counts: result.summary.counts, parameters: result.summary.parameters, exports, replay,
       execution_mode: 'nextflow', input_kind: 'controlled synthetic fixture', biological_validation: false,
       browser: browser.version(), url: base,
+      public_gate_password_entry_verified: false,
+      public_gate_session_source: base.startsWith('https://') ? 'legitimately issued after masked local password verification' : null,
     }, null, 2));
     await context.close();
   } finally { await browser.close(); }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UploadCloud, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/auth';
-import { ApiError, getJobOptions, submitAnalysis, validateFile, type JobOptions, type SubmissionResponse } from '../services/api';
+import { ApiError, downloadDemoInput, getJobOptions, submitAnalysis, validateFile, type JobOptions, type SubmissionResponse } from '../services/api';
 import { clearDraft, loadDraft, makeParameters, matchesFile, saveDraft, type SubmissionDraft } from '../services/submissionDraft';
 
 export function NewAnalysisPage() {
@@ -27,6 +27,7 @@ export function NewAnalysisPage() {
   const [error, setError] = useState('');
   const [partial, setPartial] = useState<SubmissionResponse | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [downloadingInput, setDownloadingInput] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -85,6 +86,18 @@ export function NewAnalysisPage() {
   };
   const inputClass = 'w-full glass-card rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 disabled:opacity-60';
   const selectedReference = options?.references.find(item => item.id_reference_genome === Number(reference));
+  const getDemoInput = async () => {
+    if (!token || downloadingInput) return;
+    setDownloadingInput(true); setError('');
+    try {
+      const url = URL.createObjectURL(await downloadDemoInput(token));
+      const link = document.createElement('a');
+      link.href = url; link.download = 'genopath_synthetic_SE.fastq.gz';
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Contoh FASTQ tidak tersedia.'); }
+    finally { setDownloadingInput(false); }
+  };
 
   return <div className="max-w-3xl mx-auto space-y-6 pb-12">
     <header className="text-center space-y-3 pt-2">
@@ -109,7 +122,13 @@ export function NewAnalysisPage() {
           <label htmlFor="fastq" className="block text-sm font-semibold">{draft ? 'Pilih kembali FASTQ yang sama untuk melanjutkan submission' : 'Pilih atau seret berkas FASTQ'}</label>
           <input id="fastq" type="file" accept=".fastq,.fastq.gz" disabled={uploading || draft?.reconciliation || Boolean(restored.error)}
             onChange={event => { if (event.target.files?.[0]) selectFile(event.target.files[0]); }} className="block w-full text-sm" />
-          <p className="text-xs">.fastq / .fastq.gz · Maksimum {((options?.upload_max_bytes ?? 1_000_000_000) / 1_000_000).toLocaleString('id-ID')} MB. Validasi isi dilakukan server saat dikirim.</p>
+          <p className="text-xs">.fastq / .fastq.gz · {options ? 'Maksimum ' + (options.upload_max_bytes / 1024 ** 2).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' MiB.' : 'Memuat batas unggah…'} Validasi isi dilakukan server saat dikirim.</p>
+          {options?.references.some(item => item.sumber === 'genopath:synthetic-fixture') && <div className="text-xs space-y-2">
+            <p>Demo teknis: gunakan contoh sintetis 20 kbp dengan reference fixture, ploidi 2. Bukan data biologis Garlic.V2.</p>
+            <button type="button" onClick={() => void getDemoInput()} disabled={downloadingInput} className="text-blue-700 dark:text-blue-300 underline py-2">
+              {downloadingInput ? 'Mengunduh contoh…' : 'Unduh FASTQ contoh sintetis'}
+            </button>
+          </div>}
           {file && <p className="text-sm break-all">{file.name} · {(file.size / 1_000_000).toFixed(2)} MB · Belum berarti analisis berjalan.</p>}
         </div>
       </section>

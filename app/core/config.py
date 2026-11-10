@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     # Both gates default closed. No reference or biological strategy is selected implicitly.
     pipeline_enabled: bool = False
+    pipeline_max_active_jobs: int | None = Field(default=None, ge=1, le=64)
     pipeline_allow_synthetic: bool = False
     pipeline_root: Path = Path("data/jobs")
     reference_root: Path = Path("data/reference")

@@ -15,6 +15,10 @@
 - Tunnel **belum aktif**. Aktivasi publik tetap membutuhkan approval khusus dan password final dari input terminal tersamar pengguna.
 - Checkpoint ekspor backend: `b6d16f9`. Frontend memakai endpoint sebenarnya melalui header Bearer, CSV seluruh hasil sesuai filter aktif, VCF seluruh hasil seleksi analisis. Browser Job #3: CSV filter SNP menghasilkan 1 record; replay UUID/file/parameter yang sama mengembalikan Job yang sama tanpa dispatch ulang. JWT tetap wajib setelah gate.
 - Validasi terbaru: production build PASS, lint PASS, 44 frontend test PASS, 263 backend regression test PASS. Screenshot browser light/dark dan 390 px ditinjau; tabel tetap memiliki scroll horizontal lokal.
+- Gate server mencakup SPA, assets, dan semua `/api`, termasuk auth/upload/start/ekspor. Argon2id, signed HttpOnly/Secure/SameSite cookie 16 jam, CSRF, batas percobaan 6/IP/menit dan 30 global/menit. Password final melalui `scripts.demo_runtime password`, hash/key privat mode 0600, reload tanpa restart. Regresi favicon dan rotasi sesi diuji. Login/JWT GenoPath tetap wajib.
+- Serving production `127.0.0.1:3000` menyajikan build dan API same-origin; Vite dan server 8000 dihentikan. Runtime demo membatasi upload 10 MiB, 1 Job Queued/Running global dengan lock PostgreSQL, 2 thread dan timeout 600 detik.
+- Uji PostgreSQL tambahan: Job #4 QUAL 999 Completed dengan 0 varian dan ekspor valid; Job #5 reference/index mismatch sengaja menjadi Failed tanpa Analysis. Reference negatif disimpan di `.runtime/negative-evidence/`, tidak tersedia sebagai opsi aktif. Browser menampilkan empty/failed states dan refresh dengan benar.
+- Browser Job #6 menggunakan FASTQ gzip yang diunduh melalui tombol contoh sintetis setelah login; bytes sama dengan fixture, pipeline nyata, hasil/VCF/CSV/filter/replay/ownership PASS. Peserta tidak perlu mengambil dataset dari filesystem host.
 
 ## Baseline dan commit lokal
 

@@ -35,6 +35,7 @@ def preflight(factory, settings, owner, parameters):
         if reference is None:
             raise jobs.JobInvalid("Reference is unavailable.")
         confined_file(settings.reference_root, reference.path_fasta)
+        jobs.global_capacity(db, settings)
         if db.scalar(select(Job.id_job).where(Job.id_user == owner, Job.status.in_(("Queued", "Running")))):
             raise jobs.JobConflict("One active Job per user is allowed.")
 

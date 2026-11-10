@@ -158,9 +158,17 @@ export async function downloadJobResult(id: string | number, format: 'vcf' | 'cs
       if (filters[key] != null) query.set(key, String(filters[key]));
     }
   }
+  return authenticatedDownload('/api/jobs/' + id + '/' + format + (query.size ? '?' + query : ''), token);
+}
+
+export function downloadDemoInput(token: string): Promise<Blob> {
+  return authenticatedDownload('/api/demo/reads.fastq.gz', token);
+}
+
+async function authenticatedDownload(url: string, token: string): Promise<Blob> {
   let response: Response;
   try {
-    response = await fetch('/api/jobs/' + id + '/' + format + (query.size ? '?' + query : ''), {
+    response = await fetch(url, {
       headers: { Authorization: 'Bearer ' + token }, cache: 'no-store',
     });
   } catch { throw new ApiError(0, 'Unduhan terputus. Coba kembali setelah koneksi pulih.'); }

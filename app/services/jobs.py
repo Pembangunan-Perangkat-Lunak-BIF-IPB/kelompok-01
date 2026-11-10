@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import Settings
@@ -116,11 +116,21 @@ def build_plan(db, settings, owner, request):
     return plan
 
 
+def global_capacity(db, settings):
+    if settings.pipeline_max_active_jobs is None:
+        return
+    count = db.scalar(select(func.count()).select_from(Job).where(Job.status.in_(("Queued", "Running"))))
+    if count >= settings.pipeline_max_active_jobs:
+        raise JobConflict("Demo execution capacity is busy. Wait for the active Job to finish.")
+
+
 def create_job(factory, settings: Settings, owner: int, request: JobCreateRequest):
     with factory() as db, db.begin():
         # Serializes creation per user in PostgreSQL, including idempotent replay.
         if db.scalar(select(User.id_user).where(User.id_user == owner).with_for_update()) is None:
             raise JobNotFound("User not found.")
+        if settings.pipeline_max_active_jobs is not None and db.get_bind().dialect.name == "postgresql":
+            db.execute(text("SELECT pg_advisory_xact_lock(7041102026)"))
         existing = db.scalar(select(Job).where(
             Job.id_user == owner,
             Job.parameter_pipeline["request"]["request_id"].as_string() == request.request_id,
@@ -129,6 +139,7 @@ def create_job(factory, settings: Settings, owner: int, request: JobCreateReques
             if existing.parameter_pipeline["request"] != request.model_dump(mode="json"):
                 raise JobConflict("Submission UUID already belongs to different parameters.")
             return snapshot(db, existing)
+        global_capacity(db, settings)
         active = db.scalar(select(Job.id_job).where(Job.id_user == owner, Job.status.in_(["Queued", "Running"])))
         if active is not None:
             raise JobConflict("One active Job per user is allowed.")

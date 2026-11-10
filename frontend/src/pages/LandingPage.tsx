@@ -52,7 +52,7 @@ export const LandingPage: React.FC = () => {
           </div>
           <div className="hidden sm:block text-slate-400 dark:text-slate-600">|</div>
           <div>
-            <span>Format Input: <strong className="text-blue-900 dark:text-blue-300 font-black">Single-End FASTQ (.fastq / .fastq.gz maks 1 GB)</strong></span>
+            <span>Format Input: <strong className="text-blue-900 dark:text-blue-300 font-black">Single-end FASTQ kecil untuk demo; target final hingga 1 GB</strong></span>
           </div>
         </div>
       </section>
@@ -81,7 +81,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <h3 className="font-black text-sm text-slate-950 dark:text-white">Unggah Data FASTQ</h3>
               <p className="text-xs text-slate-950 dark:text-slate-200 leading-relaxed font-extrabold">
-                Validasi berkas Single-End (.fastq / .fastq.gz) maks 1 GB via REST API multipart upload aman.
+                Validasi FASTQ single-end (.fastq / .fastq.gz). Batas unggah demo ditampilkan pada formulir analisis.
               </p>
             </div>
             <div className="pt-2">
@@ -216,8 +216,8 @@ export const LandingPage: React.FC = () => {
                 </tr>
                 <tr className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="py-3 px-4 font-black text-blue-700 dark:text-blue-400">05.</td>
-                  <td className="py-3 px-4 font-extrabold">Buka hasil untuk meninjau tabel dan ekspor halaman aktif ke CSV. Download VCF belum tersedia.</td>
-                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">Tabel hasil & CSV halaman aktif</td>
+                  <td className="py-3 px-4 font-extrabold">Buka hasil untuk meninjau tabel serta mengunduh VCF hasil seleksi analisis dan CSV seluruh hasil sesuai filter aktif.</td>
+                  <td className="py-3 px-4 text-slate-950 dark:text-slate-100 font-black">Tabel hasil, VCF & CSV</td>
                 </tr>
               </tbody>
             </table>

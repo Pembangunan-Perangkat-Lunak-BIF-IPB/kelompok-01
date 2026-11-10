@@ -190,12 +190,14 @@ export const LoginPage: React.FC = () => {
               <>
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Pengguna (Username):</label>
+                    <label htmlFor="username" className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Pengguna (Username):</label>
                     <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">USERNAME</span>
                   </div>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      id="username"
+                      autoComplete="username"
                       type="text"
                       required
                       value={username}
@@ -208,11 +210,13 @@ export const LoginPage: React.FC = () => {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Kata Sandi:</label>
+                    <label htmlFor="password" className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Kata Sandi:</label>
                   </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      id="password"
+                      autoComplete="current-password"
                       type={showPassword ? 'text' : 'password'}
                       required
                       value={password}
@@ -222,6 +226,7 @@ export const LoginPage: React.FC = () => {
                     />
                     <button
                       type="button"
+                      aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none cursor-pointer"
                     >
@@ -257,12 +262,14 @@ export const LoginPage: React.FC = () => {
               <>
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Pengguna (Username):</label>
+                    <label htmlFor="username" className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Pengguna (Username):</label>
                     <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">USERNAME</span>
                   </div>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      id="username"
+                      autoComplete="username"
                       type="text"
                       required
                       value={username}
@@ -275,12 +282,14 @@ export const LoginPage: React.FC = () => {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Lengkap Peneliti:</label>
+                    <label htmlFor="nama" className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Nama Lengkap Peneliti:</label>
                     <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">FULL NAME</span>
                   </div>
                   <div className="relative">
                     <UserCheck className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      id="nama"
+                      autoComplete="name"
                       type="text"
                       required
                       value={nama}
@@ -293,12 +302,14 @@ export const LoginPage: React.FC = () => {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Alamat Email:</label>
+                    <label htmlFor="email" className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Alamat Email:</label>
                     <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">RFC-5322</span>
                   </div>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      id="email"
+                      autoComplete="email"
                       type="email"
                       required
                       value={email}
@@ -311,12 +322,14 @@ export const LoginPage: React.FC = () => {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Buat Kata Sandi:</label>
+                    <label htmlFor="password" className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Buat Kata Sandi:</label>
                     <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold">MIN. 12 KARAKTER</span>
                   </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      id="password"
+                      autoComplete="new-password"
                       type={showPassword ? 'text' : 'password'}
                       required
                       minLength={12}
@@ -327,6 +340,7 @@ export const LoginPage: React.FC = () => {
                     />
                     <button
                       type="button"
+                      aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none cursor-pointer"
                     >

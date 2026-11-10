@@ -1,25 +1,64 @@
 # Progres demo GenoPath — 11 November 2026
 
-Scope sesi: Checkpoint A dan B; tanpa live E2E PostgreSQL/Nextflow, tunnel, atau polish besar.
+**Checkpoint A dan B selesai untuk review.** Tidak dilanjutkan ke Checkpoint C/D/E.
 
-## Checkpoint A
+## Baseline dan commit lokal
 
-- Backend: `development@e0b94af42bc1b12f7d7b19cc83daea2f1a966367`.
-- Frontend Azril: snapshot `ca03a33c4b3e37a027a88cc33c69d3f88610469e`, hanya direktori `frontend/`.
-- Worktree: `/home/zizi/projects/genopath-demo-20261110`.
-- Branch: `codex/demo-integration-20261110`.
-- Workspace utama bersih; branch semula dan stash dipertahankan. Perubahan backend branch FE tidak diimpor.
-- Keputusan client: single-end only. Full Garlic.V2/FASTQ 1 GB bukan scope sesi ini.
+- Worktree: /home/zizi/projects/genopath-demo-20261110
+- Branch: codex/demo-integration-20261110
+- Backend: development@e0b94af42bc1b12f7d7b19cc83daea2f1a966367.
+- Frontend Azril: snapshot ca03a33c4b3e37a027a88cc33c69d3f88610469e, hanya direktori frontend/.
+- 85fc09b — feat(fe): integrasikan frontend Azril dengan baseline backend GenoPath (A).
+- aaa136b — feat(be): sediakan riwayat job dan pilihan referensi terautentikasi.
+- 7ba500f — fix(fe): benahi submission idempoten dan penyajian hasil analisis (B).
+- Catatan hasil akhir ini disimpan pada commit dokumentasi terpisah.
 
-## Checkpoint B
+Workspace utama tetap pada feature/be-m8-bowtie2-e2e@3a90689 dan bersih. Stash dipertahankan. Tidak ada push, PR, merge, atau perubahan branch Azril/development/main. Git worktree valid pada path di atas. Tool attachment Codex belum mengenali path setelah pemindahan dari lokasi managed ke path permintaan pengguna; semua perintah menggunakan path eksplisit. Ini tidak menghalangi penggunaan Git atau validasi.
 
-- Backend: GET /jobs dengan ownership dan urutan terbaru; GET /jobs/options terautentikasi hanya mengembalikan reference tersedia beserta constraint, tanpa path internal. Respons baru private, no-store.
-- Guard JWT, FASTQ, storage, receipt/flock, sanitasi error, dan runner tetap dari baseline backend.
-- Regresi targeted awal: **656 PASS**, dua warning deprecation Starlette/httpx/anyio. Tidak memakai database utama; fixture SQLite/temporary files.
-- Build awal frontend: **PASS**. Lint setelah normalisasi NBSP dan pemisahan context/hooks: **PASS**. Pengujian frontend awal: **34 PASS**.
-- FAIL awal telah diperbaiki: direktori induk --basetemp belum dibuat; assertion inventaris OpenAPI belum mencakup /jobs/options; indentation NBSP pada salinan frontend tidak lolos lint.
-- Perbaikan frontend dan validasi akhir masih berlangsung.
+## Perubahan Checkpoint B
 
-## Commit lokal
+- GET /jobs mengembalikan Job milik pengguna, urutan terbaru. GET /jobs/options terautentikasi mengembalikan reference yang file-nya tersedia beserta constraint publik, tanpa path internal. Respons baru private, no-store.
+- Guard JWT/ownership, validasi FASTQ, storage, receipt/flock, sanitasi error, dan runner tetap dari baseline backend. Tidak mengimpor pelemahan guard maupun debug logging body dari branch FE.
+- Alur: pilih FASTQ single-end → pilih reference/ploidi → konfigurasi QUAL/FORMAT-DP → Jalankan Analisis → pemantauan Job yang diakui server. Pemilihan berkas tidak mengirim POST.
+- Submission menggunakan POST /samples/upload-and-run. UUID, metadata file, dan parameter dibekukan sebelum pengiriman; retry/reload pada tab yang sama mempertahankan identitas. Penanganan accepted/replayed, sample_stored, reconciliation_required, HTTP 413/422, dan hasil jaringan ambigu berbeda.
+- Rekonsiliasi menghentikan retry otomatis. Penolakan definitif membuka konfigurasi untuk perbaikan dengan UUID baru. Double submission saat sibuk diblokir.
+- QUAL finite ≥ 0; FORMAT/DP integer 0–2147483647. Nilai nondefault diuji hingga parameter Job tersimpan sebelum dispatch. Missing QUAL/DP tetap dikecualikan oleh backend walaupun threshold nol.
+- Autentikasi hanya memakai DTO login yang sebenarnya; tidak mengarang profile/role server. Provider ganda dihapus, respons 401 memperbarui sesi, route analisis dilindungi, dan login kembali ke route yang diminta.
+- Monitoring menggunakan endpoint Job spesifik untuk direct link, polling tidak overlap, alasan gagal terbaca, serta timestamp mulai/selesai sebenarnya.
+- Result Viewer memakai counts/parameters/timestamp/ID backend, mempertahankan ALT dan GT asli serta null. Tidak ada angka, reference, genotype, checksum, atau validasi VCF fallback palsu. Mode synthetic dilabeli jelas.
+- Filter tipe dan batas QUAL dijalankan server sebelum pagination; respons lama diabaikan. Search/genotype client-side yang memberi hasil parsial dihapus.
+- VCF download dinonaktifkan dengan penjelasan karena endpoint belum ada. CSV hanya halaman aktif, diberi label eksplisit, dengan escaping koma/kutip/newline dan proteksi formula spreadsheet.
+- Identitas/navigasi/tema/styles kelompok dipertahankan. Copy homepage yang tidak sesuai kontrak diperbaiki tanpa redesign. NBSP dan trailing whitespace salinan FE dinormalisasi untuk lint.
+- Keputusan client: **single-end only**. Full Garlic.V2 dan FASTQ 1 GB tetap target final, di luar sesi ini.
 
-- 85fc09b — feat(fe): integrasikan frontend Azril dengan baseline backend GenoPath (Checkpoint A).
+## Validasi aktual
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| Frontend production build (TypeScript + Vite) | PASS |
+| ESLint | PASS, 0 error/warning |
+| Vitest: 5 file, kontrak API dan komponen | PASS, 39 test |
+| Backend targeted regression: 13 file test | PASS, 657 test |
+| Git diff --check | PASS |
+| Live E2E Nextflow/PostgreSQL, browser terhadap service nyata | SKIP, batas sesi |
+| Full genome/indexing, tunnel, rehearsal, Impeccable, polish besar | SKIP, batas sesi |
+
+Backend targeted mencakup demo_integration, auth, register, security, upload_storage, upload_http, jobs, job_http, submissions, results, pipeline, bowtie2_adapter, dan migrations. Dua warning deprecation berasal dari Starlette/httpx/anyio; tidak ada kegagalan akhir.
+
+Uji kontrak Nextflow memakai HTTP/upload/SQLite dan runner stub, index fixture bukan index biologis. Replay membuat hanya satu Sample tambahan dan satu Job. Tidak ada Nextflow biologis atau PostgreSQL yang dijalankan. Test data tidak diklaim sebagai hasil biologis.
+
+FAIL awal yang sudah diperbaiki: direktori induk basetemp belum dibuat, inventaris route OpenAPI belum mencakup /jobs/options, serta indentation NBSP/context export salinan FE tidak lolos lint.
+
+Runtime build: Node 24.22.2 portable, checksum diverifikasi dari nodejs.org, dalam .tools/ yang diabaikan Git. Dependency frontend/test dikunci di package-lock.json; instalasi memakai --ignore-scripts. Python memakai environment yang sudah tersedia, dengan -B; artefak test berada dalam .test-artifacts/ worktree baru.
+
+## Risiko dan langkah berikutnya (Checkpoint C, belum dijalankan)
+
+- Verifikasi konfigurasi runtime, schema database yang disetujui, reference/index yang cocok, wrapper executable, dan dataset demo kecil beserta provenance. .env tidak dibaca/disalin atau dikomit dalam sesi ini.
+- Flag pipeline_enabled dan katalog reference bukan klaim bahwa semua tools/index lolos preflight. Caller ploidi dipilih eksplisit sesuai dataset.
+- Uji browser nyata dari register/login, submission, monitoring, hingga hasil PostgreSQL/VCF; bandingkan parameter dan record secara aktual. Nextflow pada input sintetis tetap pembuktian teknis, bukan validasi data biologis nyata.
+- BackgroundTasks belum tahan restart; satu Job aktif per pengguna bukan pembatas resource global. History belum dipaginasi server untuk skala besar.
+- Journal browser hanya dalam sessionStorage, per akun pada tab yang sama; bukan antrean durable/cross-tab. Jika tab ditutup/storage dibersihkan pada hasil ambigu, periksa history/receipt sebelum membuat submission baru.
+- VCF download/CSV seluruh hasil masih belum tersedia dan UI menyatakannya. CSV halaman aktif bukan ekspor lengkap.
+- RAM WSL/full-genome/1 GB, kondisi runtime aktual, dan akses eksternal belum dibuktikan dalam Checkpoint B.
+
+Tidak ada tindakan manual yang diperlukan untuk menyelesaikan A/B. Siap direview sebelum izin Checkpoint C; gunakan path worktree eksplisit di atas.

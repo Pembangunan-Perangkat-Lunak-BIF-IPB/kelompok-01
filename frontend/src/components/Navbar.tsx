@@ -10,7 +10,7 @@ export const Navbar: React.FC = () => {
 
   const navItems = [
     { label: 'Beranda', path: '/' },
-    { label: 'Dashboard Job', path: '/dashboard' },
+    { label: 'Riwayat', path: '/dashboard' },
     { label: 'Analisis Baru', path: '/analisis-baru' },
   ];
 

@@ -32,6 +32,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-gradient-to-b from-blue-500/20 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
       </div>}
 
+      <div aria-hidden="true" className="fixed inset-0 pointer-events-none z-0 bg-repeat opacity-[0.035] dark:invert dark:opacity-[0.045]"
+        style={{ backgroundImage: "url('/garlic-pattern.png')", backgroundSize: '360px' }} />
       {/* Navigasi Utama Sticky */}
       <Navbar />
 

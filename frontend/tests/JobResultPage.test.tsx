@@ -42,9 +42,9 @@ it('renders actual parameters, nullable values, original multiallelic ALT/GT and
   expect(screen.queryByText('2.41')).toBeNull();
   expect(screen.queryByText('27.8x')).toBeNull();
   expect(screen.queryByText(/VERIFIED-OK|ASM12345/)).toBeNull();
-  expect((screen.getByRole('button', { name: /Unduh VCF/ }) as HTMLButtonElement).disabled).toBe(true);
-  expect(screen.getByRole('button', { name: 'Ekspor halaman ini (CSV)' })).toBeTruthy();
-  expect(screen.getByText(/CSV hanya memuat halaman tabel/)).toBeTruthy();
+  expect((screen.getByRole('button', { name: /Unduh VCF/ }) as HTMLButtonElement).disabled).toBe(false);
+  expect(screen.getByRole('button', { name: 'Unduh CSV seluruh hasil sesuai filter' })).toBeTruthy();
+  expect(screen.getByText(/tanpa batas halaman/)).toBeTruthy();
 });
 it('does not invent a genotype or type for missing legacy values', async () => {
   vi.mocked(getJobVariants).mockResolvedValue(page([{ ...variant, variant_type: null, genotypes: [] }]));
@@ -58,7 +58,7 @@ it('distinguishes unavailable results from a successful empty result', async () 
   mount(); await screen.findAllByText('Hasil belum tersedia.');
   expect(screen.queryByText('Total record varian')).toBeNull();
   expect(screen.queryByText(/Tidak ada record yang cocok/)).toBeNull();
-  expect((screen.getByRole('button', { name: 'Ekspor halaman ini (CSV)' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: 'Unduh CSV seluruh hasil sesuai filter' }) as HTMLButtonElement).disabled).toBe(true);
 });
 it('keeps synthetic execution visibly labelled', async () => {
   vi.mocked(getJobResult).mockResolvedValue({ ...summary, execution_mode: 'synthetic' });

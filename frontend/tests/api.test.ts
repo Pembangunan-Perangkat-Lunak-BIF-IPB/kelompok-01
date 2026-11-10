@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, getJobVariants, submitAnalysis, validateFile } from '../src/services/api';
+import { ApiError, downloadJobResult, getJobVariants, submitAnalysis, validateFile } from '../src/services/api';
 import { clearDraft, loadDraft, makeParameters, matchesFile, saveDraft } from '../src/services/submissionDraft';
 import { pageCsv } from '../src/services/resultExport';
 import type { VariantItem } from '../src/services/api';
@@ -88,6 +88,30 @@ describe('file validation and immutable submission draft', () => {
     expect(() => validateFile(new File(['x'], 'reads.FASTQ'))).toThrow();
     expect(() => validateFile(new File([], 'reads.fastq'))).toThrow();
     expect(() => validateFile(file, 1)).toThrow();
+  });
+});
+describe('owned result download contract', () => {
+  it('exports server filters without frontend pagination or query credentials', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response('CHROM,POS\r\nchr1,42\r\n'));
+    vi.stubGlobal('fetch', fetcher);
+    const blob = await downloadJobResult(3, 'csv', 'private-test-token', {
+      limit: 10, offset: 20, min_qual: 0, variant_type: 'snp',
+    });
+    const [url, options] = fetcher.mock.calls[0];
+    expect(Object.fromEntries(new URL(url, 'http://localhost').searchParams)).toEqual({ variant_type: 'snp', min_qual: '0' });
+    expect(url).not.toContain('private-test-token');
+    expect(options.headers.Authorization).toBe('Bearer private-test-token');
+    expect(blob.size).toBeGreaterThan(0);
+  });
+  it('downloads the complete selected VCF independently of table filters', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response('##fileformat=VCFv4.2\n'));
+    vi.stubGlobal('fetch', fetcher);
+    await downloadJobResult(3, 'vcf', 'private-test-token', { min_qual: 999, offset: 10 });
+    expect(fetcher.mock.calls[0][0]).toBe('/api/jobs/3/vcf');
+  });
+  it.each([401, 404, 409])('rejects HTTP %i instead of creating a pretend file', async status => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: 'Result unavailable.' }), { status })));
+    await expect(downloadJobResult(3, 'vcf', 'private-test-token')).rejects.toMatchObject({ status });
   });
 });
 it('exports only supplied rows with valid CSV escaping, original ALT/GT, nulls, and safe spreadsheet cells', () => {

@@ -2,8 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, FileSpreadsheet, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/auth';
-import { getJobResult, getJobVariants, type JobResultSummary, type JobVariantsResponse, type VariantQueryParams, type VariantType } from '../services/api';
-import { pageCsv } from '../services/resultExport';
+import { downloadJobResult, getJobResult, getJobVariants, type JobResultSummary, type JobVariantsResponse, type VariantQueryParams, type VariantType } from '../services/api';
 
 export function JobResultPage() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -15,6 +14,8 @@ export function JobResultPage() {
   const [filters, setFilters] = useState<VariantQueryParams>({});
   const [offset, setOffset] = useState(0);
   const [filterError, setFilterError] = useState('');
+  const [downloadError, setDownloadError] = useState('');
+  const [downloading, setDownloading] = useState<'vcf' | 'csv' | null>(null);
   const [summaryState, setSummary] = useState<{ key: string; data: JobResultSummary | null; error: string }>({ key: '', data: null, error: '' });
   const [tableState, setTable] = useState<{ key: string; data: JobVariantsResponse | null; error: string }>({ key: '', data: null, error: '' });
   const limit = 10;
@@ -56,12 +57,21 @@ export function JobResultPage() {
     setFilterError(''); setOffset(0);
     setFilters({ variant_type: type ? type as VariantType : undefined, min_qual: min, max_qual: max });
   };
-  const exportPage = () => {
-    if (!table?.items.length) return;
-    const url = URL.createObjectURL(new Blob([pageCsv(table.items)], { type: 'text/csv;charset=utf-8' }));
-    const link = document.createElement('a'); link.href = url;
-    link.download = 'GenoPath_Job_' + jobId + '_halaman_' + (Math.floor(offset / limit) + 1) + '.csv';
-    link.click(); URL.revokeObjectURL(url);
+  const download = async (format: 'vcf' | 'csv') => {
+    if (!summary || !jobId || !token || downloading) return;
+    setDownloading(format); setDownloadError('');
+    try {
+      const blob = await downloadJobResult(jobId, format, token, format === 'csv' && table ? {
+        variant_type: table.filters.variant_type ?? undefined,
+        min_qual: table.filters.min_qual ?? undefined, max_qual: table.filters.max_qual ?? undefined,
+      } : {});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a'); link.href = url;
+      link.download = 'GenoPath_Job_' + jobId + (format === 'vcf' ? '_selected.vcf' : '_filtered.csv');
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { setDownloadError(error instanceof Error ? error.message : 'Unduhan gagal.'); }
+    finally { setDownloading(null); }
   };
   if (!valid) return <p role="alert">ID Job tidak valid.</p>;
   const date = (value: string | null) => value ? new Date(value).toLocaleString('id-ID') : 'Belum tersedia';
@@ -78,11 +88,13 @@ export function JobResultPage() {
       {!loadingSummary && summaryState.error && <p role="alert" className="text-rose-800 dark:text-rose-300">{summaryState.error}</p>}
       {summary && <div className="text-sm space-y-2">
         {summary.execution_mode === 'synthetic' && <p role="status" className="font-bold text-amber-800 dark:text-amber-300">DATA SINTETIS — untuk pengujian teknis, bukan hasil biologis nyata.</p>}
+        {summary.reference?.sumber === 'genopath:synthetic-fixture' && <p role="status" className="font-bold text-amber-800 dark:text-amber-300">INPUT SINTETIS TERKONTROL — toolchain nyata; bukan validasi biologis Garlic.V2.</p>}
+        {summary.reference && <p>Reference: {summary.reference.nama_genom} · {summary.reference.versi ?? 'Versi tidak tersedia'}</p>}
         <p>Reference ID: #{summary.id_reference_genome} · Mulai: {date(summary.waktu_mulai)} · Selesai: {date(summary.waktu_selesai)}</p>
         <p>Seleksi analisis: QUAL ≥ {summary.parameters.parameter_qual}; FORMAT/DP ≥ {summary.parameters.parameter_dp};
           FILTER=PASS: {summary.parameters.require_pass == null ? 'Tidak diketahui' : summary.parameters.require_pass ? 'Ya' : 'Tidak'};
           Ploidi: {summary.parameters.variant_ploidy ?? 'Tidak diketahui'}.</p>
-        <p className="text-xs">Nama/assembly reference, checksum, dan metrik alignment tidak disediakan API ini.</p>
+        <p className="text-xs">Checksum dan metrik alignment tidak disediakan API ini.</p>
       </div>}
     </header>
     {summary && <section className="space-y-2"><div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -92,9 +104,10 @@ export function JobResultPage() {
     </div><p className="text-xs">Ringkasan seluruh record tersimpan pada Job; tidak berubah oleh filter tabel. Record multiallelic tetap dihitung satu record.</p></section>}
     <section className="glass-card rounded-2xl p-5 space-y-3">
       <div className="flex flex-wrap gap-3">
-        <button type="button" disabled title="Endpoint download VCF belum tersedia" className="bg-slate-500 text-white px-4 py-2 rounded-xl text-sm disabled:opacity-60">Unduh VCF — belum tersedia</button>
-        <button type="button" disabled={!table?.items.length} onClick={exportPage} className="bg-blue-600 disabled:bg-slate-500 text-white px-4 py-2 rounded-xl text-sm"><FileSpreadsheet className="inline w-4 h-4 mr-1" />Ekspor halaman ini (CSV)</button>
-      </div><p className="text-xs">CSV hanya memuat halaman tabel yang sedang ditampilkan, maksimal 10 record. Ekspor seluruh hasil dan download VCF belum diimplementasikan.</p>
+        <button type="button" disabled={!summary || Boolean(downloading)} onClick={() => void download('vcf')} className="bg-blue-600 disabled:bg-slate-500 text-white px-4 py-2 rounded-xl text-sm">{downloading === 'vcf' ? 'Mengunduh VCF…' : 'Unduh VCF hasil analisis'}</button>
+        <button type="button" disabled={!summary || !table || Boolean(downloading)} onClick={() => void download('csv')} className="bg-blue-600 disabled:bg-slate-500 text-white px-4 py-2 rounded-xl text-sm"><FileSpreadsheet className="inline w-4 h-4 mr-1" />{downloading === 'csv' ? 'Mengunduh CSV…' : 'Unduh CSV seluruh hasil sesuai filter'}</button>
+      </div><p className="text-xs">VCF memuat seluruh record hasil seleksi analisis, bukan VCF mentah atau filter tampilan. CSV memuat seluruh record yang cocok dengan filter aktif, tanpa batas halaman. Teks berpotensi formula diamankan untuk spreadsheet.</p>
+      {downloadError && <p role="alert" className="text-rose-800 dark:text-rose-300">{downloadError}</p>}
     </section>
     <section className="glass-card rounded-2xl overflow-hidden">
       <div className="p-5 space-y-4">

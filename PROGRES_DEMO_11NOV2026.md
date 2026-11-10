@@ -13,6 +13,8 @@
 - Backend ekspor/result/auth/gate: 167 PASS sebelum tambahan regresi rotasi/favicon. Frontend build/lint dan 39 test PASS. Pengujian tambahan serta freeze masih berjalan.
 - Bukti lokal dan artefak ada pada `.runtime/evidence/`, `.runtime/jobs/`, dan `.test-artifacts/`, semuanya diabaikan Git. Secret hanya file privat `.runtime/`, tidak dicetak atau dikomit.
 - Tunnel **belum aktif**. Aktivasi publik tetap membutuhkan approval khusus dan password final dari input terminal tersamar pengguna.
+- Checkpoint ekspor backend: `b6d16f9`. Frontend memakai endpoint sebenarnya melalui header Bearer, CSV seluruh hasil sesuai filter aktif, VCF seluruh hasil seleksi analisis. Browser Job #3: CSV filter SNP menghasilkan 1 record; replay UUID/file/parameter yang sama mengembalikan Job yang sama tanpa dispatch ulang. JWT tetap wajib setelah gate.
+- Validasi terbaru: production build PASS, lint PASS, 44 frontend test PASS, 263 backend regression test PASS. Screenshot browser light/dark dan 390 px ditinjau; tabel tetap memiliki scroll horizontal lokal.
 
 ## Baseline dan commit lokal
 

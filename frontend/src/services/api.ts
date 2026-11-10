@@ -35,6 +35,7 @@ export interface JobResultSummary {
   waktu_mulai: string | null; waktu_selesai: string | null;
   counts: { total_variants: number; snps: number; indels: number; other: number; unclassified: number };
   parameters: { parameter_qual: number; parameter_dp: number; require_pass: boolean | null; variant_ploidy: number | null };
+  reference?: ReferenceOption | null;
 }
 export interface VariantItem {
   id_variant: number; chromosome: string; position: number; ref_allele: string; alt_allele: string;
@@ -148,4 +149,29 @@ export function getJobVariants(id: string | number, params: VariantQueryParams, 
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) if (value !== undefined) query.set(key, String(value));
   return request<JobVariantsResponse>('/jobs/' + id + '/variants?' + query, token, { signal });
+}
+
+export async function downloadJobResult(id: string | number, format: 'vcf' | 'csv', token: string, filters: VariantQueryParams = {}): Promise<Blob> {
+  const query = new URLSearchParams();
+  if (format === 'csv') {
+    for (const key of ['variant_type', 'min_qual', 'max_qual'] as const) {
+      if (filters[key] != null) query.set(key, String(filters[key]));
+    }
+  }
+  let response: Response;
+  try {
+    response = await fetch('/api/jobs/' + id + '/' + format + (query.size ? '?' + query : ''), {
+      headers: { Authorization: 'Bearer ' + token }, cache: 'no-store',
+    });
+  } catch { throw new ApiError(0, 'Unduhan terputus. Coba kembali setelah koneksi pulih.'); }
+  if (response.status === 401) {
+    localStorage.removeItem('access_token'); localStorage.removeItem('user_info');
+    window.dispatchEvent(new Event('genopath:unauthorized'));
+  }
+  if (!response.ok) {
+    const data: unknown = await response.json().catch(() => null);
+    throw new ApiError(response.status, isObject(data) && typeof data.detail === 'string' ? data.detail : 'Unduhan gagal atau hasil belum tersedia.');
+  }
+  try { return await response.blob(); }
+  catch { throw new ApiError(0, 'Unduhan tidak lengkap. Coba kembali.'); }
 }

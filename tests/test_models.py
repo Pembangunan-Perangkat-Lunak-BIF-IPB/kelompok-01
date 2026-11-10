@@ -22,6 +22,8 @@ MODELS = (User, ReferenceGenome, Sample, Job, Analysis, Variant, Genotype)
 
 M7_COLUMNS = {
     Job: {
+        "analysis_number": (Integer, False),
+        "analysis_name": (String, False),
         "id_job": (Integer, False),
         "id_user": (Integer, False),
         "id_sample": (Integer, False),
@@ -215,7 +217,7 @@ def test_schema_does_not_introduce_defaults_or_delete_cascades(model):
         assert column.default is None
         assert column.server_default is None
         if isinstance(column.type, String):
-            assert column.type.length is None
+            assert column.type.length == (80 if model is Job and column.name == "analysis_name" else None)
     for foreign_key in model.__table__.foreign_keys:
         assert foreign_key.ondelete is None
         assert foreign_key.onupdate is None

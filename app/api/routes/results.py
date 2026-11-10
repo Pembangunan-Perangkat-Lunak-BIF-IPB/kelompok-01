@@ -50,9 +50,10 @@ def variants(id_job: JobId, query: Annotated[VariantQuery, Query()], owner: Owne
 @router.get("/{id_job}/vcf", responses=ERRORS, summary="Download the owned Job's selected VCF",
             description="Full analysis selection, not raw caller VCF and not current display filters.")
 def vcf(id_job: JobId, owner: Owner, factory: Factory, settings: Configuration):
+    filename = invoke(downloads.download_filename, factory, id_job, owner, "vcf")
     stream, size = invoke(downloads.selected_vcf, factory, settings, id_job, owner)
     return StreamingResponse(downloads.file_chunks(stream, size), media_type="text/vcf",
-                             headers={"Content-Disposition": f'attachment; filename="GenoPath_Job_{id_job}_selected.vcf"',
+                             headers={"Content-Disposition": f'attachment; filename="{filename}"',
                                       "Content-Length": str(size), "Cache-Control": "private, no-store",
                                       "X-Content-Type-Options": "nosniff"},
                              background=BackgroundTask(stream.close))
@@ -62,8 +63,9 @@ def vcf(id_job: JobId, owner: Owner, factory: Factory, settings: Configuration):
             description="SQL filters before keyset batches of 200. No page limit. Empty values remain empty. "
                         "Formula-like spreadsheet text is prefixed with an apostrophe.")
 def csv(id_job: JobId, filters: Annotated[VariantFilters, Query()], owner: Owner, factory: Factory):
+    filename = invoke(downloads.download_filename, factory, id_job, owner, "csv")
     chunks, close = invoke(downloads.csv_export, factory, id_job, owner, filters)
     return StreamingResponse(chunks, media_type="text/csv; charset=utf-8",
-                             headers={"Content-Disposition": f'attachment; filename="GenoPath_Job_{id_job}_filtered.csv"',
+                             headers={"Content-Disposition": f'attachment; filename="{filename}"',
                                       "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
                              background=BackgroundTask(close))

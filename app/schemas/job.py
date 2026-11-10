@@ -1,12 +1,31 @@
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
+import unicodedata
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 
 
 class JobParameters(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid", hide_input_in_errors=True)
+
+    analysis_name: str | None = Field(default=None, max_length=80)
+
+    @model_serializer(mode="wrap")
+    def legacy_compatible_metadata(self, handler):
+        data = handler(self)
+        if self.analysis_name is None:
+            data.pop("analysis_name", None)
+        return data
+
+    @field_validator("analysis_name", mode="before")
+    @classmethod
+    def safe_analysis_name(cls, value):
+        if value is None:
+            return None
+        if not isinstance(value, str) or any(not c.isprintable() for c in value):
+            raise ValueError("Nama analisis tidak boleh memuat karakter kontrol.")
+        return unicodedata.normalize("NFC", value.strip()) or None
 
     id_reference_genome: int = Field(gt=0, le=2**31 - 1)
     request_id: str = Field(description="Client-generated UUID, reused only for the same submission.")
@@ -28,6 +47,8 @@ class JobCreateRequest(JobParameters):
 
 
 class JobResponse(BaseModel):
+    analysis_number: int
+    analysis_name: str
     id_job: int
     id_sample: int
     id_reference_genome: int

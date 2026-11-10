@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import unicodedata
 
 from sqlalchemy import func, select
 from app.models import Genotype, Variant
@@ -139,3 +140,12 @@ def csv_export(factory, identifier, owner, filters):
         finally:
             stack.close()
     return chunks(), stack.close
+
+
+def download_filename(factory, identifier, owner, format):
+    with read_session(factory) as db:
+        job, _ = owned_result(db, identifier, owner)
+        ascii_name = unicodedata.normalize("NFKD", job.analysis_name).encode("ascii", "ignore").decode()
+        slug = re.sub(r"[^A-Za-z0-9]+", "-", ascii_name).strip("-")[:80].rstrip("-") or "Analisis"
+        suffix = "selected.vcf" if format == "vcf" else "filtered.csv"
+        return f"GenoPath_Analisis-{job.analysis_number}_{slug}_{suffix}"

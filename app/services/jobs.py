@@ -51,6 +51,7 @@ def snapshot(db, job):
     configuration = job.parameter_pipeline or {}
     mode = configuration.get("request", {}).get("execution_mode")
     return JobResponse(
+        analysis_number=job.analysis_number, analysis_name=job.analysis_name,
         id_job=job.id_job, id_sample=job.id_sample, id_reference_genome=job.id_reference_genome,
         status=job.status, waktu_mulai=job.waktu_mulai.replace(tzinfo=timezone.utc) if job.waktu_mulai else None,
         waktu_selesai=job.waktu_selesai.replace(tzinfo=timezone.utc) if job.waktu_selesai else None,
@@ -144,7 +145,8 @@ def create_job(factory, settings: Settings, owner: int, request: JobCreateReques
         if active is not None:
             raise JobConflict("One active Job per user is allowed.")
         plan = build_plan(db, settings, owner, request)
-        job = Job(id_user=owner, id_sample=request.id_sample, id_reference_genome=request.id_reference_genome,
+        number = (db.scalar(select(func.max(Job.analysis_number)).where(Job.id_user == owner)) or 0) + 1
+        job = Job(analysis_number=number, analysis_name=request.analysis_name or f"Analisis {number}", id_user=owner, id_sample=request.id_sample, id_reference_genome=request.id_reference_genome,
                   status="Queued", parameter_pipeline=plan.model_dump(mode="json"))
         db.add(job)
         db.flush()

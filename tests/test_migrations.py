@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "migrations/versions/0001_m6_baseline.py"
 M7 = ROOT / "migrations/versions/0002_m7_schema.py"
 M8 = ROOT / "migrations/versions/0003_m8_pipeline.py"
+M5 = ROOT / "migrations/versions/0005_analysis_identity.py"
 M9 = ROOT / "migrations/versions/0004_m9_result_indexes.py"
 
 
@@ -60,6 +61,7 @@ def test_revision_chain_is_explicit_and_linear():
         (M7, "0002_m7_schema", "0001_m6_baseline"),
         (M8, "0003_m8_pipeline", "0002_m7_schema"),
         (M9, "0004_m9_result_indexes", "0003_m8_pipeline"),
+        (M5, "0005_analysis_identity", "0004_m9_result_indexes"),
     ]:
         assignments = {
             node.targets[0].id: ast.literal_eval(node.value)
@@ -164,9 +166,9 @@ def test_alembic_resolves_one_head(offline_config):
     from alembic.script import ScriptDirectory
 
     scripts = ScriptDirectory.from_config(offline_config)
-    assert scripts.get_heads() == ["0004_m9_result_indexes"]
+    assert scripts.get_heads() == ["0005_analysis_identity"]
     assert [item.revision for item in scripts.walk_revisions()] == [
-        "0004_m9_result_indexes", "0003_m8_pipeline", "0002_m7_schema", "0001_m6_baseline"
+        "0005_analysis_identity", "0004_m9_result_indexes", "0003_m8_pipeline", "0002_m7_schema", "0001_m6_baseline"
     ]
 
 
@@ -183,7 +185,7 @@ def test_new_database_sql_is_generated_offline(offline_config):
     assert "UNIQUE (email)" not in sql
     assert "UNIQUE (username)" in sql
     assert "UNIQUE (id_job)" in sql
-    assert "CHECK (" not in sql
+    assert "CHECK (analysis_number > 0)" in sql
     assert "ON DELETE CASCADE" not in sql
     assert sql.index("LOCK TABLE") < sql.index("DO $genopath$")
     assert sql.index("DO $genopath$") < sql.index("ADD COLUMN username")
@@ -225,6 +227,12 @@ def test_explicit_revision_columns_match_orm(offline_config, monkeypatch):
         return add_column(name, column, **kwargs)
 
     monkeypatch.setattr(op, "add_column", capture_column)
+    alter_column = op.alter_column
+    def capture_alter(name, column, **kwargs):
+        if "nullable" in kwargs:
+            added[name][column].nullable = kwargs["nullable"]
+        return alter_column(name, column, **kwargs)
+    monkeypatch.setattr(op, "alter_column", capture_alter)
     command.upgrade(offline_config, "head", sql=True)
 
     assert set(created) == set(Base.metadata.tables)
@@ -277,7 +285,7 @@ def test_m9_indexes_match_orm_and_only_add_indexes(offline_config):
         index = next(index for index in Base.metadata.tables[table].indexes if index.name == name)
         assert list(index.columns.keys()) == columns
         assert not index.unique
-    command.upgrade(offline_config, "0003_m8_pipeline:head", sql=True)
+    command.upgrade(offline_config, "0003_m8_pipeline:0004_m9_result_indexes", sql=True)
     sql = offline_config.output_buffer.getvalue()
     assert sql.count("CREATE INDEX") == 3
     assert "CREATE TABLE" not in sql and "ALTER TABLE" not in sql
@@ -301,3 +309,15 @@ def test_online_errors_hide_connection_details(alembic_api, monkeypatch):
     assert "internal connection detail" not in str(error.value)
     assert error.value.__suppress_context__ is True
     engine.dispose.assert_called_once_with()
+
+
+def test_identity_backfill_order_constraints_and_no_biological_updates(offline_config):
+    from alembic import command
+    command.upgrade(offline_config, "0004_m9_result_indexes:head", sql=True)
+    sql=offline_config.output_buffer.getvalue()
+    assert "PARTITION BY id_user ORDER BY id_job" in sql
+    assert "UNIQUE (id_user, analysis_number)" in sql
+    assert "analysis_number > 0" in sql
+    for table in ("analysis", "variant", "genotype", "sample"):
+        assert f"UPDATE public.{table} " not in sql
+    assert "DROP " not in sql

@@ -58,6 +58,8 @@ class ResultSummary(BaseModel):
          'waktu_selesai': '2026-11-03T11:39:46.391799Z'}
     ]})
 
+    analysis_number: int | None = None
+    analysis_name: str | None = None
     id_job: int
     id_analysis: int
     id_sample: int

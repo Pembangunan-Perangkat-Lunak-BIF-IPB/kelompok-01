@@ -291,3 +291,12 @@ def test_corrupt_receipt_fails_closed_without_repair(tmp_path, data):
     with pytest.raises(ValueError):
         SubmissionRecord(tmp_path, 1, request_id)
     assert path.read_text() == data
+
+def test_name_is_frozen_in_receipt_and_uuid_conflicts_do_not_consume_number(case):
+    first=submit(case,analysis_name="Sampel Bawang A").json()
+    replay=submit(case,analysis_name="Sampel Bawang A")
+    assert replay.status_code==202 and replay.json()["job"]=={**first["job"],"status":"Completed","has_result":True,"waktu_mulai":replay.json()["job"]["waktu_mulai"],"waktu_selesai":replay.json()["job"]["waktu_selesai"]}
+    assert replay.json()["job"]["analysis_name"]=="Sampel Bawang A"
+    assert replay.json()["job"]["analysis_number"]==1
+    assert submit(case,analysis_name="Sampel Bawang B").status_code==409
+    assert (count(case,Job),count(case,Sample))==(1,3)

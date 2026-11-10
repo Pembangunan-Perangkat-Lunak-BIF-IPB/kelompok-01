@@ -1,5 +1,6 @@
 from sqlalchemy import (
     BigInteger,
+    CheckConstraint,
     Column,
     DateTime,
     Float,
@@ -60,6 +61,12 @@ class Sample(Base):
 
 class Job(Base):
     __tablename__ = "job"
+    __table_args__ = (
+        UniqueConstraint("id_user", "analysis_number", name="uq_job_owner_number"),
+        CheckConstraint("analysis_number > 0", name="ck_job_analysis_number_positive"),
+    )
+    analysis_number = Column(Integer, nullable=False)
+    analysis_name = Column(String(80), nullable=False)
 
     id_job = Column(Integer, primary_key=True)
     id_user = Column(Integer, ForeignKey("user.id_user"), nullable=False)

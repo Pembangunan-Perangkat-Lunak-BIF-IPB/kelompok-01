@@ -67,6 +67,7 @@ def summary(factory, identifier, owner):
         ploidy, require_pass = request.get("variant_ploidy"), request.get("require_pass")
         reference = db.get(ReferenceGenome, job.id_reference_genome)
         return ResultSummary(
+            analysis_number=job.analysis_number, analysis_name=job.analysis_name,
             id_job=job.id_job, id_analysis=analysis.id_analysis, id_sample=job.id_sample,
             id_reference_genome=job.id_reference_genome, status="Completed",
             reference=ReferenceOption(id_reference_genome=reference.id_reference_genome,

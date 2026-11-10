@@ -1,8 +1,21 @@
 # Progres demo GenoPath, 11 November 2026
 
-**Tahap 2C.2 selesai: nama/nomor analisis dan cleanup telah dideploy; tunnel publik dipertahankan.**
-URL aktif: https://namely-year-father-fifth.trycloudflare.com
+**Restorasi visual Azril selesai dan tervalidasi; fitur integrasi serta profil persisten tetap berfungsi.**
+URL aktif: https://arise-priced-bio-exercises.trycloudflare.com
 Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
+
+## Finalisasi restorasi visual dan audit publikasi (11 November 2026)
+
+- Basis sebelum finalisasi: dba7238, branch feature/fe-be-integration-demo. Perubahan lokal Layout.tsx, TeamSection.tsx dan test restorasi dipertahankan, tanpa reset/stash atau perubahan branch tim.
+- Restorasi selektif dari ca03a33: background kampus siang/malam dan overlay asli pada landing page; gambar Uchiha.jpg, cutout u1 sampai u5, layout kartu, hover blur/zoom/transisi serta animasi gelombang nama. Delapan aset kampus/karakter identik byte dengan snapshot Azril. Adaptasi terbatas: keyboard/tap, pembersihan timer, dan object-contain pada mobile; identitas gambar/peran tidak ditukar.
+- NIM terkonfirmasi: Roni Andripan G0401241005; Fajar Dhuha Zafran G0401241009; Rafif Alfarrel Nugroho G0401241015; Azril Ilham Fajrian G0401241020; Aldo Rafiz Aprilian G0401241051.
+- PASS build TypeScript/Vite terpisah di .runtime/final-restoration-build, ESLint, 55 frontend tests pada 7 file, dan git diff --check. Node Linux portable existing digunakan; percobaan awal melalui npm Windows gagal karena path UNC, tanpa instalasi/perubahan dependency.
+- PASS browser Edge nyata pada URL final: enam gambar, kelima pasangan nama/NIM/cutout, animasi nama, hover/blur/zoom, tap mobile 390 px, light/dark, tanpa overflow horizontal mobile. Login, profil GET /auth/me setelah refresh, Advanced QUAL/DP tersimpan saat panel ditutup/dibuka, riwayat, Monitoring dan Result Viewer tetap bekerja. VCF dan CSV masing-masing terunduh dengan nama server dan dua record; gate tanpa sesi dan JWT invalid ditolak. Tidak ada submission atau pipeline baru.
+- Build publik awal masih memakai crop mobile lama. Setelah identitas database demo diverifikasi read-only dan tidak ada Job aktif, aset frontend disalin dan HTML diganti atomik. HTML/aset sebelumnya tetap tersedia sebagai fallback. Browser publik kemudian PASS. Server PID 2341 dan cloudflared PID 7717 tidak direstart; password/hash, konfigurasi, database, dan pipeline tidak diubah.
+- Audit sebelum publikasi mencakup seluruh 17 commit demo di atas remote development@e0b94af, 166 blob unik dan 87 path historis, termasuk versi file yang kemudian diubah/dihapus. Tidak ditemukan secret runtime/akun lokal, token nyata, private key, credential URL, .env, database, log, binary tool, cache atau artefak Nextflow yang ikut terlacak. Sebanyak 26 kandidat literal credential merupakan marker test sintetis. Aset besar yang ikut adalah gambar frontend, bukan data runtime. File restorasi/test/dokumentasi final juga diperiksa sebelum commit.
+- Publikasi hanya untuk github:feature/fe-be-integration-demo; tidak merge, force push atau membuat PR. Hasil push dan kesamaan HEAD lokal/remote dilaporkan pada respons final. Bukti browser/unduhan/screenshot tetap lokal pada .runtime/final-restoration-check/, tidak ikut commit.
+- URL final dipilih manual oleh pengguna setelah recovery PC: https://arise-priced-bio-exercises.trycloudflare.com. Tunnel berada pada terminal WSL pengguna dan harus dibiarkan berjalan. Klaim pipeline tetap terbatas pada fixture sintetis 20 kbp, upload 10 MiB, satu Job aktif global; Full Garlic.V2/1 GB belum divalidasi.
+- Untuk progress report M10: rehearsal singkat anggota kelompok, demonstrasi hasil Completed/VCF/CSV nyata, dan penjelasan batas validasi sintetis. Impeccable serta perubahan fitur lain tetap ditunda.
 
 ## Bugfix profil: nama lengkap setelah login ulang
 
@@ -158,7 +171,7 @@ BackgroundTasks bukan antrean durable: restart saat Job aktif memerlukan rekonsi
 
 ## Handoff singkat untuk Azril
 
-- URL: https://namely-year-father-fifth.trycloudflare.com
+- URL: https://arise-priced-bio-exercises.trycloudflare.com
 - Masukkan password demo yang dibagikan pengguna secara privat, kemudian register/login akun GenoPath sendiri.
 - Analisis Baru → Unduh FASTQ contoh sintetis → pilih file unduhan → reference Fixture sintetis 20 kbp ID 1 → ploidi 2 → default QUAL 30/DP 10 atau Advanced 25/8 → Jalankan Analisis → monitor → Lihat Hasil → VCF/CSV.
 - Contoh ini hanya pembuktian teknis sintetis; tidak memvalidasi Garlic.V2. Upload maksimal 10 MiB dan satu Job aktif global. Jika sibuk, tunggu Job aktif selesai.

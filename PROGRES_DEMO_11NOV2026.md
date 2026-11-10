@@ -6,7 +6,7 @@ Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikas
 
 ## Tahap 2C.2: identitas analisis dan cleanup final
 
-- Backend checkpoint 87b3638; frontend fungsional 19531ba. Cleanup visual dan catatan ini disimpan pada checkpoint berikutnya. Rename branch dilakukan setelah semua perubahan dan pengujian selesai.
+- Backend 87b3638; frontend fungsional 19531ba; cleanup visual dan validasi 68cb927. Setelah seluruh implementasi/test/commit selesai dan tree bersih, branch lokal di-rename dari codex/demo-integration-20261110 ke feature/fe-be-integration-demo. Target sebelumnya tidak ada dan HEAD/history dipertahankan; tidak membuat branch tambahan. Pembaruan nama branch ini disimpan pada commit dokumentasi terakhir.
 - Nama opsional maksimal 80 karakter disimpan pada Job dan metadata request. Whitespace dinormalisasi, kontrol/bidi ditolak, teks dirender aman oleh React. Nama duplikat diizinkan; nama tidak menjadi path atau identitas internal.
 - Nomor persisten per owner berada di job.analysis_number, unik bersama id_user dan bernilai positif. Alokasi max nomor semua status + 1 dilakukan di bawah lock baris User yang sudah ada, sesudah pemeriksaan replay UUID. Job Failed tetap memiliki nomor; tidak ada fitur delete/recycle.
 - Migrasi additive 0005_analysis_identity hanya dijalankan pada genopath_demo_20261110_2231b2 setelah identitas database/role diverifikasi. Backfill memakai ROW_NUMBER PARTITION BY id_user ORDER BY id_job. Tidak mengubah primary key, FK, URL global, parameter biologis, atau output.
@@ -41,7 +41,7 @@ Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikas
 ## Git dan batas perubahan
 
 - Worktree: /home/zizi/projects/genopath-demo-20261110
-- Branch: codex/demo-integration-20261110
+- Branch: feature/fe-be-integration-demo
 - Basis backend development e0b94af; snapshot frontend Azril ca03a33, diport selektif.
 - A/B: 85fc09b, aaa136b, 7ba500f, d0e1258. Build/lint, 39 FE test dan 657 BE targeted test adalah bukti sesi A/B.
 - 2B: b6d16f9 ekspor backend, 665f019 integrasi ekspor FE, 76cec73 runtime/gate, b67d21d adaptasi visual, 1b2b1ea freeze lokal, 6f1747a verifikasi alur publik. HEAD juga mencakup checkpoint rehearsal Default dan konfirmasi jaringan pengguna ini.
@@ -63,7 +63,7 @@ Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikas
 
 ## Runtime terisolasi
 
-- Database baru: genopath_demo_20261110_2231b2, restricted role bernama sama, schema head 0004_m9_result_indexes. Identitas database dan role diverifikasi sebelum mutasi.
+- Database baru: genopath_demo_20261110_2231b2, restricted role bernama sama, schema head 0005_analysis_identity (sebelum Tahap 2C.2: 0004_m9_result_indexes). Identitas database dan role diverifikasi sebelum mutasi.
 - genopath_db dan genopath_integration_test tidak dimutasi atau dibersihkan.
 - PostgreSQL Windows 18.6; Python environment existing digunakan read-only. Java 21.0.13+9, Nextflow 25.10.9, fastp 1.0.1, Bowtie2 2.5.4, SAMtools 1.22.1, BCFtools 1.22.
 - Executable existing di main workspace digunakan read-only; HOME/cache/work/output baru diarahkan ke worktree demo. Folder toolchain dan .venv existing tetap menjadi dependensi restart.

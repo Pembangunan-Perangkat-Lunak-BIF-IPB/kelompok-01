@@ -1,7 +1,8 @@
 # Progres demo GenoPath, 11 November 2026
 
-**Freeze lokal Tahap 2B selesai. Tunnel publik belum diaktifkan.**
-Menunggu password final melalui terminal tersamar dan approval khusus aktivasi publik. Jangan menganggap localhost sebagai external E2E.
+**Tahap 2B: freeze lokal selesai; tunnel publik aktif setelah approval pengguna.**
+URL aktif: https://namely-year-father-fifth.trycloudflare.com
+Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pemasukan password final di halaman HTTPS dan akses dari jaringan/perangkat independen masih menunggu konfirmasi pengguna.
 
 ## Git dan batas perubahan
 
@@ -52,12 +53,17 @@ Menunggu password final melalui terminal tersamar dan approval khusus aktivasi p
 - Argon2id, signed HttpOnly/Secure/SameSite cookie, CSRF, batas 6 percobaan/IP/menit dan 30 global/menit. Traversal static, favicon CSRF, tampered cookie, expiry, rotasi password dan fail-closed diuji.
 - Password final ditetapkan pengguna dengan input tersamar 12–128 karakter, dua kali. Raw password tidak disimpan. Hash/key pada .runtime/gate.json; rotasi tidak perlu restart.
 - CLI menguji password lokal dan menyimpan hanya sesi yang benar-benar diterbitkan server pada file privat .runtime/gate-check-session.json untuk pengujian HTTPS otomatis. Ini bukan bukti pemasukan password pada URL publik; langkah tersebut tetap harus diuji di browser publik.
-- cloudflared portable resmi versi 2026.10.7 tersedia di .tools/, SHA-256 cocok digest release. Tidak memasang service, mengubah firewall/OS, atau mengaktifkan tunnel.
+- cloudflared portable resmi versi 2026.10.7 tersedia di .tools/, SHA-256 cocok digest release. Tidak memasang service, mengubah firewall/OS, atau mengubah konfigurasi sistem. Tunnel diaktifkan setelah persetujuan khusus pengguna.
 - Launcher menolak password sementara, memeriksa revision gate yang berjalan serta digest binary sebelum publikasi.
-- Setelah approval, hanya port 3000 melalui HTTPS tunnel yang diekspos. Database dan backend port 8000 tidak dibuka ke internet.
+- Approval aktivasi publik diterima pada percakapan ini. Tunnel aktif sejak 10 November 2026 sekitar 20.14 WIB, hanya menuju server loopback 3000. Database dan backend port 8000 tidak dibuka ke internet. Metrics cloudflared tetap loopback 20241.
 - Quick Tunnel bersifat sementara, tanpa jaminan uptime, hostname berubah setelah restart, batas 200 in-flight requests dan tidak mendukung SSE. Aplikasi memakai polling.
 - Rujukan resmi: https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/
-- External HTTPS, public password entry, external E2E dan perangkat/jaringan Azril: SKIP sampai aktivasi disetujui dan dijalankan. Belum ada URL untuk dibagikan.
+- Public HTTPS/TLS serta Cloudflare edge PASS. Tanpa gate, halaman/assets/API auth/upload/start/download mendapat 401. JWT sah tanpa gate tetap ditolak; cookie gate tampered dan JWT invalid untuk ekspor ditolak.
+- Browser melalui URL publik PASS: register/login GenoPath, download input sintetis gzip, pilih file/config tanpa POST, submit, Queued/Running/Completed Job #7, Nextflow, hasil, refresh/direct URL, light/dark/mobile, VCF/CSV, filter SNP, replay dan ownership. Browser memakai sesi gate sah yang diterbitkan saat verifikasi password lokal, bukan password mentah atau sesi yang dipalsukan.
+- Job #7: 2 Variant/2 Genotype PostgreSQL; VCF unduhan 3.345 byte identik dengan selected.vcf pipeline dan seluruh CHROM/POS/REF/ALT/QUAL/GT/DP cocok database. CSV 167 byte berisi 2 record, filter SNP 1 record. Parameter file Nextflow nyata QUAL 25/DP 8, 2 thread, ploidi 2.
+- Browser HTTPS juga memverifikasi hasil kosong Job #4, Failed Job #5 dan refresh, upload/config mobile serta homepage tanpa menjalankan pipeline ulang.
+- Bukti publik terpisah pada .runtime/evidence/public/: browser-e2e.json, browser-review.json, postgres-export-check.json, api-gate-check.json, result-render-check.json, tunnel-status.json, screenshot dan file ekspor. Bukti localhost sebelumnya tetap dipertahankan.
+- Batas pembuktian: pengujian otomatis melewati edge Cloudflare dari Windows pada PC yang sama. Pemasukan password final pada formulir HTTPS publik serta jaringan/perangkat Azril belum diklaim PASS. Pengguna sudah diminta memeriksa melalui incognito atau HP data seluler.
 
 ## UI dan validasi
 
@@ -78,7 +84,8 @@ Menunggu password final melalui terminal tersamar dan approval khusus aktivasi p
 | Masked setup/private session/launcher guard | PASS 3 |
 | Live PostgreSQL + Nextflow fixture plain/gzip | PASS |
 | Browser VCF/CSV, filter, ownership, replay, mobile, empty/failed | PASS |
-| Public tunnel/external E2E/PC sleep policy | SKIP atau belum terverifikasi |
+| Cloudflare HTTPS dan browser E2E melalui URL publik dari PC host | PASS, Job #7 |
+| Public password entry/perangkat atau jaringan independen/PC sleep policy | Menunggu konfirmasi atau belum terverifikasi |
 | Full Garlic.V2/1 GB/annotation/Impeccable | SKIP, di luar freeze |
 
 Dua warning deprecation BE berasal dari Starlette/httpx/anyio. Tidak mengklaim test historis sebagai current run atau mengakumulasi pengulangan menjadi jumlah test unik.
@@ -93,11 +100,19 @@ Password hanya diketik pada prompt terminal, jangan kirim lewat chat. Password a
 Server sudah berjalan dari sesi lokal Codex. Bila perlu restart, hentikan proses server milik demo dengan Ctrl+C setelah memastikan tidak ada Job aktif, lalu:
     /home/zizi/projects/genopath-backend/.venv/bin/python -B -m scripts.demo_runtime web
 
-Hanya sesudah approval khusus publik, jalankan di terminal terpisah:
+Tunnel saat ini sudah aktif dan tidak perlu dijalankan ulang. Hanya bila koneksi terputus, gunakan terminal terpisah untuk memulihkan; hostname akan berubah:
     /home/zizi/projects/genopath-backend/.venv/bin/python -B -m scripts.demo_runtime tunnel
 
 Pertahankan proses web, tunnel, PostgreSQL Windows, PC, WSL, dan jaringan. Jangan restart tunnel tanpa perlu; catat URL baru jika koneksi harus dipulihkan. Ctrl+C pada terminal tunnel menghentikan publikasi. Tidak ada service autostart yang dipasang.
 
 BackgroundTasks bukan antrean durable: restart saat Job aktif memerlukan rekonsiliasi, jangan langsung retry UUID baru atau mengubah status manual. Bila public/tunnel bermasalah, fallback localhost, hasil Completed tersimpan, VCF/CSV asli, dan screenshot teknis asli. Semua bukti tetap diberi label sintetis. Kebijakan sleep Windows belum terverifikasi; pengguna perlu menjaga host tetap menyala dan tidak sleep.
 
-Tindakan manual tersisa: tetapkan password lewat terminal tersamar, berikan approval publik, lalu uji password gate dari browser HTTPS/perangkat lain dan bagikan URL/password secara privat kepada Azril. Tidak mengirim pesan otomatis.
+## Handoff singkat untuk Azril
+
+- URL: https://namely-year-father-fifth.trycloudflare.com
+- Masukkan password demo yang dibagikan pengguna secara privat, kemudian register/login akun GenoPath sendiri.
+- Analisis Baru → Unduh FASTQ contoh sintetis → pilih file unduhan → reference Fixture sintetis 20 kbp ID 1 → ploidi 2 → default QUAL 30/DP 10 atau Advanced 25/8 → Jalankan Analisis → monitor → Lihat Hasil → VCF/CSV.
+- Contoh ini hanya pembuktian teknis sintetis; tidak memvalidasi Garlic.V2. Upload maksimal 10 MiB dan satu Job aktif global. Jika sibuk, tunggu Job aktif selesai.
+- Jangan restart tunnel yang masih sehat; URL berubah bila tunnel dibuat ulang. Tidak ada pesan WhatsApp/email yang dikirim otomatis.
+
+Tindakan manual tersisa: uji password final pada URL HTTPS, idealnya dari perangkat/jaringan lain; bagikan URL/password secara privat kepada Azril; jaga PC/WSL/PostgreSQL/jaringan tetap hidup dan tidak sleep. Password final dan approval tidak perlu diulang.

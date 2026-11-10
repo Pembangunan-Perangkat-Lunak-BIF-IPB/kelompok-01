@@ -6,7 +6,9 @@ const { chromium } = require(process.env.GENOPATH_PLAYWRIGHT_MODULE || path.join
 const root = process.env.GENOPATH_DEMO_ROOT || path.resolve(__dirname, '..');
 const base = process.env.GENOPATH_DEMO_URL || 'http://localhost:3000';
 const fixture = path.join(root, '.runtime', 'fixture');
-const evidence = path.join(root, '.runtime', 'evidence');
+const localEvidence = path.join(root, '.runtime', 'evidence');
+const evidence = base.startsWith('https://') ? path.join(localEvidence, 'public') : localEvidence;
+fs.mkdirSync(evidence, { recursive: true });
 const credentials = JSON.parse(fs.readFileSync(path.join(root, '.runtime', 'browser-private.json')));
 const checks = [];
 const pass = name => { checks.push(name); console.log('PASS ' + name); };
@@ -42,8 +44,39 @@ async function api(page, route, options = {}) {
   }, { route, options });
 }
 
+async function waitForFixtureResult(page) {
+  await page.getByText('INPUT SINTETIS TERKONTROL', { exact: false }).waitFor();
+  await page.getByRole('cell', { name: 'ACGT', exact: true }).waitFor();
+}
+
+async function existingResultReview(page) {
+  const state = JSON.parse(fs.readFileSync(path.join(evidence, 'browser-e2e.json')));
+  await page.goto(base + '/login');
+  await unlock(page);
+  await page.locator('#username').fill(credentials.public_username);
+  await page.locator('#password').fill(credentials.password);
+  await page.locator('form button[type=submit]').click();
+  await page.waitForURL('**/analisis-baru');
+  await page.goto(base + '/jobs/' + state.job_id + '/result');
+  await waitForFixtureResult(page);
+  await page.screenshot({ path: path.join(evidence, 'results.png'), fullPage: true, animations: 'disabled' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.screenshot({ path: path.join(evidence, 'results-mobile.png'), fullPage: true, animations: 'disabled' });
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.getByTitle('Beralih ke Mode Malam').click();
+  await page.reload();
+  await waitForFixtureResult(page);
+  await page.screenshot({ path: path.join(evidence, 'results-dark.png'), fullPage: true, animations: 'disabled' });
+  fs.writeFileSync(path.join(evidence, 'result-render-check.json'), JSON.stringify({
+    job_id: state.job_id, rendered_summary_and_variants: true, direct_url_refresh: true,
+    desktop_mobile_dark: true, url: base,
+  }, null, 2));
+  pass('existing public Job renders actual summary/variants after direct URL and refresh; screenshots wait for data');
+}
+
 async function review(page) {
-  const state = JSON.parse(fs.readFileSync(path.join(evidence, 'additional-runtime.json')));
+  const state = JSON.parse(fs.readFileSync(path.join(localEvidence, 'additional-runtime.json')));
   await page.goto(base + '/login');
   await unlock(page);
   await page.locator('#username').fill(credentials.latest_username);
@@ -78,7 +111,7 @@ async function review(page) {
   await page.screenshot({ path: path.join(evidence, 'homepage.png'), fullPage: true, animations: 'disabled' });
   fs.writeFileSync(path.join(evidence, 'browser-review.json'), JSON.stringify({
     upload_desktop_mobile: 'PASS', empty_result: 'PASS', failed_job_refresh: 'PASS', homepage: 'PASS',
-    browser: 'Edge', scope: 'local production server', external_e2e: false,
+    browser: 'Edge', scope: base, external_e2e: base.startsWith('https://'),
   }, null, 2));
   pass('browser login, upload desktop/mobile, empty result, Failed Job/refresh and homepage');
 }
@@ -88,6 +121,11 @@ async function review(page) {
   try {
     const context = await browser.newContext({ acceptDownloads: true, reducedMotion: 'reduce', viewport: { width: 1366, height: 900 } });
     const page = await context.newPage();
+    if (process.env.GENOPATH_EXISTING_RESULT_REVIEW === '1') {
+      await existingResultReview(page);
+      await context.close();
+      return;
+    }
     if (process.env.GENOPATH_REVIEW_ONLY === '1') {
       await review(page);
       await context.close();
@@ -185,7 +223,7 @@ async function review(page) {
     assert.deepEqual(result.variants.items.map(v => v.position).sort((a,b)=>a-b), [5001, 12001]);
     assert.equal(submissions, 1);
     await page.reload();
-    await page.getByRole('heading', { name: 'Tabel Varian', exact: true }).waitFor();
+    await waitForFixtureResult(page);
     await page.screenshot({ path: path.join(evidence, 'results.png'), fullPage: true });
     pass('real Nextflow -> VCF -> PostgreSQL result API -> browser result/refresh');
     const exports = {};
@@ -240,7 +278,7 @@ async function review(page) {
     await page.getByTitle('Beralih ke Mode Malam').click();
     assert.ok(await page.locator('html').evaluate(element => element.classList.contains('dark')));
     await page.reload();
-    await page.getByRole('heading', { name: 'Tabel Varian', exact: true }).waitFor();
+    await waitForFixtureResult(page);
     assert.ok(await page.locator('html').evaluate(element => element.classList.contains('dark')));
     await page.waitForFunction(() => parseInt(getComputedStyle(document.querySelector('.glass-card')).backgroundColor.match(/\d+/)[0]) < 30);
     await page.screenshot({ path: path.join(evidence, 'results-dark.png'), fullPage: true, animations: 'disabled' });

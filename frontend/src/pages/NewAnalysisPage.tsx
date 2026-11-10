@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UploadCloud, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/auth';
 import { ApiError, downloadDemoInput, getJobOptions, submitAnalysis, validateFile, type JobOptions, type SubmissionResponse } from '../services/api';
+import { ContextHelp } from '../components/ContextHelp';
 import { clearDraft, loadDraft, makeParameters, matchesFile, saveDraft, type SubmissionDraft } from '../services/submissionDraft';
 
 export function NewAnalysisPage() {
@@ -41,6 +42,8 @@ export function NewAnalysisPage() {
   }, [token, reload]);
 
   const locked = Boolean(draft) || uploading;
+  const qualError = !qual.trim() || !Number.isFinite(Number(qual)) || Number(qual) < 0 ? 'QUAL harus berupa angka ≥ 0.' : '';
+  const dpError = !dp.trim() || !Number.isInteger(Number(dp)) || Number(dp) < 0 || Number(dp) > 2147483647 ? 'DP harus bilangan bulat 0–2147483647.' : '';
   const configured = options?.pipeline_enabled && options.alignment_strategy === 'bowtie2';
   const selectFile = (candidate: File) => {
     if (inFlight.current || draft?.reconciliation || restored.error) return;
@@ -53,6 +56,7 @@ export function NewAnalysisPage() {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (inFlight.current || !token || !file || !configured || draft?.reconciliation || restored.error) return;
+    if (qualError || dpError) { setError(qualError || dpError); return; }
     inFlight.current = true;
     setError(''); setPartial(null);
     let active: SubmissionDraft;
@@ -143,27 +147,46 @@ export function NewAnalysisPage() {
             {selectedReference?.sumber && <p className="text-xs mt-1">Sumber: {selectedReference.sumber}</p>}
           </div>
           <div><label htmlFor="ploidy" className="block text-sm font-semibold mb-1">Ploidi untuk variant calling</label>
+            <ContextHelp label="Ploidi">Jumlah salinan kromosom yang digunakan caller. Pilih sesuai dataset; aplikasi tidak menentukannya dari FASTQ.</ContextHelp>
             <select id="ploidy" required value={ploidy} className={inputClass} onChange={event => setPloidy(event.target.value)}>
               <option value="">Pilih sesuai dataset</option>
               {options?.variant_ploidies.map(value => <option key={value} value={value}>{value}</option>)}
-            </select><p className="text-xs mt-1">Parameter caller harus sesuai dataset; tidak disimpulkan otomatis dari FASTQ.</p>
+            </select>
           </div>
-          <button type="button" role="switch" aria-checked={advanced} aria-controls="thresholds" onClick={() => {
-            setAdvanced(!advanced); if (advanced) { setQual('30'); setDp('10'); }
-          }} className="glass-card px-4 py-2 rounded-xl text-sm">Advanced QUAL/DP: {advanced ? 'Aktif' : 'Nonaktif'}</button>
-          {advanced ? <div id="thresholds" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label htmlFor="qual" className="block text-sm mb-1">Minimum QUAL</label>
-              <input id="qual" type="number" min="0" step="any" required value={qual} onChange={event => setQual(event.target.value)} className={inputClass} /></div>
-            <div><label htmlFor="dp" className="block text-sm mb-1">Minimum FORMAT/DP</label>
-              <input id="dp" type="number" min="0" max="2147483647" step="1" required value={dp} onChange={event => setDp(event.target.value)} className={inputClass} /></div>
-            <p className="text-xs sm:col-span-2">Varian dengan QUAL/DP hilang dikecualikan, termasuk pada threshold nol. Ini parameter seleksi analisis, bukan filter tampilan.</p>
-          </div> : <p className="text-sm">Preset seleksi: QUAL ≥ 30, FORMAT/DP ≥ 10, FILTER=PASS.</p>}
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div><h3 className="font-semibold text-sm">Seleksi varian</h3>
+                <p className="text-xs mt-1">{!qualError && !dpError && Number(qual) === 30 && Number(dp) === 10 ? 'Default' : 'Konfigurasi khusus'} · QUAL ≥ {qual || '…'} · FORMAT/DP ≥ {dp || '…'} · FILTER=PASS</p></div>
+              <button type="button" aria-expanded={advanced} aria-controls="thresholds" onClick={() => setAdvanced(!advanced)}
+                className="glass-card px-4 py-3 rounded-xl text-sm font-semibold">Pengaturan lanjutan {advanced ? '−' : '+'}</button>
+            </div>
+            {!advanced && (qualError || dpError) && <p role="alert" className="text-sm text-rose-800 dark:text-rose-300">{qualError || dpError} Buka pengaturan lanjutan untuk memperbaiki nilai.</p>}
+            {advanced && <div id="thresholds" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center"><label htmlFor="qual" className="text-sm font-semibold">Minimum QUAL</label>
+                  <ContextHelp label="Minimum QUAL">Skor kualitas varian pada kolom QUAL VCF. Threshold lebih tinggi mempertahankan lebih sedikit record yang memenuhi syarat, bukan jaminan akurasi lebih tinggi. Nilai QUAL yang hilang dikecualikan, termasuk jika threshold 0.</ContextHelp></div>
+                <p id="qual-help" className="text-xs mb-2">Ambang kualitas minimum varian. Default: 30.</p>
+                <input id="qual" type="number" min="0" step="any" required value={qual} aria-invalid={Boolean(qualError)} aria-describedby={'qual-help' + (qualError ? ' qual-error' : '')}
+                  onChange={event => setQual(event.target.value)} className={inputClass} />
+                {qualError && <p id="qual-error" role="alert" className="text-sm text-rose-800 dark:text-rose-300 mt-2">{qualError}</p>}
+              </div>
+              <div>
+                <div className="flex items-center"><label htmlFor="dp" className="text-sm font-semibold">Minimum FORMAT/DP</label>
+                  <ContextHelp label="Minimum FORMAT/DP">Jumlah read pada posisi varian untuk sample terkait, sesuai FORMAT/DP dalam VCF. Ini bukan jumlah read pendukung ALT saja dan bukan INFO/DP. Threshold lebih tinggi dapat mengurangi hasil. Nilai DP yang hilang tetap dikecualikan.</ContextHelp></div>
+                <p id="dp-help" className="text-xs mb-2">Kedalaman minimum per sample. Default: 10.</p>
+                <input id="dp" type="number" min="0" max="2147483647" step="1" required value={dp} aria-invalid={Boolean(dpError)} aria-describedby={'dp-help' + (dpError ? ' dp-error' : '')}
+                  onChange={event => setDp(event.target.value)} className={inputClass} />
+                {dpError && <p id="dp-error" role="alert" className="text-sm text-rose-800 dark:text-rose-300 mt-2">{dpError}</p>}
+              </div>
+              <p className="text-xs sm:col-span-2">Nilai tersimpan saat panel ditutup. Parameter ini menentukan seleksi analisis.</p>
+            </div>}
+          </div>
         </fieldset>
       </section>
       <section className="glass-card rounded-2xl p-5 space-y-2 text-sm">
         <h2 className="font-bold">Ringkasan sebelum dikirim</h2>
         <p>Reference: {selectedReference?.nama_genom ?? (reference ? '#' + reference : 'Belum dipilih')} · Ploidi: {ploidy || 'Belum dipilih'}</p>
-        <p>Single-end · Bowtie2 / Nextflow · QUAL ≥ {qual} · FORMAT/DP ≥ {dp} · FILTER=PASS</p>
+        <p>Single-end · Bowtie2 / Nextflow · QUAL ≥ {qualError ? 'Tidak valid' : qual} · FORMAT/DP ≥ {dpError ? 'Tidak valid' : dp} · FILTER=PASS</p>
         {draft && <div role="status" className="space-y-2 break-all">
           <p>UUID submission: <code>{draft.parameters.request_id}</code></p>
           <p>{draft.reconciliation ? 'Hasil pengiriman memerlukan rekonsiliasi operator. Jangan membuat UUID baru atau mengunggah ulang.' : 'Konfigurasi dikunci. Pengiriman ulang memakai UUID dan berkas yang sama agar tidak membuat Sample kedua.'}</p>
@@ -173,7 +196,7 @@ export function NewAnalysisPage() {
       </section>
       <div className="flex flex-wrap justify-end gap-3">
         {!draft && <button type="button" disabled={uploading} className="glass-card px-4 py-3 rounded-xl text-sm" onClick={() => { setQual('30'); setDp('10'); }}><RotateCcw className="inline w-4 h-4 mr-1" />Reset threshold</button>}
-        <button type="submit" disabled={!file || !reference || !ploidy || !configured || uploading || draft?.reconciliation || Boolean(restored.error)}
+        <button type="submit" disabled={Boolean(qualError || dpError) || !file || !reference || !ploidy || !configured || uploading || draft?.reconciliation || Boolean(restored.error)}
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-500 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2">
           {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
           {uploading ? 'Mengunggah dan memvalidasi…' : draft ? 'Kirim ulang submission yang sama' : 'Jalankan Analisis'}

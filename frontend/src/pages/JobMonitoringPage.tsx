@@ -1,3 +1,4 @@
+import { ContextHelp } from '../components/ContextHelp';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { Loader2, RefreshCcw, Play, Eye } from 'lucide-react';
@@ -47,7 +48,7 @@ export function JobMonitoringPage() {
     {notification && <p role="status" className="glass-card p-4 rounded-xl">{notification}</p>}
     <header className="glass-card rounded-3xl p-6 flex flex-wrap justify-between gap-4">
       <div><h1 className="text-2xl font-black">{jobId ? 'Pemantauan Job #' + jobId : 'Dashboard Job Analisis'}</h1>
-        <p className="text-sm mt-2">Status diperbarui setiap 4 detik. {state.updated && !loading ? 'Terakhir diterima: ' + state.updated : ''}</p></div>
+        <p className="text-sm mt-2">Pembaruan otomatis setiap 4 detik. {state.updated && !loading ? 'Terakhir diterima: ' + state.updated : ''}<ContextHelp label="Status Job">Queued: menunggu eksekusi. Running: pipeline sedang berjalan. Completed: analisis selesai; buka hasil untuk melihat parameter aktual. Failed: periksa pesan kegagalan sebelum mencoba analisis baru.</ContextHelp></p></div>
       <div className="flex items-center gap-3">
         <button type="button" aria-label="Segarkan status" className="glass-card rounded-xl p-3" onClick={() => setRefresh(value => value + 1)}><RefreshCcw className="w-4 h-4" /></button>
         <Link to="/analisis-baru" className="bg-blue-600 text-white rounded-xl px-4 py-3 text-sm font-bold"><Play className="inline w-4 h-4 mr-1" />Analisis Baru</Link>

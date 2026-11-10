@@ -4,6 +4,21 @@
 URL aktif: https://namely-year-father-fifth.trycloudflare.com
 Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
 
+## Tahap 2C.1: Advanced dan contextual help, selesai untuk review
+
+- Baseline fallback ca54fe1 dipertahankan. Build stabil sebelum perubahan disalin ke .runtime/ui-2c1/dist-stable-ca54fe1/; aset lama tetap tersedia di frontend/dist. Rollback UI dapat dilakukan dengan mengganti index.html secara atomik dari salinan stabil, tanpa restart service/tunnel.
+- Advanced menjadi disclosure Pengaturan lanjutan dengan aria-expanded, QUAL/FORMAT-DP dua kolom desktop dan satu kolom mobile. Menutup panel mempertahankan nilai khusus; ringkasan tetap menunjukkan nilai aktual dan label Konfigurasi khusus. Reset threshold terpisah mengembalikan 30/10. Tidak menambah parameter/default backend.
+- Validasi langsung QUAL finite >= 0 dan DP integer 0–2147483647, aria-invalid/description dan error per field. Pesan invalid tetap terlihat saat panel ditutup; submission invalid diblokir sebelum penyimpanan UUID. Draft/idempotency/retry/reconciliation dan keamanan tetap memakai mekanisme sebelumnya.
+- ContextHelp memakai portal di luar card/scroll container, target 44 px, label/description screen reader, hover/focus, klik/tap, Enter/Space dan Escape. Bantuan panjang dibatasi viewport dan bisa di-scroll; tidak memasang dependency.
+- Halaman: Analisis Baru (QUAL/FORMAT-DP/ploidi), Monitoring (arti status), Result Viewer (ringkasan, scope ekspor, filter), homepage (alur tools). Login/register tidak diubah.
+- Contoh penyederhanaan: paragraf scope VCF/CSV menjadi “VCF: seluruh seleksi analisis. CSV: seluruh hasil sesuai filter, tanpa batas halaman.” Detail raw VCF, filter, escaping spreadsheet berada pada ikon bantuan. Penjelasan QUAL/DP dipisah menjadi ringkasan satu kalimat dan bantuan tambahan. Peringatan sintetis, limit upload, status/error, parameter aktual dan cakupan unduhan tetap terlihat.
+- Parameter aktual Completed Job tetap tampil di Result Viewer dari API sebenarnya. DTO Monitoring tidak memuat threshold; tidak mengarang nilai atau mengubah kontrak API untuk menambahkannya.
+- PASS production build TypeScript/Vite, ESLint, 48 frontend test (6 file). Test baru mencakup keyboard/Escape/portal/toggle bantuan, preservasi parameter saat panel ditutup, reset, invalid input tanpa UUID/POST, dan submission nilai khusus dari panel tertutup. Kontrak submission diuji dengan mock pada unit test, bukan response dummy pada UI publik.
+- PASS browser Edge nyata melalui URL HTTPS yang sama: Default/Advanced, nilai input/validasi, hover/focus/keyboard/Escape, mobile touch 390 px dan batas popover, light/dark, login, pilih FASTQ tanpa POST, Monitoring Job #7, Result Viewer dan VCF/CSV asli Job #7. Total POST submission 0; tidak menjalankan pipeline atau memutasi data analisis. Tidak mengklaim live submission/pipeline baru pada tahap UI ini.
+- Deploy: build kandidat ke .runtime/ui-2c1/candidate, cek tidak ada Job aktif, salin aset dahulu dan ganti HTML secara atomik terakhir. Tidak restart server/tunnel, tidak mengubah hostname, gate/hash/JWT, database, API/backend, pipeline, limit atau mekanisme ekspor. Smoke browser awal diperbaiki agar menunggu render dan memisahkan tap dari screenshot full-page yang mengubah viewport; interaksi sentuhan memakai pointer event agar hover sintetis tidak membuka ulang bantuan.
+- Bukti lokal: .test-artifacts/ui-2c1-{build,lint,test}.log dan .runtime/ui-2c1/browser-check.json serta screenshot. Selector smoke script lama disesuaikan dengan disclosure baru; pipeline tidak dijalankan ulang.
+- Batas: Impeccable belum dipasang/dijalankan, Tahap 2C.2 menunggu review pengguna. Batas ilmiah dan operasional Tahap 2B tetap berlaku. Pengguna dapat refresh halaman publik untuk melihat build baru.
+
 ## Git dan batas perubahan
 
 - Worktree: /home/zizi/projects/genopath-demo-20261110

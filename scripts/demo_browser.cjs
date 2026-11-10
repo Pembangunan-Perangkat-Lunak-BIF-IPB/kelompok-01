@@ -95,7 +95,7 @@ async function review(page) {
   assert.deepEqual(fs.readFileSync(examplePath), fs.readFileSync(path.join(fixture, 'reads.fastq.gz')));
   await page.locator('#reference').selectOption('1');
   await page.locator('#ploidy').selectOption('2');
-  await page.getByRole('switch').click();
+  await page.getByRole('button', { name: /Pengaturan lanjutan/ }).click();
   await page.screenshot({ path: path.join(evidence, 'upload-desktop.png'), fullPage: true, animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
@@ -193,11 +193,11 @@ async function review(page) {
     await page.locator('#reference').selectOption('1');
     await page.locator('#ploidy').selectOption('2');
     if (defaultParameters) {
-      assert.equal(await page.getByRole('switch').getAttribute('aria-checked'), 'false');
+      assert.equal(await page.getByRole('button', { name: /Pengaturan lanjutan/ }).getAttribute('aria-expanded'), 'false');
       assert.equal(await page.locator('#qual').count(), 0);
       assert.equal(await page.locator('#dp').count(), 0);
     } else {
-      await page.getByRole('switch').click();
+      await page.getByRole('button', { name: /Pengaturan lanjutan/ }).click();
       await page.locator('#qual').fill(String(expectedQual));
       await page.locator('#dp').fill(String(expectedDp));
     }

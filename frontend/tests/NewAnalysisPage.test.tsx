@@ -40,7 +40,7 @@ it('selects/configures without POST, submits once, then navigates to the acknowl
   vi.mocked(submitAnalysis).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
   mount(); const user = await configure();
   expect(submitAnalysis).not.toHaveBeenCalled();
-  await user.click(screen.getByRole('switch'));
+  await user.click(screen.getByRole('button', { name: /Pengaturan lanjutan/ }));
   await user.clear(screen.getByLabelText('Minimum QUAL')); await user.type(screen.getByLabelText('Minimum QUAL'), '42.5');
   await user.clear(screen.getByLabelText('Minimum FORMAT/DP')); await user.type(screen.getByLabelText('Minimum FORMAT/DP'), '0');
   const form = screen.getByRole('button', { name: 'Jalankan Analisis' }).closest('form')!;
@@ -107,4 +107,52 @@ it.each([413, 422])('unlocks a definitive HTTP %s rejection for a corrected subm
   await user.click(screen.getByRole('button', { name: 'Jalankan Analisis' }));
   await screen.findByRole('heading', { name: 'Monitoring tujuan' });
   expect(vi.mocked(submitAnalysis).mock.calls[1][2].request_id).not.toBe(firstId);
+});
+
+it('collapses Advanced without losing custom thresholds or posting, and resets explicitly', async () => {
+  mount(); const user = await configure();
+  const toggle = screen.getByRole('button', { name: /Pengaturan lanjutan/ });
+  await user.click(toggle);
+  await user.clear(screen.getByLabelText('Minimum QUAL')); await user.type(screen.getByLabelText('Minimum QUAL'), '42');
+  await user.clear(screen.getByLabelText('Minimum FORMAT/DP')); await user.type(screen.getByLabelText('Minimum FORMAT/DP'), '7');
+  await user.click(toggle);
+  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  expect(screen.queryByLabelText('Minimum QUAL')).toBeNull();
+  expect(screen.getByText(/Konfigurasi khusus/).textContent).toContain('QUAL ≥ 42');
+  expect(submitAnalysis).not.toHaveBeenCalled();
+  await user.click(toggle);
+  expect((screen.getByLabelText('Minimum QUAL') as HTMLInputElement).value).toBe('42');
+  await user.click(screen.getByRole('button', { name: /Reset threshold/ }));
+  expect((screen.getByLabelText('Minimum QUAL') as HTMLInputElement).value).toBe('30');
+  expect((screen.getByLabelText('Minimum FORMAT/DP') as HTMLInputElement).value).toBe('10');
+  expect(submitAnalysis).not.toHaveBeenCalled();
+});
+
+it('shows field validation and blocks submission before persisting any UUID', async () => {
+  mount(); const user = await configure();
+  await user.click(screen.getByRole('button', { name: /Pengaturan lanjutan/ }));
+  await user.clear(screen.getByLabelText('Minimum FORMAT/DP'));
+  await user.type(screen.getByLabelText('Minimum FORMAT/DP'), '1.5');
+  expect(screen.getByRole('alert').textContent).toContain('bilangan bulat');
+  expect(screen.getByLabelText('Minimum FORMAT/DP').getAttribute('aria-invalid')).toBe('true');
+  const submit = screen.getByRole('button', { name: 'Jalankan Analisis' });
+  expect((submit as HTMLButtonElement).disabled).toBe(true);
+  await user.click(screen.getByRole('button', { name: /Pengaturan lanjutan/ }));
+  expect(screen.getByRole('alert').textContent).toContain('Buka pengaturan lanjutan');
+  fireEvent.submit(submit.closest('form')!);
+  expect(submitAnalysis).not.toHaveBeenCalled();
+  expect(loadDraft('tester')).toBeNull();
+});
+
+it('submits visible custom summary values even when Advanced is collapsed', async () => {
+  mount(); const user = await configure();
+  const toggle = screen.getByRole('button', { name: /Pengaturan lanjutan/ });
+  await user.click(toggle);
+  await user.clear(screen.getByLabelText('Minimum QUAL')); await user.type(screen.getByLabelText('Minimum QUAL'), '25');
+  await user.clear(screen.getByLabelText('Minimum FORMAT/DP')); await user.type(screen.getByLabelText('Minimum FORMAT/DP'), '8');
+  await user.click(toggle);
+  await user.click(screen.getByRole('button', { name: 'Jalankan Analisis' }));
+  await screen.findByRole('heading', { name: 'Monitoring tujuan' });
+  expect(submitAnalysis).toHaveBeenCalledTimes(1);
+  expect(vi.mocked(submitAnalysis).mock.calls[0][2]).toMatchObject({ parameter_qual: 25, parameter_dp: 8 });
 });

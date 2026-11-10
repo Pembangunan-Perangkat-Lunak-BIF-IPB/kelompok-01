@@ -1,3 +1,4 @@
+import { ContextHelp } from '../components/ContextHelp';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, FileSpreadsheet, Loader2, RefreshCw } from 'lucide-react';
@@ -94,19 +95,19 @@ export function JobResultPage() {
         <p>Seleksi analisis: QUAL ≥ {summary.parameters.parameter_qual}; FORMAT/DP ≥ {summary.parameters.parameter_dp};
           FILTER=PASS: {summary.parameters.require_pass == null ? 'Tidak diketahui' : summary.parameters.require_pass ? 'Ya' : 'Tidak'};
           Ploidi: {summary.parameters.variant_ploidy ?? 'Tidak diketahui'}.</p>
-        <p className="text-xs">Checksum dan metrik alignment tidak disediakan API ini.</p>
+
       </div>}
     </header>
     {summary && <section className="space-y-2"><div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
       {[['Total record varian', summary.counts.total_variants], ['SNP', summary.counts.snps], ['InDel', summary.counts.indels],
         ['Other', summary.counts.other], ['Tidak terklasifikasi', summary.counts.unclassified]].map(([label, value]) =>
         <div key={label} className="glass-card rounded-2xl p-5"><h2 className="text-sm">{label}</h2><p className="text-3xl font-black mt-2">{Number(value).toLocaleString('id-ID')}</p></div>)}
-    </div><p className="text-xs">Ringkasan seluruh record tersimpan pada Job; tidak berubah oleh filter tabel. Record multiallelic tetap dihitung satu record.</p></section>}
+    </div><p className="text-xs">Ringkasan seluruh hasil analisis.<ContextHelp label="Ringkasan varian">Filter tabel tidak mengubah ringkasan. Record multiallelic, dengan beberapa ALT, dihitung sebagai satu record. GT mempertahankan indeks alel dan pemisah asli VCF.</ContextHelp></p></section>}
     <section className="glass-card rounded-2xl p-5 space-y-3">
       <div className="flex flex-wrap gap-3">
         <button type="button" disabled={!summary || Boolean(downloading)} onClick={() => void download('vcf')} className="bg-blue-600 disabled:bg-slate-500 text-white px-4 py-2 rounded-xl text-sm">{downloading === 'vcf' ? 'Mengunduh VCF…' : 'Unduh VCF hasil analisis'}</button>
         <button type="button" disabled={!summary || !table || Boolean(downloading)} onClick={() => void download('csv')} className="bg-blue-600 disabled:bg-slate-500 text-white px-4 py-2 rounded-xl text-sm"><FileSpreadsheet className="inline w-4 h-4 mr-1" />{downloading === 'csv' ? 'Mengunduh CSV…' : 'Unduh CSV seluruh hasil sesuai filter'}</button>
-      </div><p className="text-xs">VCF memuat seluruh record hasil seleksi analisis, bukan VCF mentah atau filter tampilan. CSV memuat seluruh record yang cocok dengan filter aktif, tanpa batas halaman. Teks berpotensi formula diamankan untuk spreadsheet.</p>
+      </div><p className="text-xs">VCF: seluruh seleksi analisis. CSV: seluruh hasil sesuai filter, tanpa batas halaman.<ContextHelp label="Cakupan unduhan">VCF bukan file mentah caller dan tidak mengikuti filter tampilan. CSV mengikuti filter aktif pada semua halaman. Teks berpotensi formula diamankan untuk spreadsheet; nilai kosong tetap kosong.</ContextHelp></p>
       {downloadError && <p role="alert" className="text-rose-800 dark:text-rose-300">{downloadError}</p>}
     </section>
     <section className="glass-card rounded-2xl overflow-hidden">
@@ -121,7 +122,7 @@ export function JobResultPage() {
           <div><label htmlFor="max-qual" className="block text-sm mb-1">QUAL maksimum</label><input id="max-qual" type="number" min="0" step="any" value={maxQual} onChange={event => setMaxQual(event.target.value)} className={inputClass} /></div>
           <button className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm" type="submit">Terapkan filter</button>
         </form>
-        <p className="text-xs">Filter diterapkan server sebelum pagination, hanya pada varian yang sudah disimpan; tidak menjalankan ulang analisis.</p>
+        <p className="text-xs">Filter tampilan tidak menjalankan ulang analisis.<ContextHelp label="Filter hasil">Tipe dan batas QUAL diterapkan pada seluruh varian tersimpan sebelum pembagian halaman. Filter ini tidak dapat mengembalikan record yang dikeluarkan oleh threshold analisis awal.</ContextHelp></p>
         {filterError && <p role="alert" className="text-rose-800 dark:text-rose-300">{filterError}</p>}
       </div>
       {loadingTable ? <p role="status" className="p-8"><Loader2 className="inline w-5 h-5 animate-spin mr-2" />Memuat varian…</p> :

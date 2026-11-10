@@ -1,3 +1,4 @@
+import { ContextHelp } from '../components/ContextHelp';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Play, FileInput, Sliders, Dna as DnaIcon, Database, ArrowRight } from 'lucide-react';
@@ -25,7 +26,7 @@ export const LandingPage: React.FC = () => {
         {/* Subtitle Hero Frosted Glass */}
         <div className="max-w-2xl mx-auto bg-white/30 dark:bg-slate-900/45 backdrop-blur-2xl p-4.5 rounded-2xl border border-white/50 dark:border-slate-700/60 shadow-xl">
           <p className="text-xs md:text-sm text-slate-950 dark:text-slate-100 font-extrabold leading-relaxed">
-            Otomatisasi pemrosesan genomik <span className="italic text-blue-700 dark:text-blue-400">Allium sativum</span> (Bawang Putih) mulai dari kontrol kualitas FASTQ, pemetaan terhadap reference yang dipilih via Bowtie2, hingga penyimpanan varian dan peninjauan hasil.
+            Analisis FASTQ single-end untuk menemukan varian DNA bawang putih, dari unggah hingga hasil yang dapat diunduh.<ContextHelp label="Alur analisis">fastp memeriksa kualitas read, Bowtie2 memetakan read ke reference, SAMtools memproses alignment, dan BCFtools memanggil varian. Reference serta parameter seleksi dipilih sebelum analisis.</ContextHelp>
           </p>
         </div>
 

@@ -5,7 +5,8 @@ from datetime import timezone
 
 from sqlalchemy import case, func, or_, select, text
 
-from app.models import Analysis, Genotype, Job, Sample, Variant
+from app.models import Analysis, Genotype, Job, ReferenceGenome, Sample, Variant
+from app.schemas.job_options import ReferenceOption
 from app.schemas.result import (
     GenotypeResult, ResultParameters, ResultSummary, VariantCounts, VariantFilters,
     VariantPage, VariantQuery, VariantResult,
@@ -64,9 +65,13 @@ def summary(factory, identifier, owner):
         request = request if isinstance(request, dict) else {}
         mode = request.get("execution_mode")
         ploidy, require_pass = request.get("variant_ploidy"), request.get("require_pass")
+        reference = db.get(ReferenceGenome, job.id_reference_genome)
         return ResultSummary(
             id_job=job.id_job, id_analysis=analysis.id_analysis, id_sample=job.id_sample,
             id_reference_genome=job.id_reference_genome, status="Completed",
+            reference=ReferenceOption(id_reference_genome=reference.id_reference_genome,
+                                      nama_genom=reference.nama_genom, versi=reference.versi, sumber=reference.sumber)
+            if reference is not None else None,
             counts=VariantCounts(**dict(zip(("total_variants", "snps", "indels", "other", "unclassified"), counts))),
             parameters=ResultParameters(parameter_qual=analysis.parameter_qual, parameter_dp=analysis.parameter_dp,
                 require_pass=require_pass if type(require_pass) is bool else None,

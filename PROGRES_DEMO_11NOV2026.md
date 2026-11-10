@@ -1,6 +1,18 @@
 # Progres demo GenoPath — 11 November 2026
 
-**Checkpoint A dan B selesai untuk review.** Tidak dilanjutkan ke Checkpoint C/D/E.
+**Checkpoint A/B telah disetujui; Tahap 2B sedang dijalankan.** Catatan A/B di bawah adalah bukti historis, bukan status akhir 2B.
+
+## Tahap 2B: runtime dan ekspor (10 November, lokal)
+
+- Database baru `genopath_demo_20261110_2231b2`, role terbatas dengan nama sama, schema head `0004_m9_result_indexes`. Identitas database/role diverifikasi sebelum migrasi dan penulisan. `genopath_db` dan `genopath_integration_test` tidak dimutasi.
+- Browser Edge nyata berhasil register/login, file/config tanpa POST, submit 202, Queued/Running/Completed, Nextflow, fastp, Bowtie2, SAMtools, BCFtools, ingest PostgreSQL, Result Viewer, serta refresh. Job #1 dan #2 masing-masing berisi 2 varian, 1 SNP posisi 5001 dan 1 InDel posisi 12001, serta 2 genotype.
+- Input **sintetis terkontrol**: generator repo seed 20261104, reference 20.000 bp, 7.942 read single-end 150 bp Q40. QUAL 25, FORMAT/DP 8, ploidi 2. Reference/index cocok diverifikasi. Toolchain nyata ini bukan validasi biologis atau Garlic.V2.
+- GET `/jobs/{id}/vcf` men-stream `selected.vcf` yang benar dari Job, mencocokkan metadata/run ID, file descriptor tanpa symlink, validitas VCF dan jumlah record. Bukan raw caller VCF atau filter tampilan.
+- GET `/jobs/{id}/csv` men-stream seluruh hasil sesuai filter server, batch 200, snapshot read-only, tanpa limit halaman. Null kosong, ALT/GT asli, escaping CSV dan proteksi formula spreadsheet.
+- Browser berhasil mengunduh VCF 3.329 byte dan CSV 167 byte Job #2, masing-masing 2 record. JWT hilang/invalid, cross-user, status belum selesai, file invalid/hilang/path tidak aman, ALT multiallelic, null, formula, serta ekspor 509 record diuji pada fixture terisolasi.
+- Backend ekspor/result/auth/gate: 167 PASS sebelum tambahan regresi rotasi/favicon. Frontend build/lint dan 39 test PASS. Pengujian tambahan serta freeze masih berjalan.
+- Bukti lokal dan artefak ada pada `.runtime/evidence/`, `.runtime/jobs/`, dan `.test-artifacts/`, semuanya diabaikan Git. Secret hanya file privat `.runtime/`, tidak dicetak atau dikomit.
+- Tunnel **belum aktif**. Aktivasi publik tetap membutuhkan approval khusus dan password final dari input terminal tersamar pengguna.
 
 ## Baseline dan commit lokal
 

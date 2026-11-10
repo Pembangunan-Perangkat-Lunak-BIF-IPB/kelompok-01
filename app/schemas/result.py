@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from app.schemas.job_options import ReferenceOption
 
 
 class VariantFilters(BaseModel):
@@ -61,6 +62,7 @@ class ResultSummary(BaseModel):
     id_analysis: int
     id_sample: int
     id_reference_genome: int
+    reference: ReferenceOption | None = None
     status: Literal["Completed"]
     counts: VariantCounts
     parameters: ResultParameters

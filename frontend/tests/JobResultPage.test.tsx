@@ -13,7 +13,7 @@ vi.mock('../src/services/api', async importOriginal => ({
 const variant: VariantItem = { id_variant: 1, chromosome: 'contig-contract', position: 42, ref_allele: 'A', alt_allele: 'C,AT',
   qual: null, variant_type: 'other', filter_status: null, info: null,
   genotypes: [{ id_genotype: 1, id_sample: 9, genotype_call: '1|2', dp: null }] };
-const summary: JobResultSummary = { id_job: 8, id_analysis: 2, id_sample: 9, id_reference_genome: 7,
+const summary: JobResultSummary = { analysis_name: 'Sampel Bawang A', analysis_number: 1, id_job: 8, id_analysis: 2, id_sample: 9, id_reference_genome: 7,
   status: 'Completed', execution_mode: 'nextflow', waktu_mulai: null, waktu_selesai: null,
   parameters: { parameter_qual: 17.5, parameter_dp: 0, variant_ploidy: 1, require_pass: true },
   counts: { total_variants: 11, snps: 10, indels: 0, other: 1, unclassified: 0 } };
@@ -34,7 +34,7 @@ it('renders actual parameters, nullable values, original multiallelic ALT/GT and
   mount();
   await screen.findByText('C,AT');
   expect(screen.getByText('1|2')).toBeTruthy();
-  expect(screen.getByText(/Sample #9/)).toBeTruthy();
+  expect(screen.getByText(/Analisis #1/)).toBeTruthy();
   expect(screen.getByText(/Reference ID: #7/)).toBeTruthy();
   expect(screen.getByText(/QUAL ≥ 17.5; FORMAT\/DP ≥ 0/)).toBeTruthy();
   expect(screen.queryByText(/Heterozygous/)).toBeNull();

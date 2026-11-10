@@ -62,13 +62,13 @@ export function JobResultPage() {
     if (!summary || !jobId || !token || downloading) return;
     setDownloading(format); setDownloadError('');
     try {
-      const blob = await downloadJobResult(jobId, format, token, format === 'csv' && table ? {
+      const file = await downloadJobResult(jobId, format, token, format === 'csv' && table ? {
         variant_type: table.filters.variant_type ?? undefined,
         min_qual: table.filters.min_qual ?? undefined, max_qual: table.filters.max_qual ?? undefined,
       } : {});
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(file.blob);
       const link = document.createElement('a'); link.href = url;
-      link.download = 'GenoPath_Job_' + jobId + (format === 'vcf' ? '_selected.vcf' : '_filtered.csv');
+      link.download = file.filename;
       document.body.appendChild(link); link.click(); link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) { setDownloadError(error instanceof Error ? error.message : 'Unduhan gagal.'); }
@@ -78,18 +78,18 @@ export function JobResultPage() {
   const date = (value: string | null) => value ? new Date(value).toLocaleString('id-ID') : 'Belum tersedia';
   const inputClass = 'glass-card px-3 py-2 rounded-xl text-sm w-full';
   return <div className="max-w-7xl mx-auto space-y-6 px-4 py-6">
-    <Link to={'/jobs/' + jobId} className="text-blue-700 dark:text-blue-300 underline text-sm"><ArrowLeft className="inline w-4 h-4 mr-1" />Pemantauan Job #{jobId}</Link>
+    <Link to={'/jobs/' + jobId} className="text-blue-700 dark:text-blue-300 underline text-sm"><ArrowLeft className="inline w-4 h-4 mr-1" />Pemantauan analisis</Link>
     <header className="glass-card rounded-2xl p-6 space-y-4">
       <div className="flex justify-between items-start gap-4">
-        <div><h1 className="text-2xl font-black">Hasil Analisis Job #{jobId}</h1>
-          {summary && <p className="text-sm mt-2">Sample #{summary.id_sample} · {summary.status} · Mode: {summary.execution_mode ?? 'Tidak diketahui'}</p>}</div>
+        <div><h1 className="text-2xl font-black">{summary?.analysis_name ?? 'Hasil analisis'}</h1>
+          {summary && <p className="text-sm mt-2">Analisis #{summary.analysis_number ?? '?'} · {summary.status} · Mode: {summary.execution_mode ?? 'Tidak diketahui'}</p>}</div>
         <button type="button" aria-label="Muat ulang hasil" onClick={() => setReload(value => value + 1)} className="glass-card rounded-xl p-3"><RefreshCw className="w-4 h-4" /></button>
       </div>
       {loadingSummary && <p role="status">Memuat ringkasan…</p>}
       {!loadingSummary && summaryState.error && <p role="alert" className="text-rose-800 dark:text-rose-300">{summaryState.error}</p>}
       {summary && <div className="text-sm space-y-2">
-        {summary.execution_mode === 'synthetic' && <p role="status" className="font-bold text-amber-800 dark:text-amber-300">DATA SINTETIS — untuk pengujian teknis, bukan hasil biologis nyata.</p>}
-        {summary.reference?.sumber === 'genopath:synthetic-fixture' && <p role="status" className="font-bold text-amber-800 dark:text-amber-300">INPUT SINTETIS TERKONTROL — toolchain nyata; bukan validasi biologis Garlic.V2.</p>}
+        {summary.execution_mode === 'synthetic' && <p role="status" className="font-bold text-amber-800 dark:text-amber-300">DATA SINTETIS: untuk pengujian teknis, bukan hasil biologis nyata.</p>}
+        {summary.reference?.sumber === 'genopath:synthetic-fixture' && <p role="status" className="font-bold text-amber-800 dark:text-amber-300">INPUT SINTETIS TERKONTROL: toolchain nyata; bukan validasi biologis Garlic.V2.</p>}
         {summary.reference && <p>Reference: {summary.reference.nama_genom} · {summary.reference.versi ?? 'Versi tidak tersedia'}</p>}
         <p>Reference ID: #{summary.id_reference_genome} · Mulai: {date(summary.waktu_mulai)} · Selesai: {date(summary.waktu_selesai)}</p>
         <p>Seleksi analisis: QUAL ≥ {summary.parameters.parameter_qual}; FORMAT/DP ≥ {summary.parameters.parameter_dp};
@@ -132,15 +132,15 @@ export function JobResultPage() {
             <thead><tr className="border-y border-slate-300 dark:border-slate-700">{['Kromosom', 'Posisi (bp)', 'REF', 'ALT', 'QUAL', 'FORMAT/DP', 'GT asli', 'FILTER', 'Tipe'].map(label => <th scope="col" key={label} className="p-3">{label}</th>)}</tr></thead>
             <tbody>{table.items.map(variant => <tr key={variant.id_variant} className="border-b border-slate-200 dark:border-slate-800 font-mono">
               <td className="p-3">{variant.chromosome}</td><td className="p-3">{variant.position.toLocaleString('id-ID')}</td>
-              <td className="p-3 break-all">{variant.ref_allele}</td><td className="p-3 break-all">{variant.alt_allele}</td><td className="p-3">{variant.qual ?? '—'}</td>
-              <td className="p-3">{variant.genotypes.length ? variant.genotypes.map(call => call.dp ?? '—').join('; ') : '—'}</td>
-              <td className="p-3">{variant.genotypes.length ? variant.genotypes.map(call => call.genotype_call || '—').join('; ') : '—'}</td>
-              <td className="p-3">{variant.filter_status ?? '—'}</td><td className="p-3">{variant.variant_type ?? 'Tidak terklasifikasi'}</td>
+              <td className="p-3 break-all">{variant.ref_allele}</td><td className="p-3 break-all">{variant.alt_allele}</td><td className="p-3">{variant.qual ?? 'Tidak tersedia'}</td>
+              <td className="p-3">{variant.genotypes.length ? variant.genotypes.map(call => call.dp ?? 'Tidak tersedia').join('; ') : 'Tidak tersedia'}</td>
+              <td className="p-3">{variant.genotypes.length ? variant.genotypes.map(call => call.genotype_call || 'Tidak tersedia').join('; ') : 'Tidak tersedia'}</td>
+              <td className="p-3">{variant.filter_status ?? 'Tidak tersedia'}</td><td className="p-3">{variant.variant_type ?? 'Tidak terklasifikasi'}</td>
             </tr>)}</tbody>
           </table></div>
           {table.items.length === 0 && <p className="p-6">{table.total === 0 ? 'Tidak ada record yang cocok dengan filter ini.' : 'Halaman ini kosong; kembali ke halaman sebelumnya.'}</p>}
           <div className="p-4 flex flex-wrap gap-3 justify-between items-center text-sm">
-            <p>Menampilkan {table.items.length ? offset + 1 : 0}–{table.items.length ? offset + table.returned : 0} dari {table.total} record setelah filter.</p>
+            <p>Menampilkan {table.items.length ? offset + 1 : 0}-{table.items.length ? offset + table.returned : 0} dari {table.total} record setelah filter.</p>
             <div className="flex gap-3">
               <button type="button" disabled={offset === 0} onClick={() => setOffset(value => Math.max(0, value - limit))} className="glass-card rounded-xl px-3 py-2 disabled:opacity-40">Sebelumnya</button>
               <button type="button" disabled={!table.has_more || table.next_offset == null} onClick={() => { if (table.next_offset != null) setOffset(table.next_offset); }} className="glass-card rounded-xl px-3 py-2 disabled:opacity-40">Selanjutnya</button>

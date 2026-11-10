@@ -156,3 +156,21 @@ it('submits visible custom summary values even when Advanced is collapsed', asyn
   expect(submitAnalysis).toHaveBeenCalledTimes(1);
   expect(vi.mocked(submitAnalysis).mock.calls[0][2]).toMatchObject({ parameter_qual: 25, parameter_dp: 8 });
 });
+
+it('freezes the trimmed custom name across Advanced and ambiguous retries', async () => {
+  vi.mocked(submitAnalysis).mockRejectedValueOnce(new ApiError(0, 'Koneksi terputus.'));
+  mount(); const user = await configure();
+  await user.type(screen.getByLabelText('Nama analisis (opsional)'), '  Sampel Bawang A  ');
+  const toggle = screen.getByRole('button', { name: /Pengaturan lanjutan/ });
+  await user.click(toggle); await user.click(toggle);
+  expect(screen.getByText('Nama: Sampel Bawang A')).toBeTruthy();
+  expect(submitAnalysis).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button', { name: 'Jalankan Analisis' }));
+  await screen.findByText('Koneksi terputus.');
+  expect((screen.getByLabelText('Nama analisis (opsional)') as HTMLInputElement).disabled).toBe(true);
+  expect(loadDraft('tester')?.parameters.analysis_name).toBe('Sampel Bawang A');
+  const first = vi.mocked(submitAnalysis).mock.calls[0][2];
+  await user.click(screen.getByRole('button', { name: 'Kirim ulang submission yang sama' }));
+  await screen.findByRole('heading', { name: 'Monitoring tujuan' });
+  expect(vi.mocked(submitAnalysis).mock.calls[1][2]).toEqual(first);
+});

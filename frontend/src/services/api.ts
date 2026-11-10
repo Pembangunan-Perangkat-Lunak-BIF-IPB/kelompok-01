@@ -7,6 +7,7 @@ export interface SampleUploadResponse {
 }
 export type JobStatus = 'Queued' | 'Running' | 'Completed' | 'Failed';
 export interface JobItem {
+  analysis_name?: string; analysis_number?: number;
   id_job: number; id_sample: number; id_reference_genome: number; status: JobStatus;
   waktu_mulai: string | null; waktu_selesai: string | null; pesan_error: string | null;
   execution_mode: 'synthetic' | 'nextflow' | null; has_result: boolean;
@@ -19,6 +20,7 @@ export interface JobOptions {
   variant_ploidies: number[]; references: ReferenceOption[];
 }
 export interface SubmissionParameters {
+  analysis_name?: string;
   request_id: string; id_reference_genome: number; vcf_sample: string;
   parameter_qual: number; parameter_dp: number; require_pass: boolean;
   variant_ploidy: number; execution_mode: 'nextflow'; alignment_strategy: 'bowtie2';
@@ -30,6 +32,7 @@ export interface SubmissionResponse {
   dispatch_scheduled: boolean; detail: string | null;
 }
 export interface JobResultSummary {
+  analysis_name?: string; analysis_number?: number;
   id_job: number; id_analysis: number; id_sample: number; id_reference_genome: number;
   status: 'Completed'; execution_mode: 'synthetic' | 'nextflow' | null;
   waktu_mulai: string | null; waktu_selesai: string | null;
@@ -151,21 +154,23 @@ export function getJobVariants(id: string | number, params: VariantQueryParams, 
   return request<JobVariantsResponse>('/jobs/' + id + '/variants?' + query, token, { signal });
 }
 
-export async function downloadJobResult(id: string | number, format: 'vcf' | 'csv', token: string, filters: VariantQueryParams = {}): Promise<Blob> {
+export async function downloadJobResult(id: string | number, format: 'vcf' | 'csv', token: string, filters: VariantQueryParams = {}): Promise<{ blob: Blob; filename: string }> {
   const query = new URLSearchParams();
   if (format === 'csv') {
     for (const key of ['variant_type', 'min_qual', 'max_qual'] as const) {
       if (filters[key] != null) query.set(key, String(filters[key]));
     }
   }
-  return authenticatedDownload('/api/jobs/' + id + '/' + format + (query.size ? '?' + query : ''), token);
+  const download = await authenticatedDownload('/api/jobs/' + id + '/' + format + (query.size ? '?' + query : ''), token);
+  if (!download.filename) throw new ApiError(503, 'Nama file unduhan tidak tersedia.');
+  return { blob: download.blob, filename: download.filename };
 }
 
-export function downloadDemoInput(token: string): Promise<Blob> {
-  return authenticatedDownload('/api/demo/reads.fastq.gz', token);
+export async function downloadDemoInput(token: string): Promise<Blob> {
+  return (await authenticatedDownload('/api/demo/reads.fastq.gz', token)).blob;
 }
 
-async function authenticatedDownload(url: string, token: string): Promise<Blob> {
+async function authenticatedDownload(url: string, token: string): Promise<{ blob: Blob; filename: string | null }> {
   let response: Response;
   try {
     response = await fetch(url, {
@@ -180,6 +185,8 @@ async function authenticatedDownload(url: string, token: string): Promise<Blob> 
     const data: unknown = await response.json().catch(() => null);
     throw new ApiError(response.status, isObject(data) && typeof data.detail === 'string' ? data.detail : 'Unduhan gagal atau hasil belum tersedia.');
   }
-  try { return await response.blob(); }
+  const candidate = /filename="([^"]+)"/i.exec(response.headers.get('Content-Disposition') ?? '')?.[1];
+  const filename = candidate && candidate.length <= 180 && !Array.from(candidate).some(c => c === '/' || c === '\\' || c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127) ? candidate : null;
+  try { return { blob: await response.blob(), filename }; }
   catch { throw new ApiError(0, 'Unduhan tidak lengkap. Coba kembali.'); }
 }

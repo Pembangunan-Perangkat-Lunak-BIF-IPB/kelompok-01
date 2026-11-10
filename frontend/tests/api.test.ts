@@ -92,7 +92,7 @@ describe('file validation and immutable submission draft', () => {
 });
 describe('owned result download contract', () => {
   it('exports server filters without frontend pagination or query credentials', async () => {
-    const fetcher = vi.fn().mockResolvedValue(new Response('CHROM,POS\r\nchr1,42\r\n'));
+    const fetcher = vi.fn().mockResolvedValue(new Response('CHROM,POS\r\nchr1,42\r\n', { headers: { 'Content-Disposition': 'attachment; filename="GenoPath_Analisis-1_Sampel_filtered.csv"' } }));
     vi.stubGlobal('fetch', fetcher);
     const blob = await downloadJobResult(3, 'csv', 'private-test-token', {
       limit: 10, offset: 20, min_qual: 0, variant_type: 'snp',
@@ -101,10 +101,10 @@ describe('owned result download contract', () => {
     expect(Object.fromEntries(new URL(url, 'http://localhost').searchParams)).toEqual({ variant_type: 'snp', min_qual: '0' });
     expect(url).not.toContain('private-test-token');
     expect(options.headers.Authorization).toBe('Bearer private-test-token');
-    expect(blob.size).toBeGreaterThan(0);
+    expect(blob.blob.size).toBeGreaterThan(0);
   });
   it('downloads the complete selected VCF independently of table filters', async () => {
-    const fetcher = vi.fn().mockResolvedValue(new Response('##fileformat=VCFv4.2\n'));
+    const fetcher = vi.fn().mockResolvedValue(new Response('##fileformat=VCFv4.2\n', { headers: { 'Content-Disposition': 'attachment; filename="GenoPath_Analisis-1_Sampel_selected.vcf"' } }));
     vi.stubGlobal('fetch', fetcher);
     await downloadJobResult(3, 'vcf', 'private-test-token', { min_qual: 999, offset: 10 });
     expect(fetcher.mock.calls[0][0]).toBe('/api/jobs/3/vcf');
@@ -122,4 +122,14 @@ it('exports only supplied rows with valid CSV escaping, original ALT/GT, nulls, 
   expect(csv).toContain('"C,AT"'); expect(csv).toContain('"1|2"');
   expect(csv).toContain('"' + "'=unsafe," + '""contig""\nline"');
   expect(csv).not.toContain('0/1'); expect(csv).not.toContain('undefined');
+});
+
+it('honors server download filenames and rejects unsafe or missing names', async () => {
+  const filename = 'GenoPath_Analisis-2_Sampel-Bawang-A_filtered.csv';
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('a,b', { headers: { 'Content-Disposition': 'attachment; filename="' + filename + '"' } })));
+  expect((await downloadJobResult(10, 'csv', 'test-token')).filename).toBe(filename);
+  for (const disposition of ['', 'attachment; filename="../unsafe.csv"']) {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('a,b', { headers: { 'Content-Disposition': disposition } })));
+    await expect(downloadJobResult(10, 'csv', 'test-token')).rejects.toMatchObject({ status: 503 });
+  }
 });

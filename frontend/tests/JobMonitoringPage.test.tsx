@@ -8,7 +8,7 @@ vi.mock('../src/context/auth', () => ({ useAuth: () => ({ token: 'test-token' })
 vi.mock('../src/services/api', async importOriginal => ({
   ...await importOriginal<typeof import('../src/services/api')>(), getJob: vi.fn(), getJobs: vi.fn(),
 }));
-const job: JobItem = { id_job: 8, id_sample: 9, id_reference_genome: 7, status: 'Queued', execution_mode: 'nextflow',
+const job: JobItem = { analysis_name: "Sampel Bawang A", analysis_number: 1, id_job: 8, id_sample: 9, id_reference_genome: 7, status: 'Queued', execution_mode: 'nextflow',
   waktu_mulai: null, waktu_selesai: null, pesan_error: null, has_result: false };
 beforeEach(() => { vi.mocked(getJob).mockReset().mockResolvedValue(job); vi.mocked(getJobs).mockReset().mockResolvedValue([job]); });
 function mount(path = '/jobs/8') {

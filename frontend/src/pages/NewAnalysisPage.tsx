@@ -131,7 +131,8 @@ export function NewAnalysisPage() {
     {!options && !optionsError && <p role="status">Memuat pilihan reference…</p>}
     {options && !configured && <p role="status" className="glass-card rounded-xl p-4">Eksekusi biologis belum diaktifkan atau aligner Bowtie2 belum dikonfigurasi oleh operator.</p>}
     {options && options.references.length === 0 && <p className="glass-card rounded-xl p-4">Belum ada reference yang tersedia pada server. Operator perlu menyiapkannya sebelum analisis.</p>}
-    <form onSubmit={submit} className="space-y-6">
+    <form onSubmit={submit} className="gp-analysis-form">
+      <div className="gp-analysis-fields">
       <section className="gp-section space-y-2">
         <label htmlFor="analysis-name" className="block text-sm font-semibold">Nama analisis (opsional)</label>
         <input id="analysis-name" value={name} maxLength={80} disabled={locked} placeholder="Contoh: Sampel Bawang A"
@@ -186,7 +187,7 @@ export function NewAnalysisPage() {
                 className="gp-button gp-button--secondary">Pengaturan lanjutan {advanced ? '−' : '+'}</button>
             </div>
             {!advanced && (qualError || dpError) && <p role="alert" className="text-sm text-rose-800 dark:text-rose-300">{qualError || dpError} Buka pengaturan lanjutan untuk memperbaiki nilai.</p>}
-            {advanced && <div id="thresholds" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {advanced && <div id="thresholds" className="gp-disclosure-enter grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <div className="flex items-center"><label htmlFor="qual" className="text-sm font-semibold">Minimum QUAL</label>
                   <ContextHelp label="Minimum QUAL">Skor kualitas varian pada kolom QUAL VCF. Threshold lebih tinggi mempertahankan lebih sedikit record yang memenuhi syarat, bukan jaminan akurasi lebih tinggi. Nilai QUAL yang hilang dikecualikan, termasuk jika threshold 0.</ContextHelp></div>
@@ -208,6 +209,8 @@ export function NewAnalysisPage() {
           </div>
         </fieldset>
       </section>
+      </div>
+      <aside className="gp-submit-panel" aria-label="Konfigurasi yang akan dikirim">
       <section className="gp-summary space-y-2 text-sm">
         <h2 className="font-bold">Ringkasan sebelum dikirim</h2>
         <p>Nama: {name.trim() || 'Otomatis setelah dikirim'}</p>
@@ -229,6 +232,7 @@ export function NewAnalysisPage() {
           {uploading ? 'Mengunggah dan memvalidasi…' : draft ? 'Kirim ulang submission yang sama' : 'Jalankan Analisis'}
         </button>
       </div>
+      </aside>
     </form>
   </div>;
 }

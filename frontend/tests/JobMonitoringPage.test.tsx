@@ -19,7 +19,7 @@ it('polls the selected Job endpoint and accurately distinguishes Queued from Run
   mount(); await screen.findByText('Queued');
   expect(getJob).toHaveBeenCalledWith('8', 'test-token', expect.any(AbortSignal));
   expect(getJobs).not.toHaveBeenCalled();
-  expect(screen.getByText(/belum berarti pipeline sedang berjalan/)).toBeTruthy();
+  expect(screen.getByText('Menunggu eksekusi')).toBeTruthy();
   expect(screen.queryByRole('link', { name: 'Lihat Hasil' })).toBeNull();
 });
 it('shows failure reason in readable content', async () => {

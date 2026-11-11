@@ -1,6 +1,6 @@
 # Frontend GenoPath M11
 
-Fondasi Stasiun riset GenoPath: source API aktual, navigasi terpusat, token light/dark dan komponen bersama. Baseline fungsional M10: `8b71771aaa10eed2f59142d70408759fdda17357`.
+Overhaul Stasiun riset GenoPath berstatus PROPOSED, menunggu review tim. Fondasi: source API aktual, navigasi terpusat, token light/dark dan komponen bersama. Baseline fungsional M10: `8b71771aaa10eed2f59142d70408759fdda17357`.
 
 ## Mulai bekerja
 
@@ -26,13 +26,13 @@ Jika pengujian browser memerlukan sesi, jalankan `python -B -m scripts.preview_f
 
 | Route/file | Pemilik | Batas |
 | --- | --- | --- |
-| `/dashboard`, `src/pages/DashboardPage.tsx` | Developer Dashboard | Ringkasan dari `getJobs`, tiga analisis terbaru; bukan scope Dashboard final |
+| `/dashboard`, `src/pages/DashboardPage.tsx` | Developer Dashboard | Record dari `getJobs`, Completed terbaru dan ringkasan `getJobResult`, provenance, attention aktif/gagal serta analisis lain |
 | `/riwayat`, `src/pages/HistoryPage.tsx` | Developer Riwayat | Pencarian/status/empty states riwayat |
 | `/jobs/:jobId/result`, `src/pages/JobResultPage.tsx` | Developer Riwayat | Filter server-side, pagination dan ekspor existing |
 | `/analisis-baru`, `src/pages/NewAnalysisPage.tsx` | Developer Analisis | Presentasi file/konfigurasi; pertahankan handler, UUID dan recovery |
 | `/jobs/:jobId`, `src/pages/JobMonitoringPage.tsx` | Integrator fondasi | Pemantauan Job spesifik, polling dan jalur ke hasil |
-| `src/App.tsx`, `components/Navbar.tsx`, `components/Layout.tsx` | Integrator fondasi | Registrasi route, active navigation, shell |
-| `components/ui/`, `components/analysis/`, `styles/`, `hooks/useJobPolling.ts` | Shared foundation | Perubahan melalui integrator agar tidak terjadi konflik paralel |
+| `src/App.tsx`, `components/Navbar.tsx`, `components/Layout.tsx` | Integrator fondasi | Registrasi route, empat tujuan horizontal, active navigation, breadcrumb dan shell |
+| `components/ui/`, `components/analysis/`, `styles/`, `hooks/useJobPolling.ts`, `hooks/useNarrowWorkspace.ts` | Shared foundation | Perubahan melalui integrator agar tidak terjadi konflik paralel |
 
 Jangan mengedit shared files sekadar menambahkan konten halaman. Gunakan props/children serta pola class yang sudah tersedia. Ajukan perluasan primitive bersama melalui integrator. Jangan membuat salinan Button atau tabel dengan style baru per halaman.
 
@@ -46,6 +46,13 @@ Jangan mengedit shared files sekadar menambahkan konten halaman. Gunakan props/c
 - `ContextHelp`: portal, hover/focus/tap, Escape dan outside click tetap dipertahankan.
 - `useJobPolling`: endpoint dan interval 4 detik dari M10, dengan abort/cleanup dan data stale. Jangan menambah interval kedua.
 - `JobTable`: data dari akun aktif; URL tetap memakai ID global, label memakai nomor per akun.
+- `AnalysisRecord`, `AnalysisProvenance`: identitas, mode, status, tindakan, Sample ID, Reference ID dan waktu dari Job yang tersimpan. Dipakai Dashboard dan Monitoring.
+- `ResultOverview`: GET `/jobs/{id_job}/result` hanya untuk Completed dengan `has_result`; counts, reference, threshold dan konfigurasi caller berasal dari respons aktual. Loading/error/retry berdiri sendiri, metadata Job tetap tersedia, data hilang tidak menjadi nol.
+- `useNarrowWorkspace`: media query sampai 900 px. Dashboard memindahkan attention aktif/gagal sebelum hasil dalam DOM agar urutan baca, visual dan tab sesuai; keadaan tenang tetap setelah hasil.
+
+Dashboard memilih Completed terbaru menurut waktu selesai, dengan ID sebagai tie-break, lalu memakai analisis aktif jika belum ada Completed. Attention memuat seluruh Job aktif dan paling banyak dua kegagalan, dengan tautan ke Riwayat jika lebih banyak. Bagian Analisis lain menampilkan paling banyak empat record selain fokus. Tidak ada ledger tiga angka atau perkiraan progress tahap.
+
+`styles/tokens.css` menyimpan nilai semantik; `index.css` memuat fondasi existing dan `styles/workspace.css` menerapkan aturan workspace terakhir. Periksa cascade sebelum menambah aturan. Gunakan lembar record bergaris, tabel dan primitive existing. Form `gp-analysis-form` menyandingkan `gp-analysis-fields` dan `gp-submit-panel` pada desktop, lalu menumpuk sampai 900 px; hindari kartu bertingkat. Motion dibatasi ke umpan balik tombol, reveal lembar dan disclosure. Pertahankan alternatif reduced-motion dan jangan menganimasikan baris ilmiah.
 
 Semua angka berasal dari API. Jangan membuat grafik atau statistik placeholder. Jangan mengubah ALT multiallelic, null, GT, QUAL, DP, filter server, scope ekspor atau filename server. Input file tetap uncontrolled; jangan menambahkan `value` yang merusak cancel dan reset file M10. Memilih file tidak boleh membuat Job.
 

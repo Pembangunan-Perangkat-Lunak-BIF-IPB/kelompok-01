@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Navbar } from './Navbar';
 export function Layout({children}:{children?:ReactNode}){
- const landing=useLocation().pathname==='/';
+ const {pathname}=useLocation();
+ const landing=pathname==='/';
+ const context=pathname==='/dashboard'?'Dashboard':pathname==='/riwayat'?'Riwayat':pathname==='/analisis-baru'?'Analisis Baru':pathname.endsWith('/result')?'Hasil Analisis':pathname.startsWith('/jobs/')?'Monitoring':'GenoPath';
  return <div className={'gp-shell'+(landing?' gp-landing':'')}>
   {!landing&&<div className="gp-workspace-motif" aria-hidden="true"/>}
   <a className="gp-skip" href="#main-content">Lewati ke konten utama</a><Navbar/>
   <main className="gp-main" id="main-content" tabIndex={-1}>
    <div className={landing ? undefined : 'gp-workspace-content'}>
-   {!landing&&<div className="gp-topline"><span>Analisis varian DNA</span><span className="gp-species-context"><i>Allium sativum</i><span>Bawang putih</span></span></div>}
+   {!landing&&<div className="gp-topline"><nav aria-label="Lokasi halaman"><Link to="/dashboard">Ruang kerja</Link><span aria-hidden="true">/</span><span aria-current="page">{context}</span></nav><span className="gp-species-context"><i>Allium sativum</i><span>Bawang putih</span></span></div>}
    {children}
    </div>
    {!landing&&<footer className="gp-footer">GenoPath · Bioinformatika IPB University</footer>}

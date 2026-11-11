@@ -79,7 +79,7 @@ export function JobResultPage() {
   if (!valid) return <p role="alert">ID Job tidak valid.</p>;
   const date = (value: string | null) => value ? new Date(value).toLocaleString('id-ID') : 'Belum tersedia';
   const inputClass = 'gp-input';
-  return <div className="space-y-6">
+  return <div className="gp-result-page space-y-6">
     <Link to={'/jobs/' + jobId} className="text-blue-700 dark:text-blue-300 underline text-sm"><ArrowLeft className="inline w-4 h-4 mr-1" />Pemantauan analisis</Link>
     <header className="gp-section space-y-4">
       <div className="flex justify-between items-start gap-4">

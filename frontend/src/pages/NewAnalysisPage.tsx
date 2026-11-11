@@ -4,6 +4,7 @@ import { UploadCloud, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/auth';
 import { ApiError, downloadDemoInput, getJobOptions, submitAnalysis, validateFile, type JobOptions, type SubmissionResponse } from '../services/api';
 import { ContextHelp } from '../components/ContextHelp';
+import { PageHeader } from '../components/ui/Foundation';
 import { displayReferenceName } from '../services/displayText';
 import { clearDraft, loadDraft, makeParameters, matchesFile, saveDraft, type SubmissionDraft } from '../services/submissionDraft';
 
@@ -106,7 +107,7 @@ export function NewAnalysisPage() {
       }
     } finally { inFlight.current = false; setUploading(false); }
   };
-  const inputClass = 'w-full glass-card rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 disabled:opacity-60';
+  const inputClass = 'gp-input';
   const selectedReference = options?.references.find(item => item.id_reference_genome === Number(reference));
   const getDemoInput = async () => {
     if (!token || downloadingInput) return;
@@ -121,12 +122,9 @@ export function NewAnalysisPage() {
     finally { setDownloadingInput(false); }
   };
 
-  return <div className="max-w-3xl mx-auto space-y-6 pb-12">
-    <header className="text-center space-y-3 pt-2">
-      <h1 className="text-3xl font-black">Mulai Analisis Varian Baru</h1>
-      <p className="glass-card rounded-2xl p-4 text-sm">Pilih FASTQ single-end, tentukan konfigurasi, lalu jalankan analisis.</p>
-    </header>
-    {(restored.error || optionsError || error) && <div role="alert" className="glass-card rounded-xl p-4 text-rose-800 dark:text-rose-300">
+  return <div className="gp-form-page pb-12">
+    <PageHeader title="Mulai Analisis Varian Baru" description="Pilih FASTQ single-end, tentukan konfigurasi, lalu jalankan analisis." />
+    {(restored.error || optionsError || error) && <div role="alert" className="gp-alert gp-alert--error">
       {restored.error || optionsError || error}
       {optionsError && <button type="button" className="underline ml-3" onClick={() => setReload(value => value + 1)}>Muat ulang konfigurasi</button>}
     </div>}
@@ -134,7 +132,7 @@ export function NewAnalysisPage() {
     {options && !configured && <p role="status" className="glass-card rounded-xl p-4">Eksekusi biologis belum diaktifkan atau aligner Bowtie2 belum dikonfigurasi oleh operator.</p>}
     {options && options.references.length === 0 && <p className="glass-card rounded-xl p-4">Belum ada reference yang tersedia pada server. Operator perlu menyiapkannya sebelum analisis.</p>}
     <form onSubmit={submit} className="space-y-6">
-      <section className="glass-card rounded-2xl p-5 space-y-2">
+      <section className="gp-section space-y-2">
         <label htmlFor="analysis-name" className="block text-sm font-semibold">Nama analisis (opsional)</label>
         <input id="analysis-name" value={name} maxLength={80} disabled={locked} placeholder="Contoh: Sampel Bawang A"
           onChange={event => setName(event.target.value)} aria-invalid={Boolean(nameError)} aria-describedby="name-help"
@@ -142,9 +140,9 @@ export function NewAnalysisPage() {
         <p id="name-help" className="text-xs">Kosongkan untuk nama otomatis. Maksimal 80 karakter.</p>
         {nameError && <p role="alert" className="text-rose-800 dark:text-rose-300 text-sm">{nameError}</p>}
       </section>
-      <section className="glass-card rounded-3xl p-6 space-y-4">
+      <section className="gp-section space-y-4">
         <h2 className="font-bold text-blue-700 dark:text-blue-300">01 · Input FASTQ single-end</h2>
-        <div className="border-2 border-dashed border-blue-400 rounded-2xl p-6 space-y-3"
+        <div className="gp-upload space-y-3"
           onDragOver={event => event.preventDefault()} onDrop={event => {
             event.preventDefault(); if (event.dataTransfer.files[0]) selectFile(event.dataTransfer.files[0]);
           }}>
@@ -160,10 +158,10 @@ export function NewAnalysisPage() {
               {downloadingInput ? 'Mengunduh contoh…' : 'Unduh FASTQ contoh sintetis'}
             </button>
           </div>}
-          {file && <p className="text-sm break-all">{file.name} · {(file.size / 1_000_000).toFixed(2)} MB · File siap dikirim.</p>}
+          {file && <p className="gp-file-state">{file.name} · {(file.size / 1_000_000).toFixed(2)} MB · File siap dikirim.</p>}
         </div>
       </section>
-      <section className="glass-card rounded-3xl p-6 space-y-4">
+      <section className="gp-section space-y-4">
         <h2 className="font-bold text-blue-700 dark:text-blue-300">02 · Konfigurasi analisis</h2>
         <fieldset disabled={locked} className="space-y-4">
           <div><label htmlFor="reference" className="block text-sm font-semibold mb-1">Genom reference</label>
@@ -185,7 +183,7 @@ export function NewAnalysisPage() {
               <div><h3 className="font-semibold text-sm">Seleksi varian</h3>
                 <p className="text-xs mt-1">{!qualError && !dpError && Number(qual) === 30 && Number(dp) === 10 ? 'Default' : 'Konfigurasi khusus'} · QUAL ≥ {qual || '…'} · FORMAT/DP ≥ {dp || '…'} · FILTER=PASS</p></div>
               <button type="button" aria-expanded={advanced} aria-controls="thresholds" onClick={() => setAdvanced(!advanced)}
-                className="glass-card px-4 py-3 rounded-xl text-sm font-semibold">Pengaturan lanjutan {advanced ? '−' : '+'}</button>
+                className="gp-button gp-button--secondary">Pengaturan lanjutan {advanced ? '−' : '+'}</button>
             </div>
             {!advanced && (qualError || dpError) && <p role="alert" className="text-sm text-rose-800 dark:text-rose-300">{qualError || dpError} Buka pengaturan lanjutan untuk memperbaiki nilai.</p>}
             {advanced && <div id="thresholds" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -210,9 +208,10 @@ export function NewAnalysisPage() {
           </div>
         </fieldset>
       </section>
-      <section className="glass-card rounded-2xl p-5 space-y-2 text-sm">
+      <section className="gp-summary space-y-2 text-sm">
         <h2 className="font-bold">Ringkasan sebelum dikirim</h2>
         <p>Nama: {name.trim() || 'Otomatis setelah dikirim'}</p>
+        <p className="break-all">Berkas: {file ? file.name : 'Belum dipilih'}{file ? ' (' + (file.size / 1_000_000).toFixed(2) + ' MB)' : ''}</p>
         <p>Reference: {selectedReference ? displayReferenceName(selectedReference.nama_genom) : (reference ? '#' + reference : 'Belum dipilih')} · Ploidi: {ploidy || 'Belum dipilih'}</p>
         <p>Single-end · Bowtie2 / Nextflow · QUAL ≥ {qualError ? 'Tidak valid' : qual} · FORMAT/DP ≥ {dpError ? 'Tidak valid' : dp} · FILTER=PASS</p>
         {draft && <div role="status" className="space-y-2 break-all">
@@ -223,9 +222,9 @@ export function NewAnalysisPage() {
         {partial?.job && <Link className="text-blue-700 dark:text-blue-300 underline" to={'/jobs/' + partial.job.id_job}>Periksa Job #{partial.job.id_job}</Link>}
       </section>
       <div className="flex flex-wrap justify-end gap-3">
-        {!draft && <button type="button" disabled={uploading} className="glass-card px-4 py-3 rounded-xl text-sm" onClick={() => { setQual('30'); setDp('10'); }}><RotateCcw className="inline w-4 h-4 mr-1" />Reset threshold</button>}
+        {!draft && <button type="button" disabled={uploading} className="gp-button gp-button--secondary" onClick={() => { setQual('30'); setDp('10'); }}><RotateCcw className="inline w-4 h-4 mr-1" />Reset threshold</button>}
         <button type="submit" disabled={Boolean(nameError || qualError || dpError) || !file || !reference || !ploidy || !configured || uploading || draft?.reconciliation || Boolean(restored.error)}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-500 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2">
+          className="gp-button gp-button--primary">
           {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
           {uploading ? 'Mengunggah dan memvalidasi…' : draft ? 'Kirim ulang submission yang sama' : 'Jalankan Analisis'}
         </button>

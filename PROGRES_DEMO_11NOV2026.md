@@ -1,8 +1,23 @@
 # Progres demo GenoPath, 11 November 2026
 
 **Restorasi visual Azril selesai dan tervalidasi; fitur integrasi serta profil persisten tetap berfungsi.**
-URL aktif: https://arise-priced-bio-exercises.trycloudflare.com
+URL historis M10 (tunnel telah dihentikan pengguna): https://arise-priced-bio-exercises.trycloudflare.com
 Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
+
+## Fondasi M11, preview lokal 11 November 2026
+
+- Worktree terisolasi `/home/zizi/projects/genopath-m11-impeccable`, branch `feature/m11-impeccable`, basis M10 `8b71771aaa10eed2f59142d70408759fdda17357`. Worktree/branch/build M10 dan stash dipertahankan. Tidak ada push/merge/PR; persetujuan visual pengguna masih diperlukan.
+- Arah Stasiun riset GenoPath dipilih pengguna: rail navigasi dan kanvas kerja tenang, Beranda ekspresif memakai kampus asli, tanpa mengembalikan desain Hi-Fi/Lo-Fi lama. Sora untuk heading dan Instrument Sans untuk UI disajikan lokal dengan lisensi OFL.
+- PRODUCT.md, DESIGN.md, sidecar `.impeccable/design.json` dan surface brief merekam produk, token/komponen serta arah desain. README frontend berisi ownership dan cara melanjutkan. Dashboard `/dashboard`, Riwayat `/riwayat`, Analisis `/analisis-baru`, Monitoring `/jobs/:jobId`, Result `/jobs/:jobId/result`; redirect dan active navigation diuji.
+- Token light/dark, primitive Button/FormField/PageHeader/Alert/StatePanel/StatusBadge/TableFrame/Pagination, ContextHelp, serta hook polling dan JobTable bersama diterapkan pada halaman representatif. Dashboard minimum hanya memakai jumlah/status dan tiga analisis terbaru dari API, tanpa grafik atau statistik baru.
+- API/draft/AuthContext/gate tidak berubah; region logika submission/result identik dengan M10. Semua sembilan aset kampus/pattern/Uchiha/u1-u5 identik byte. Nama/NIM/mapping dan animasi normal dipertahankan, dengan alternatif reduced-motion yang menghentikan gelombang huruf.
+- Engine resmi linux-x64 0.1.5 (skill 4.3.1) diadakan lewat launcher ke `.tools/impeccable/`, SHA256 cocok sidecar resmi release. Context dan detector berjalan. Detector satu kali menghasilkan satu warning `overused-font` untuk Instrument Sans body, dipertahankan sebagai pilihan UI eksplisit dengan Sora sebagai heading. Tidak mengaktifkan hook, update skill, atau live mode.
+- PASS production build, ESLint, 79 frontend tests pada 12 file (62 regression M10 ditambah 17 test fondasi/route/login/Dashboard), serta dua test gate/proxy preview tanpa database. Dua warning deprecation BE existing tetap ada. Tidak menjalankan ulang pipeline.
+- PASS Edge nyata pada desktop 1440 px dan mobile 390 px, light/dark, keyboard tabs/password focus/Escape bantuan, profile/refresh, route, Monitoring, result aktual dan VCF/CSV. Tidak ada request analisis mutatif; file fixture valid hanya dipilih. JWT hilang/invalid ditolak; cross-user Job/result/variants/ekspor ditolak. Byte VCF/CSV M11 identik dengan M10, masing-masing dua record fixture. Pemeriksaan layout juga mencakup viewport 768 px dan reflow sempit untuk pendekatan zoom; bukan sertifikasi accessibility lengkap.
+- Dua batch visual dan perbaikan material: navigasi mobile empat kolom, control-border terpisah (3.45:1 light dan 5.25:1 dark terhadap canvas), serta lebar REF/ALT agar ACGT tetap satu baris. Recapture bukti Result sempat diperlukan karena capture awal mendahului data; bukti akhir menunggu summary/record/pagination dan menampilkan ALT melalui scroll tabel. Finish reviewer menilai ketiga fix resolved, disposition ship pada lingkup fix list; bukan persetujuan visual pengguna.
+- Preview `http://localhost:3001` aktif hanya loopback. Launcher `scripts/preview_frontend.py` memakai gate existing M10 dan proxy API M10 localhost3000; tidak menjalankan database atau runner kedua. Pengguna memasukkan password existing melalui `--unlock`, menghasilkan sesi sah privat tanpa mengganti gate. Server M10, PostgreSQL, WSL dan password tidak direstart/diubah. Cloudflare tetap tidak dijalankan.
+- Rollback M10 tidak diperlukan karena build M10 tidak disentuh. Screenshot sebelum/sesudah, dua tema dan bukti browser disimpan pada `.impeccable/review/` serta `.runtime/`, diabaikan Git. Engine, dependency, session, hasil ekspor dan data biologis tidak masuk checkpoint.
+- Handoff: developer Dashboard hanya DashboardPage; developer Riwayat mengerjakan HistoryPage/JobResultPage; developer Analisis mengerjakan NewAnalysisPage. Integrator memegang shared UI, tokens, shell, polling, Monitoring dan registrasi route. QA melanjutkan acceptance independen dari SHA fondasi yang nanti disetujui.
 
 ## M10: sinkronisasi file upload dan tipografi (11 November 2026)
 

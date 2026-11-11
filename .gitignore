@@ -17,3 +17,7 @@ docs/
 .tools/
 .test-artifacts/
 .runtime/
+# M11 local visual evidence and engine output
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/build/

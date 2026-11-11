@@ -1,4 +1,5 @@
 import { ContextHelp } from '../components/ContextHelp';
+import { Pagination, StatusBadge, TableFrame } from '../components/ui/Foundation';
 import { displayReferenceName } from '../services/displayText';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -77,14 +78,14 @@ export function JobResultPage() {
   };
   if (!valid) return <p role="alert">ID Job tidak valid.</p>;
   const date = (value: string | null) => value ? new Date(value).toLocaleString('id-ID') : 'Belum tersedia';
-  const inputClass = 'glass-card px-3 py-2 rounded-xl text-sm w-full';
-  return <div className="max-w-7xl mx-auto space-y-6 px-4 py-6">
+  const inputClass = 'gp-input';
+  return <div className="space-y-6">
     <Link to={'/jobs/' + jobId} className="text-blue-700 dark:text-blue-300 underline text-sm"><ArrowLeft className="inline w-4 h-4 mr-1" />Pemantauan analisis</Link>
-    <header className="glass-card rounded-2xl p-6 space-y-4">
+    <header className="gp-section space-y-4">
       <div className="flex justify-between items-start gap-4">
         <div><h1 className="text-2xl font-black">{summary?.analysis_name ?? 'Hasil analisis'}</h1>
-          {summary && <p className="text-sm mt-2">Analisis #{summary.analysis_number ?? '?'} · {summary.status} · Mode: {summary.execution_mode ?? 'Tidak diketahui'}</p>}</div>
-        <button type="button" aria-label="Muat ulang hasil" onClick={() => setReload(value => value + 1)} className="glass-card rounded-xl p-3"><RefreshCw className="w-4 h-4" /></button>
+          {summary && <p className="text-sm mt-2">Analisis #{summary.analysis_number ?? '?'} · <StatusBadge status={summary.status} /> · Mode: {summary.execution_mode ?? 'Tidak diketahui'}</p>}</div>
+        <button type="button" aria-label="Muat ulang hasil" onClick={() => setReload(value => value + 1)} className="gp-button gp-button--secondary gp-icon-button"><RefreshCw className="w-4 h-4" /></button>
       </div>
       {loadingSummary && <p role="status">Memuat ringkasan…</p>}
       {!loadingSummary && summaryState.error && <p role="alert" className="text-rose-800 dark:text-rose-300">{summaryState.error}</p>}
@@ -99,29 +100,29 @@ export function JobResultPage() {
 
       </div>}
     </header>
-    {summary && <section className="space-y-2"><div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    {summary && <section className="space-y-2"><div className="gp-result-stats">
       {[['Total record varian', summary.counts.total_variants], ['SNP', summary.counts.snps], ['InDel', summary.counts.indels],
         ['Other', summary.counts.other], ['Tidak terklasifikasi', summary.counts.unclassified]].map(([label, value]) =>
-        <div key={label} className="glass-card rounded-2xl p-5"><h2 className="text-sm">{label}</h2><p className="text-3xl font-black mt-2">{Number(value).toLocaleString('id-ID')}</p></div>)}
+        <div key={label} className=""><h2 className="text-sm">{label}</h2><p className="mt-2">{Number(value).toLocaleString('id-ID')}</p></div>)}
     </div><p className="text-xs">Ringkasan seluruh hasil analisis.<ContextHelp label="Ringkasan varian">Filter tabel tidak mengubah ringkasan. Record multiallelic, dengan beberapa ALT, dihitung sebagai satu record. GT mempertahankan indeks alel dan pemisah asli VCF.</ContextHelp></p></section>}
-    <section className="glass-card rounded-2xl p-5 space-y-3">
+    <section className="gp-section space-y-3">
       <div className="flex flex-wrap gap-3">
-        <button type="button" disabled={!summary || Boolean(downloading)} onClick={() => void download('vcf')} className="bg-blue-600 disabled:bg-slate-500 text-white px-4 py-2 rounded-xl text-sm">{downloading === 'vcf' ? 'Mengunduh VCF…' : 'Unduh VCF hasil analisis'}</button>
-        <button type="button" disabled={!summary || !table || Boolean(downloading)} onClick={() => void download('csv')} className="bg-blue-600 disabled:bg-slate-500 text-white px-4 py-2 rounded-xl text-sm"><FileSpreadsheet className="inline w-4 h-4 mr-1" />{downloading === 'csv' ? 'Mengunduh CSV…' : 'Unduh CSV seluruh hasil sesuai filter'}</button>
+        <button type="button" disabled={!summary || Boolean(downloading)} onClick={() => void download('vcf')} className="gp-button gp-button--primary">{downloading === 'vcf' ? 'Mengunduh VCF…' : 'Unduh VCF hasil analisis'}</button>
+        <button type="button" disabled={!summary || !table || Boolean(downloading)} onClick={() => void download('csv')} className="gp-button gp-button--primary"><FileSpreadsheet className="inline w-4 h-4 mr-1" />{downloading === 'csv' ? 'Mengunduh CSV…' : 'Unduh CSV seluruh hasil sesuai filter'}</button>
       </div><p className="text-xs">VCF: seluruh seleksi analisis. CSV: seluruh hasil sesuai filter, tanpa batas halaman.<ContextHelp label="Cakupan unduhan">VCF bukan file mentah caller dan tidak mengikuti filter tampilan. CSV mengikuti filter aktif pada semua halaman. Teks berpotensi formula diamankan untuk spreadsheet; nilai kosong tetap kosong.</ContextHelp></p>
       {downloadError && <p role="alert" className="text-rose-800 dark:text-rose-300">{downloadError}</p>}
     </section>
-    <section className="glass-card rounded-2xl overflow-hidden">
+    <section className="gp-section">
       <div className="p-5 space-y-4">
         <h2 className="font-bold">Tabel Varian</h2>
-        <form onSubmit={applyFilters} className="grid grid-cols-1 sm:grid-cols-4 items-end gap-3">
+        <form onSubmit={applyFilters} className="gp-filterbar">
           <div><label htmlFor="variant-type" className="block text-sm mb-1">Tipe varian</label>
             <select id="variant-type" value={type} onChange={event => setType(event.target.value)} className={inputClass}>
               <option value="">Semua tipe</option><option value="snp">SNP</option><option value="indel">InDel</option><option value="other">Other</option><option value="unclassified">Tidak terklasifikasi</option>
             </select></div>
           <div><label htmlFor="min-qual" className="block text-sm mb-1">QUAL minimum</label><input id="min-qual" type="number" min="0" step="any" value={minQual} onChange={event => setMinQual(event.target.value)} className={inputClass} /></div>
           <div><label htmlFor="max-qual" className="block text-sm mb-1">QUAL maksimum</label><input id="max-qual" type="number" min="0" step="any" value={maxQual} onChange={event => setMaxQual(event.target.value)} className={inputClass} /></div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm" type="submit">Terapkan filter</button>
+          <button className="gp-button gp-button--primary" type="submit">Terapkan filter</button>
         </form>
         <p className="text-xs">Filter tampilan tidak menjalankan ulang analisis.<ContextHelp label="Filter hasil">Tipe dan batas QUAL diterapkan pada seluruh varian tersimpan sebelum pembagian halaman. Filter ini tidak dapat mengembalikan record yang dikeluarkan oleh threshold analisis awal.</ContextHelp></p>
         {filterError && <p role="alert" className="text-rose-800 dark:text-rose-300">{filterError}</p>}
@@ -129,24 +130,21 @@ export function JobResultPage() {
       {loadingTable ? <p role="status" className="p-8"><Loader2 className="inline w-5 h-5 animate-spin mr-2" />Memuat varian…</p> :
         tableState.error ? <p role="alert" className="p-6 text-rose-800 dark:text-rose-300">{tableState.error}</p> :
           table && <><p className="px-5 pb-4 text-xs">Filter aktif: {table.filters.variant_type ?? 'semua tipe'}; QUAL minimum {table.filters.min_qual ?? 'tanpa batas'}, maksimum {table.filters.max_qual ?? 'tanpa batas'}.</p>
-          <div className="overflow-x-auto"><table className="w-full text-left text-sm">
+          <TableFrame label="Varian hasil analisis"><table className="gp-scientific-table"><caption className="sr-only">Record varian sesuai filter aktif</caption>
             <thead><tr className="border-y border-slate-300 dark:border-slate-700">{['Kromosom', 'Posisi (bp)', 'REF', 'ALT', 'QUAL', 'FORMAT/DP', 'GT asli', 'FILTER', 'Tipe'].map(label => <th scope="col" key={label} className="p-3">{label}</th>)}</tr></thead>
-            <tbody>{table.items.map(variant => <tr key={variant.id_variant} className="border-b border-slate-200 dark:border-slate-800 font-mono">
+            <tbody>{table.items.map(variant => <tr key={variant.id_variant} className="gp-data">
               <td className="p-3">{variant.chromosome}</td><td className="p-3">{variant.position.toLocaleString('id-ID')}</td>
-              <td className="p-3 break-all">{variant.ref_allele}</td><td className="p-3 break-all">{variant.alt_allele}</td><td className="p-3">{variant.qual ?? 'Tidak tersedia'}</td>
+              <td className="p-3 gp-allele">{variant.ref_allele}</td><td className="p-3 gp-allele">{variant.alt_allele}</td><td className="p-3">{variant.qual ?? 'Tidak tersedia'}</td>
               <td className="p-3">{variant.genotypes.length ? variant.genotypes.map(call => call.dp ?? 'Tidak tersedia').join('; ') : 'Tidak tersedia'}</td>
               <td className="p-3">{variant.genotypes.length ? variant.genotypes.map(call => call.genotype_call || 'Tidak tersedia').join('; ') : 'Tidak tersedia'}</td>
               <td className="p-3">{variant.filter_status ?? 'Tidak tersedia'}</td><td className="p-3">{variant.variant_type ?? 'Tidak terklasifikasi'}</td>
             </tr>)}</tbody>
-          </table></div>
+          </table></TableFrame>
           {table.items.length === 0 && <p className="p-6">{table.total === 0 ? 'Tidak ada record yang cocok dengan filter ini.' : 'Halaman ini kosong; kembali ke halaman sebelumnya.'}</p>}
-          <div className="p-4 flex flex-wrap gap-3 justify-between items-center text-sm">
-            <p>Menampilkan {table.items.length ? offset + 1 : 0}-{table.items.length ? offset + table.returned : 0} dari {table.total} record setelah filter.</p>
-            <div className="flex gap-3">
-              <button type="button" disabled={offset === 0} onClick={() => setOffset(value => Math.max(0, value - limit))} className="glass-card rounded-xl px-3 py-2 disabled:opacity-40">Sebelumnya</button>
-              <button type="button" disabled={!table.has_more || table.next_offset == null} onClick={() => { if (table.next_offset != null) setOffset(table.next_offset); }} className="glass-card rounded-xl px-3 py-2 disabled:opacity-40">Selanjutnya</button>
-            </div>
-          </div></>}
+          <Pagination from={table.items.length ? offset + 1 : 0} to={table.items.length ? offset + table.returned : 0} total={table.total}
+            canPrevious={offset > 0} canNext={table.has_more && table.next_offset != null}
+            previous={() => setOffset(value => Math.max(0, value - limit))}
+            next={() => { if (table.next_offset != null) setOffset(table.next_offset); }} /></>}
     </section>
   </div>;
 }

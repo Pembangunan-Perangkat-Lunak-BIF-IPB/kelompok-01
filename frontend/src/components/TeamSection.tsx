@@ -43,6 +43,7 @@ export const TeamSection: React.FC = () => {
     setFocusedId(member.id);
     clearAnimTimeouts();
 
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setAnimatingChar(null); return; }
     const chars = member.name.split('');
     chars.forEach((_, idx) => {
       const t = setTimeout(() => {

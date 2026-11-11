@@ -4,6 +4,9 @@ import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/auth';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
+import { DashboardPage } from './pages/DashboardPage';
+import { HistoryPage } from './pages/HistoryPage';
+import { StatePanel } from './components/ui/Foundation';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { JobMonitoringPage } from './pages/JobMonitoringPage';
@@ -13,7 +16,7 @@ import { JobResultPage } from './pages/JobResultPage';
 function Authenticated({ children }: { children: ReactNode }) {
   const { isAuthenticated, profileLoading } = useAuth();
   const location = useLocation();
-  if (profileLoading) return <p role="status">Memuat profil…</p>;
+  if (profileLoading) return <Layout><StatePanel loading title="Memuat profil…" /></Layout>;
   if (!isAuthenticated) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   return <Layout>{children}</Layout>;
 }
@@ -21,7 +24,8 @@ export function App() {
   return <ThemeProvider><AuthProvider><Router><Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/" element={<Layout><LandingPage /></Layout>} />
-    <Route path="/dashboard" element={<Authenticated><JobMonitoringPage /></Authenticated>} />
+    <Route path="/dashboard" element={<Authenticated><DashboardPage /></Authenticated>} />
+    <Route path="/riwayat" element={<Authenticated><HistoryPage /></Authenticated>} />
     <Route path="/jobs/:jobId" element={<Authenticated><JobMonitoringPage /></Authenticated>} />
     <Route path="/analisis-baru" element={<Authenticated><NewAnalysisPage /></Authenticated>} />
     <Route path="/jobs/:jobId/result" element={<Authenticated><JobResultPage /></Authenticated>} />

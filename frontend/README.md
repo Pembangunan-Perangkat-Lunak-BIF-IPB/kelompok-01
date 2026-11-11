@@ -1,75 +1,58 @@
-# React + TypeScript + Vite
+# Frontend GenoPath M11
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Fondasi Stasiun riset GenoPath: source API aktual, navigasi terpusat, token light/dark dan komponen bersama. Baseline fungsional M10: `8b71771aaa10eed2f59142d70408759fdda17357`.
 
-Currently, two official plugins are available:
+## Mulai bekerja
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Gunakan commit fondasi M11 yang sudah direview sebagai basis branch halaman Anda.
+2. Pertahankan `package-lock.json`. Gunakan versi Node yang kompatibel dengan project (runtime host saat fondasi: Node 24).
+3. Jalankan `npm ci` jika dependency belum tersedia pada mesin Anda, lalu `npm run dev -- --host 127.0.0.1 --port 5173`.
+4. Proxy development `/api` mengarah ke backend lokal port 8000. Setup backend dan secret tetap lokal; jangan memasukkannya ke Git.
+5. `npm run build`, `npm run lint`, `npm test` sebelum menyerahkan perubahan.
 
-## React Compiler
+## Preview terintegrasi pada PC host
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Dari root worktree M11, setelah production build:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+/home/zizi/projects/genopath-backend/.venv/bin/python -B -m scripts.preview_frontend --port 3001
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Buka `http://localhost:3001`. Preview membaca gate existing dari worktree demo M10 dan meneruskan `/api` ke server M10 loopback 3000. Tidak menjalankan database/pipeline runner baru. Jangan menjalankan launcher kedua jika preview sudah hidup. Tidak ada tunnel publik.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Jika pengujian browser memerlukan sesi, jalankan `python -B -m scripts.preview_frontend --unlock` melalui terminal interaktif dengan environment Python yang sama. Password diketik tersamar; tidak diubah, dicetak atau disimpan. Sesi sah hanya disimpan di `.runtime/` yang diabaikan Git. Password akun GenoPath terpisah.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Route dan ownership
 
-```
+| Route/file | Pemilik | Batas |
+| --- | --- | --- |
+| `/dashboard`, `src/pages/DashboardPage.tsx` | Developer Dashboard | Ringkasan dari `getJobs`, tiga analisis terbaru; bukan scope Dashboard final |
+| `/riwayat`, `src/pages/HistoryPage.tsx` | Developer Riwayat | Pencarian/status/empty states riwayat |
+| `/jobs/:jobId/result`, `src/pages/JobResultPage.tsx` | Developer Riwayat | Filter server-side, pagination dan ekspor existing |
+| `/analisis-baru`, `src/pages/NewAnalysisPage.tsx` | Developer Analisis | Presentasi file/konfigurasi; pertahankan handler, UUID dan recovery |
+| `/jobs/:jobId`, `src/pages/JobMonitoringPage.tsx` | Integrator fondasi | Pemantauan Job spesifik, polling dan jalur ke hasil |
+| `src/App.tsx`, `components/Navbar.tsx`, `components/Layout.tsx` | Integrator fondasi | Registrasi route, active navigation, shell |
+| `components/ui/`, `components/analysis/`, `styles/`, `hooks/useJobPolling.ts` | Shared foundation | Perubahan melalui integrator agar tidak terjadi konflik paralel |
+
+Jangan mengedit shared files sekadar menambahkan konten halaman. Gunakan props/children serta pola class yang sudah tersedia. Ajukan perluasan primitive bersama melalui integrator. Jangan membuat salinan Button atau tabel dengan style baru per halaman.
+
+## Komponen dan aturan data
+
+- `Button`: primary/secondary/ghost, loading dan disabled. Tetapkan `type` secara eksplisit dalam form.
+- `FormField`: label/hint/error. Hubungkan input dengan `htmlFor`, `aria-describedby` dan `aria-invalid` yang sesuai.
+- `PageHeader`, `Alert`, `StatePanel`: hierarki dan feedback seragam.
+- `StatusBadge`: status backend tidak diubah; penjelasan Bahasa Indonesia tersedia.
+- `TableFrame`, `Pagination`: tabel ilmiah, scroll keyboard, jumlah record dan batas halaman server.
+- `ContextHelp`: portal, hover/focus/tap, Escape dan outside click tetap dipertahankan.
+- `useJobPolling`: endpoint dan interval 4 detik dari M10, dengan abort/cleanup dan data stale. Jangan menambah interval kedua.
+- `JobTable`: data dari akun aktif; URL tetap memakai ID global, label memakai nomor per akun.
+
+Semua angka berasal dari API. Jangan membuat grafik atau statistik placeholder. Jangan mengubah ALT multiallelic, null, GT, QUAL, DP, filter server, scope ekspor atau filename server. Input file tetap uncontrolled; jangan menambahkan `value` yang merusak cancel dan reset file M10. Memilih file tidak boleh membuat Job.
+
+## Batas yang dilindungi
+
+`services/api.ts`, `services/submissionDraft.ts`, AuthContext, JWT/ownership, API/backend, database dan pipeline bukan sasaran refactor desain. Single-end only. Demo sintetis 20 kbp, 10 MiB, satu Job aktif global; Full Garlic.V2/1 GB belum tervalidasi.
+
+Seluruh foto kampus, Uchiha/u1-u5, nama/NIM/mapping, hover dan animasi normal Azril dipertahankan. Reduced-motion memiliki alternatif tanpa gelombang huruf. Hi-Fi/Lo-Fi lama hanya referensi historis.
+
+Baca `../PRODUCT.md` dan `../DESIGN.md` sebelum mengembangkan halaman. Jangan gunakan Unicode em dash/en dash pada teks aplikasi. Jangan commit `.runtime/`, `.tools/`, screenshot review, session, dataset, DB atau hasil pipeline.

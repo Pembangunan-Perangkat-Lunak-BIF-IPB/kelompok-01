@@ -48,12 +48,12 @@ export function ContextHelp({ label, children }: { label: string; children: Reac
       onFocus={() => { if (pointer.current !== 'touch') show(); }}
       onBlur={event => { if ((!pinned || event.relatedTarget) && !panel.current?.contains(event.relatedTarget as Node)) { setOpen(false); setPinned(false); } }}
       onClick={() => { if (pinned) { setOpen(false); setPinned(false); } else { show(); setPinned(true); } }}
-      className="inline-flex align-middle items-center justify-center min-w-11 min-h-11 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-slate-800">
+      className="gp-help-button inline-flex align-middle items-center justify-center rounded-lg">
       <Info aria-hidden="true" className="w-4 h-4" />
     </button>
     {open && createPortal(<div ref={panel} id={id} role="tooltip"
       onMouseEnter={() => clearTimeout(timer.current)} onMouseLeave={leave}
-      className="fixed z-[100] w-80 max-w-[calc(100vw-24px)] max-h-[min(190px,70vh)] overflow-auto rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-4 text-sm leading-relaxed shadow-xl"
+      className="gp-help-panel fixed z-[100] w-80 max-w-[calc(100vw-24px)] max-h-[min(190px,70vh)] overflow-auto"
       style={position}>{children}</div>, document.body)}
   </>;
 }

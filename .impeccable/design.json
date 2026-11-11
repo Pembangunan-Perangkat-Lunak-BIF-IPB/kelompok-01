@@ -1,0 +1,768 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T07:19:29.439031Z",
+  "title": "Design System: GenoPath",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Kanvas porselen",
+        "tonalRamp": [
+          "oklch(15.00% 0.00418 236.50)",
+          "oklch(26.43% 0.00418 236.50)",
+          "oklch(37.86% 0.00418 236.50)",
+          "oklch(49.29% 0.00418 236.50)",
+          "oklch(60.71% 0.00418 236.50)",
+          "oklch(72.14% 0.00418 236.50)",
+          "oklch(83.57% 0.00418 236.50)",
+          "oklch(95.00% 0.00418 236.50)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Permukaan",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "subtle": {
+        "role": "neutral",
+        "displayName": "Lapisan mineral",
+        "tonalRamp": [
+          "oklch(15.00% 0.00931 242.84)",
+          "oklch(26.43% 0.00931 242.84)",
+          "oklch(37.86% 0.00931 242.84)",
+          "oklch(49.29% 0.00931 242.84)",
+          "oklch(60.71% 0.00931 242.84)",
+          "oklch(72.14% 0.00931 242.84)",
+          "oklch(83.57% 0.00931 242.84)",
+          "oklch(95.00% 0.00931 242.84)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Tinta utama",
+        "tonalRamp": [
+          "oklch(15.00% 0.04217 239.78)",
+          "oklch(26.43% 0.04217 239.78)",
+          "oklch(37.86% 0.04217 239.78)",
+          "oklch(49.29% 0.04217 239.78)",
+          "oklch(60.71% 0.04217 239.78)",
+          "oklch(72.14% 0.04217 239.78)",
+          "oklch(83.57% 0.04217 239.78)",
+          "oklch(95.00% 0.04217 239.78)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Tinta pendamping",
+        "tonalRamp": [
+          "oklch(15.00% 0.03593 241.26)",
+          "oklch(26.43% 0.03593 241.26)",
+          "oklch(37.86% 0.03593 241.26)",
+          "oklch(49.29% 0.03593 241.26)",
+          "oklch(60.71% 0.03593 241.26)",
+          "oklch(72.14% 0.03593 241.26)",
+          "oklch(83.57% 0.03593 241.26)",
+          "oklch(95.00% 0.03593 241.26)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Garis struktur",
+        "tonalRamp": [
+          "oklch(15.00% 0.01705 236.72)",
+          "oklch(26.43% 0.01705 236.72)",
+          "oklch(37.86% 0.01705 236.72)",
+          "oklch(49.29% 0.01705 236.72)",
+          "oklch(60.71% 0.01705 236.72)",
+          "oklch(72.14% 0.01705 236.72)",
+          "oklch(83.57% 0.01705 236.72)",
+          "oklch(95.00% 0.01705 236.72)"
+        ]
+      },
+      "control-border": {
+        "role": "neutral",
+        "displayName": "Tepi kontrol",
+        "tonalRamp": [
+          "oklch(15.00% 0.03313 236.02)",
+          "oklch(26.43% 0.03313 236.02)",
+          "oklch(37.86% 0.03313 236.02)",
+          "oklch(49.29% 0.03313 236.02)",
+          "oklch(60.71% 0.03313 236.02)",
+          "oklch(72.14% 0.03313 236.02)",
+          "oklch(83.57% 0.03313 236.02)",
+          "oklch(95.00% 0.03313 236.02)"
+        ]
+      },
+      "brand": {
+        "role": "primary",
+        "displayName": "Biru mineral",
+        "tonalRamp": [
+          "oklch(15.00% 0.10260 250.01)",
+          "oklch(26.43% 0.10260 250.01)",
+          "oklch(37.86% 0.10260 250.01)",
+          "oklch(49.29% 0.10260 250.01)",
+          "oklch(60.71% 0.10260 250.01)",
+          "oklch(72.14% 0.10260 250.01)",
+          "oklch(83.57% 0.10260 250.01)",
+          "oklch(95.00% 0.10260 250.01)"
+        ]
+      },
+      "brand-hover": {
+        "role": "primary",
+        "displayName": "Biru tindakan hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.08539 249.30)",
+          "oklch(26.43% 0.08539 249.30)",
+          "oklch(37.86% 0.08539 249.30)",
+          "oklch(49.29% 0.08539 249.30)",
+          "oklch(60.71% 0.08539 249.30)",
+          "oklch(72.14% 0.08539 249.30)",
+          "oklch(83.57% 0.08539 249.30)",
+          "oklch(95.00% 0.08539 249.30)"
+        ]
+      },
+      "link": {
+        "role": "primary",
+        "displayName": "Biru tautan",
+        "tonalRamp": [
+          "oklch(15.00% 0.09758 248.40)",
+          "oklch(26.43% 0.09758 248.40)",
+          "oklch(37.86% 0.09758 248.40)",
+          "oklch(49.29% 0.09758 248.40)",
+          "oklch(60.71% 0.09758 248.40)",
+          "oklch(72.14% 0.09758 248.40)",
+          "oklch(83.57% 0.09758 248.40)",
+          "oklch(95.00% 0.09758 248.40)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Fokus keyboard",
+        "tonalRamp": [
+          "oklch(15.00% 0.12236 246.55)",
+          "oklch(26.43% 0.12236 246.55)",
+          "oklch(37.86% 0.12236 246.55)",
+          "oklch(49.29% 0.12236 246.55)",
+          "oklch(60.71% 0.12236 246.55)",
+          "oklch(72.14% 0.12236 246.55)",
+          "oklch(83.57% 0.12236 246.55)",
+          "oklch(95.00% 0.12236 246.55)"
+        ]
+      },
+      "selected": {
+        "role": "neutral",
+        "displayName": "Seleksi antrean",
+        "tonalRamp": [
+          "oklch(15.00% 0.01621 245.09)",
+          "oklch(26.43% 0.01621 245.09)",
+          "oklch(37.86% 0.01621 245.09)",
+          "oklch(49.29% 0.01621 245.09)",
+          "oklch(60.71% 0.01621 245.09)",
+          "oklch(72.14% 0.01621 245.09)",
+          "oklch(83.57% 0.01621 245.09)",
+          "oklch(95.00% 0.01621 245.09)"
+        ]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Hijau selesai",
+        "tonalRamp": [
+          "oklch(15.00% 0.08631 158.01)",
+          "oklch(26.43% 0.08631 158.01)",
+          "oklch(37.86% 0.08631 158.01)",
+          "oklch(49.29% 0.08631 158.01)",
+          "oklch(60.71% 0.08631 158.01)",
+          "oklch(72.14% 0.08631 158.01)",
+          "oklch(83.57% 0.08631 158.01)",
+          "oklch(95.00% 0.08631 158.01)"
+        ]
+      },
+      "success-bg": {
+        "role": "secondary",
+        "displayName": "Bidang selesai",
+        "tonalRamp": [
+          "oklch(15.00% 0.01574 154.47)",
+          "oklch(26.43% 0.01574 154.47)",
+          "oklch(37.86% 0.01574 154.47)",
+          "oklch(49.29% 0.01574 154.47)",
+          "oklch(60.71% 0.01574 154.47)",
+          "oklch(72.14% 0.01574 154.47)",
+          "oklch(83.57% 0.01574 154.47)",
+          "oklch(95.00% 0.01574 154.47)"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Amber berjalan",
+        "tonalRamp": [
+          "oklch(15.00% 0.09827 66.44)",
+          "oklch(26.43% 0.09827 66.44)",
+          "oklch(37.86% 0.09827 66.44)",
+          "oklch(49.29% 0.09827 66.44)",
+          "oklch(60.71% 0.09827 66.44)",
+          "oklch(72.14% 0.09827 66.44)",
+          "oklch(83.57% 0.09827 66.44)",
+          "oklch(95.00% 0.09827 66.44)"
+        ]
+      },
+      "warning-bg": {
+        "role": "secondary",
+        "displayName": "Bidang berjalan",
+        "tonalRamp": [
+          "oklch(15.00% 0.03520 85.41)",
+          "oklch(26.43% 0.03520 85.41)",
+          "oklch(37.86% 0.03520 85.41)",
+          "oklch(49.29% 0.03520 85.41)",
+          "oklch(60.71% 0.03520 85.41)",
+          "oklch(72.14% 0.03520 85.41)",
+          "oklch(83.57% 0.03520 85.41)",
+          "oklch(95.00% 0.03520 85.41)"
+        ]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Merah gagal",
+        "tonalRamp": [
+          "oklch(15.00% 0.15120 15.53)",
+          "oklch(26.43% 0.15120 15.53)",
+          "oklch(37.86% 0.15120 15.53)",
+          "oklch(49.29% 0.15120 15.53)",
+          "oklch(60.71% 0.15120 15.53)",
+          "oklch(72.14% 0.15120 15.53)",
+          "oklch(83.57% 0.15120 15.53)",
+          "oklch(95.00% 0.15120 15.53)"
+        ]
+      },
+      "danger-bg": {
+        "role": "secondary",
+        "displayName": "Bidang gagal",
+        "tonalRamp": [
+          "oklch(15.00% 0.01535 7.49)",
+          "oklch(26.43% 0.01535 7.49)",
+          "oklch(37.86% 0.01535 7.49)",
+          "oklch(49.29% 0.01535 7.49)",
+          "oklch(60.71% 0.01535 7.49)",
+          "oklch(72.14% 0.01535 7.49)",
+          "oklch(83.57% 0.01535 7.49)",
+          "oklch(95.00% 0.01535 7.49)"
+        ]
+      },
+      "rail": {
+        "role": "neutral",
+        "displayName": "Rail stasiun",
+        "tonalRamp": [
+          "oklch(15.00% 0.05425 242.71)",
+          "oklch(26.43% 0.05425 242.71)",
+          "oklch(37.86% 0.05425 242.71)",
+          "oklch(49.29% 0.05425 242.71)",
+          "oklch(60.71% 0.05425 242.71)",
+          "oklch(72.14% 0.05425 242.71)",
+          "oklch(83.57% 0.05425 242.71)",
+          "oklch(95.00% 0.05425 242.71)"
+        ]
+      },
+      "rail-muted": {
+        "role": "neutral",
+        "displayName": "Teks rail",
+        "tonalRamp": [
+          "oklch(15.00% 0.03035 240.26)",
+          "oklch(26.43% 0.03035 240.26)",
+          "oklch(37.86% 0.03035 240.26)",
+          "oklch(49.29% 0.03035 240.26)",
+          "oklch(60.71% 0.03035 240.26)",
+          "oklch(72.14% 0.03035 240.26)",
+          "oklch(83.57% 0.03035 240.26)",
+          "oklch(95.00% 0.03035 240.26)"
+        ]
+      },
+      "dark-bg": {
+        "role": "neutral",
+        "displayName": "Kanvas porselen malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.02897 243.21)",
+          "oklch(26.43% 0.02897 243.21)",
+          "oklch(37.86% 0.02897 243.21)",
+          "oklch(49.29% 0.02897 243.21)",
+          "oklch(60.71% 0.02897 243.21)",
+          "oklch(72.14% 0.02897 243.21)",
+          "oklch(83.57% 0.02897 243.21)",
+          "oklch(95.00% 0.02897 243.21)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Permukaan malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.03671 240.39)",
+          "oklch(26.43% 0.03671 240.39)",
+          "oklch(37.86% 0.03671 240.39)",
+          "oklch(49.29% 0.03671 240.39)",
+          "oklch(60.71% 0.03671 240.39)",
+          "oklch(72.14% 0.03671 240.39)",
+          "oklch(83.57% 0.03671 240.39)",
+          "oklch(95.00% 0.03671 240.39)"
+        ]
+      },
+      "dark-subtle": {
+        "role": "neutral",
+        "displayName": "Lapisan mineral malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.03942 238.27)",
+          "oklch(26.43% 0.03942 238.27)",
+          "oklch(37.86% 0.03942 238.27)",
+          "oklch(49.29% 0.03942 238.27)",
+          "oklch(60.71% 0.03942 238.27)",
+          "oklch(72.14% 0.03942 238.27)",
+          "oklch(83.57% 0.03942 238.27)",
+          "oklch(95.00% 0.03942 238.27)"
+        ]
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "Tinta utama malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.01008 238.51)",
+          "oklch(26.43% 0.01008 238.51)",
+          "oklch(37.86% 0.01008 238.51)",
+          "oklch(49.29% 0.01008 238.51)",
+          "oklch(60.71% 0.01008 238.51)",
+          "oklch(72.14% 0.01008 238.51)",
+          "oklch(83.57% 0.01008 238.51)",
+          "oklch(95.00% 0.01008 238.51)"
+        ]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "Tinta pendamping malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.02520 238.49)",
+          "oklch(26.43% 0.02520 238.49)",
+          "oklch(37.86% 0.02520 238.49)",
+          "oklch(49.29% 0.02520 238.49)",
+          "oklch(60.71% 0.02520 238.49)",
+          "oklch(72.14% 0.02520 238.49)",
+          "oklch(83.57% 0.02520 238.49)",
+          "oklch(95.00% 0.02520 238.49)"
+        ]
+      },
+      "dark-border": {
+        "role": "neutral",
+        "displayName": "Garis struktur malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.03960 238.09)",
+          "oklch(26.43% 0.03960 238.09)",
+          "oklch(37.86% 0.03960 238.09)",
+          "oklch(49.29% 0.03960 238.09)",
+          "oklch(60.71% 0.03960 238.09)",
+          "oklch(72.14% 0.03960 238.09)",
+          "oklch(83.57% 0.03960 238.09)",
+          "oklch(95.00% 0.03960 238.09)"
+        ]
+      },
+      "dark-control-border": {
+        "role": "neutral",
+        "displayName": "Tepi kontrol malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.04253 237.99)",
+          "oklch(26.43% 0.04253 237.99)",
+          "oklch(37.86% 0.04253 237.99)",
+          "oklch(49.29% 0.04253 237.99)",
+          "oklch(60.71% 0.04253 237.99)",
+          "oklch(72.14% 0.04253 237.99)",
+          "oklch(83.57% 0.04253 237.99)",
+          "oklch(95.00% 0.04253 237.99)"
+        ]
+      },
+      "dark-brand": {
+        "role": "primary",
+        "displayName": "Biru mineral malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.08411 241.04)",
+          "oklch(26.43% 0.08411 241.04)",
+          "oklch(37.86% 0.08411 241.04)",
+          "oklch(49.29% 0.08411 241.04)",
+          "oklch(60.71% 0.08411 241.04)",
+          "oklch(72.14% 0.08411 241.04)",
+          "oklch(83.57% 0.08411 241.04)",
+          "oklch(95.00% 0.08411 241.04)"
+        ]
+      },
+      "dark-brand-hover": {
+        "role": "primary",
+        "displayName": "Biru tindakan hover malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.05735 238.85)",
+          "oklch(26.43% 0.05735 238.85)",
+          "oklch(37.86% 0.05735 238.85)",
+          "oklch(49.29% 0.05735 238.85)",
+          "oklch(60.71% 0.05735 238.85)",
+          "oklch(72.14% 0.05735 238.85)",
+          "oklch(83.57% 0.05735 238.85)",
+          "oklch(95.00% 0.05735 238.85)"
+        ]
+      },
+      "dark-link": {
+        "role": "primary",
+        "displayName": "Biru tautan malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.07211 240.56)",
+          "oklch(26.43% 0.07211 240.56)",
+          "oklch(37.86% 0.07211 240.56)",
+          "oklch(49.29% 0.07211 240.56)",
+          "oklch(60.71% 0.07211 240.56)",
+          "oklch(72.14% 0.07211 240.56)",
+          "oklch(83.57% 0.07211 240.56)",
+          "oklch(95.00% 0.07211 240.56)"
+        ]
+      },
+      "dark-focus": {
+        "role": "primary",
+        "displayName": "Fokus keyboard malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.07226 239.96)",
+          "oklch(26.43% 0.07226 239.96)",
+          "oklch(37.86% 0.07226 239.96)",
+          "oklch(49.29% 0.07226 239.96)",
+          "oklch(60.71% 0.07226 239.96)",
+          "oklch(72.14% 0.07226 239.96)",
+          "oklch(83.57% 0.07226 239.96)",
+          "oklch(95.00% 0.07226 239.96)"
+        ]
+      },
+      "dark-selected": {
+        "role": "neutral",
+        "displayName": "Seleksi antrean malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.05458 241.34)",
+          "oklch(26.43% 0.05458 241.34)",
+          "oklch(37.86% 0.05458 241.34)",
+          "oklch(49.29% 0.05458 241.34)",
+          "oklch(60.71% 0.05458 241.34)",
+          "oklch(72.14% 0.05458 241.34)",
+          "oklch(83.57% 0.05458 241.34)",
+          "oklch(95.00% 0.05458 241.34)"
+        ]
+      },
+      "dark-success": {
+        "role": "secondary",
+        "displayName": "Hijau selesai malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.07162 157.15)",
+          "oklch(26.43% 0.07162 157.15)",
+          "oklch(37.86% 0.07162 157.15)",
+          "oklch(49.29% 0.07162 157.15)",
+          "oklch(60.71% 0.07162 157.15)",
+          "oklch(72.14% 0.07162 157.15)",
+          "oklch(83.57% 0.07162 157.15)",
+          "oklch(95.00% 0.07162 157.15)"
+        ]
+      },
+      "dark-success-bg": {
+        "role": "secondary",
+        "displayName": "Bidang selesai malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.04134 168.21)",
+          "oklch(26.43% 0.04134 168.21)",
+          "oklch(37.86% 0.04134 168.21)",
+          "oklch(49.29% 0.04134 168.21)",
+          "oklch(60.71% 0.04134 168.21)",
+          "oklch(72.14% 0.04134 168.21)",
+          "oklch(83.57% 0.04134 168.21)",
+          "oklch(95.00% 0.04134 168.21)"
+        ]
+      },
+      "dark-warning": {
+        "role": "secondary",
+        "displayName": "Amber berjalan malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.09386 86.30)",
+          "oklch(26.43% 0.09386 86.30)",
+          "oklch(37.86% 0.09386 86.30)",
+          "oklch(49.29% 0.09386 86.30)",
+          "oklch(60.71% 0.09386 86.30)",
+          "oklch(72.14% 0.09386 86.30)",
+          "oklch(83.57% 0.09386 86.30)",
+          "oklch(95.00% 0.09386 86.30)"
+        ]
+      },
+      "dark-warning-bg": {
+        "role": "secondary",
+        "displayName": "Bidang berjalan malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.04407 83.76)",
+          "oklch(26.43% 0.04407 83.76)",
+          "oklch(37.86% 0.04407 83.76)",
+          "oklch(49.29% 0.04407 83.76)",
+          "oklch(60.71% 0.04407 83.76)",
+          "oklch(72.14% 0.04407 83.76)",
+          "oklch(83.57% 0.04407 83.76)",
+          "oklch(95.00% 0.04407 83.76)"
+        ]
+      },
+      "dark-danger": {
+        "role": "secondary",
+        "displayName": "Merah gagal malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.08703 9.26)",
+          "oklch(26.43% 0.08703 9.26)",
+          "oklch(37.86% 0.08703 9.26)",
+          "oklch(49.29% 0.08703 9.26)",
+          "oklch(60.71% 0.08703 9.26)",
+          "oklch(72.14% 0.08703 9.26)",
+          "oklch(83.57% 0.08703 9.26)",
+          "oklch(95.00% 0.08703 9.26)"
+        ]
+      },
+      "dark-danger-bg": {
+        "role": "secondary",
+        "displayName": "Bidang gagal malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.05422 0.30)",
+          "oklch(26.43% 0.05422 0.30)",
+          "oklch(37.86% 0.05422 0.30)",
+          "oklch(49.29% 0.05422 0.30)",
+          "oklch(60.71% 0.05422 0.30)",
+          "oklch(72.14% 0.05422 0.30)",
+          "oklch(83.57% 0.05422 0.30)",
+          "oklch(95.00% 0.05422 0.30)"
+        ]
+      },
+      "dark-rail": {
+        "role": "neutral",
+        "displayName": "Rail stasiun malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.03708 242.82)",
+          "oklch(26.43% 0.03708 242.82)",
+          "oklch(37.86% 0.03708 242.82)",
+          "oklch(49.29% 0.03708 242.82)",
+          "oklch(60.71% 0.03708 242.82)",
+          "oklch(72.14% 0.03708 242.82)",
+          "oklch(83.57% 0.03708 242.82)",
+          "oklch(95.00% 0.03708 242.82)"
+        ]
+      },
+      "dark-rail-muted": {
+        "role": "neutral",
+        "displayName": "Teks rail malam",
+        "tonalRamp": [
+          "oklch(15.00% 0.03035 240.26)",
+          "oklch(26.43% 0.03035 240.26)",
+          "oklch(37.86% 0.03035 240.26)",
+          "oklch(49.29% 0.03035 240.26)",
+          "oklch(60.71% 0.03035 240.26)",
+          "oklch(72.14% 0.03035 240.26)",
+          "oklch(83.57% 0.03035 240.26)",
+          "oklch(95.00% 0.03035 240.26)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Judul editorial beranda."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Orientasi halaman kerja."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Judul bagian."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Teks kerja utama."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Label field."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "Teks tindakan."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Nilai ilmiah dan angka tabular."
+      }
+    },
+    "shadows": [
+      {
+        "name": "context-help-light",
+        "value": "0 10px 28px rgba(16,47,69,.09)",
+        "purpose": "Bantuan mengambang pada mode light."
+      },
+      {
+        "name": "context-help-dark",
+        "value": "0 10px 28px rgba(0,0,0,.2)",
+        "purpose": "Override bantuan mengambang pada mode dark."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration",
+        "value": "180ms",
+        "purpose": "Transisi hover warna kontrol."
+      },
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.22,1,.36,1)",
+        "purpose": "Token easing tersedia; transisi tombol saat ini tetap memakai default CSS."
+      },
+      {
+        "name": "team-wave-step",
+        "value": "60ms",
+        "purpose": "Interval huruf scene tim normal yang dilindungi."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation:none!important;transition:none!important",
+        "purpose": "Alternatif prefers-reduced-motion; handler tim melewati gelombang huruf."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile-max",
+        "value": "640px"
+      },
+      {
+        "name": "landing-wrap-min",
+        "value": "641px"
+      },
+      {
+        "name": "table-hint-hide-min",
+        "value": "768px"
+      },
+      {
+        "name": "compact-rail-max",
+        "value": "900px"
+      },
+      {
+        "name": "landing-wrap-max",
+        "value": "1000px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Tindakan primary dari primitive Button; minimum 44 px.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\">Analisis Baru</button>",
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration);background:var(--gp-brand);color:var(--gp-surface);}.ds-button-primary:hover{background:var(--gp-brand-hover);}.ds-button-primary:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-primary:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-primary{transition:none!important}}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Tindakan secondary dari primitive Button; minimum 44 px.",
+      "html": "<button class=\"ds-button-secondary\" type=\"button\">Sebelumnya</button>",
+      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration);background:var(--gp-surface);color:var(--gp-text);border-color:var(--gp-border);}.ds-button-secondary:hover{background:var(--gp-subtle);}.ds-button-secondary:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-secondary:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-secondary{transition:none!important}}"
+    },
+    {
+      "name": "Ghost button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Tindakan ghost dari primitive Button; minimum 44 px.",
+      "html": "<button class=\"ds-button-ghost\" type=\"button\">Lihat riwayat</button>",
+      "css": ".ds-button-ghost{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration);background:transparent;color:var(--gp-link);}.ds-button-ghost:hover{background:var(--gp-subtle);}.ds-button-ghost:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-ghost:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-ghost{transition:none!important}}"
+    },
+    {
+      "name": "Analysis name field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Input berlabel dengan tepi kontrol, error dan disabled.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-analysis-name\">Nama analisis</label><input id=\"ds-analysis-name\" class=\"ds-input\" type=\"text\" /></div>",
+      "css": ".ds-field{display:grid;gap:7px;color:var(--gp-text);font-family:var(--gp-body);font-size:14px}.ds-field label{font-weight:600}.ds-input{width:100%;min-height:46px;padding:10px 13px;background:var(--gp-surface);color:var(--gp-text);border:1px solid var(--gp-control-border);border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;line-height:1.5}.ds-input:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-input::placeholder{color:var(--gp-muted);opacity:1}.ds-input[aria-invalid=true]{border-color:var(--gp-danger)}.ds-input:disabled{opacity:.6}"
+    },
+    {
+      "name": "Identity navigation",
+      "kind": "nav",
+      "description": "Rail gelap, active page terang dan grid mobile empat tujuan.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Navigasi utama\"><a href=\"/\" class=\"ds-nav-link\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"></path><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path></svg>Beranda</a><a href=\"/dashboard\" class=\"ds-nav-link\" aria-current=\"page\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\"></rect><rect width=\"7\" height=\"5\" x=\"14\" y=\"3\" rx=\"1\"></rect><rect width=\"7\" height=\"9\" x=\"14\" y=\"12\" rx=\"1\"></rect><rect width=\"7\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\"></rect></svg>Dashboard</a><a href=\"/riwayat\" class=\"ds-nav-link\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"></path><path d=\"M3 3v5h5\"></path><path d=\"M12 7v5l4 2\"></path></svg>Riwayat</a><a href=\"/analisis-baru\" class=\"ds-nav-link\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2\"></path><path d=\"M6.453 15h11.094\"></path><path d=\"M8.5 2h7\"></path></svg>Analisis Baru</a></nav>",
+      "css": ".ds-nav{display:grid;gap:8px;padding:20px;background:var(--gp-rail);font-family:var(--gp-body)}.ds-nav-link{display:flex;align-items:center;gap:12px;min-height:46px;padding:10px 14px;border-radius:8px;color:#c8dae6;font-size:14px;font-weight:500;text-decoration:none;transition:background var(--gp-duration)}.ds-nav-link:hover{background:#23485f;color:#fff}.ds-nav-link[aria-current=page]{background:#e3edf6;color:#15394e}.ds-nav-link:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}@media(max-width:640px){.ds-nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:16px}.ds-nav-link{flex-direction:column;justify-content:center;min-height:60px;padding:8px 3px;gap:5px;font-size:11px;line-height:1.3;text-align:center;white-space:normal}}.ds-nav-link{line-height:1.6}@media(max-width:640px){.ds-nav-link{line-height:1.3}.ds-nav-link svg{width:15px;flex-shrink:0}}@media(prefers-reduced-motion:reduce){.ds-nav-link{transition:none!important}}"
+    },
+    {
+      "name": "Completed status",
+      "kind": "chip",
+      "refersTo": "status-completed",
+      "description": "Status backend dengan teks dan titik; bukan input interaktif.",
+      "html": "<span class=\"ds-status\" title=\"Selesai\"><span class=\"ds-status-dot\" aria-hidden=\"true\"></span>Completed</span>",
+      "css": ".ds-status{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border-radius:5px;font-family:var(--gp-body);font-size:12px;font-weight:600;line-height:1.6;white-space:nowrap;background:var(--gp-success-bg);color:var(--gp-success)}.ds-status-dot{width:6px;height:6px;border-radius:50%;background:currentColor}"
+    },
+    {
+      "name": "Submission summary",
+      "kind": "card",
+      "refersTo": "summary",
+      "description": "Bidang konfigurasi sebelum pengiriman eksplisit.",
+      "html": "<section class=\"ds-summary\"><h2>Ringkasan sebelum dikirim</h2><p>Berkas: Belum dipilih</p></section>",
+      "css": ".ds-summary{padding:24px;margin:24px 0;border-radius:12px;background:var(--gp-subtle);color:var(--gp-text);font-family:var(--gp-body);font-size:14px;line-height:1.6}.ds-summary h2{font-family:var(--gp-heading);font-size:17px;font-weight:600;letter-spacing:-.025em;margin:0 0 12px}.ds-summary p{margin:0}@media(max-width:640px){.ds-summary{padding:20px}}"
+    },
+    {
+      "name": "Scientific table frame",
+      "kind": "custom",
+      "refersTo": "table-frame",
+      "description": "Tabel ilmiah dengan scroll region keyboard dan batas kolom alel. Tidak memuat hasil contoh.",
+      "html": "<div class=\"ds-table-frame\"><div class=\"ds-table-scroll\" role=\"region\" aria-label=\"Varian hasil analisis\" tabindex=\"0\"><table class=\"ds-scientific-table\"><caption>Record varian sesuai filter aktif</caption><thead><tr><th scope=\"col\">Kromosom</th><th scope=\"col\">Posisi (bp)</th><th scope=\"col\">REF</th><th scope=\"col\">ALT</th><th scope=\"col\">QUAL</th><th scope=\"col\">FORMAT/DP</th><th scope=\"col\">GT asli</th><th scope=\"col\">FILTER</th><th scope=\"col\">Tipe</th></tr></thead><tbody></tbody></table></div><p class=\"ds-table-hint\">Geser tabel untuk melihat seluruh kolom pada layar kecil.</p></div>",
+      "css": ".ds-table-frame{border:1px solid var(--gp-border);border-radius:12px;overflow:hidden;background:var(--gp-surface);color:var(--gp-text);font-family:var(--gp-body)}.ds-table-scroll{overflow-x:auto}.ds-table-scroll:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-scientific-table{width:100%;min-width:980px;border-collapse:collapse;text-align:left;font-size:14px}.ds-scientific-table caption{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.ds-scientific-table th{padding:15px 18px;background:var(--gp-subtle);color:var(--gp-muted);font-size:12px;font-weight:600;white-space:nowrap}.ds-scientific-table td{padding:18px;border-top:1px solid var(--gp-border);vertical-align:top;font-family:var(--gp-data);font-size:12px;font-variant-numeric:tabular-nums}.ds-scientific-table tbody tr:hover{background:var(--gp-subtle)}.ds-scientific-table .ds-allele{min-width:100px;max-width:320px;word-break:normal;overflow-wrap:anywhere}.ds-table-hint{font-size:12px;padding:10px 18px;color:var(--gp-muted);border-top:1px solid var(--gp-border)}@media(min-width:768px){.ds-table-hint{display:none}}"
+    },
+    {
+      "name": "Context help panel",
+      "kind": "custom",
+      "description": "Bantuan mengambang memakai satu shadow semantik; pemicu dan portal berada pada komponen runtime.",
+      "html": "<div class=\"ds-help-panel\">Filter tabel tidak mengubah ringkasan.</div>",
+      "css": ".ds-help-panel{padding:16px;border:1px solid var(--gp-border);border-radius:10px;background:var(--gp-surface);color:var(--gp-text);box-shadow:var(--gp-shadow);font-family:var(--gp-body);font-size:14px;line-height:1.6}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Stasiun riset GenoPath",
+    "overview": "Ruang kerja kampus untuk analisis genom yang menempatkan sampel, status dan tindakan berikutnya di depan. Rail tinta biru memberi identitas; kanvas porselen, garis pembagi dan tipografi terukur menjaga halaman kerja tenang. Beranda lebih ekspresif melalui judul editorial dan foto kampus asli.\n\nDokumen ini merekam implementasi M11, bukan pemulihan Hi-Fi/Lo-Fi lama atau komposisi final semua halaman. Arah code-led sudah dipilih pengguna; penerimaan visual akhir masih menunggu review preview. PRODUCT.md memegang kebenaran produk, surface brief memegang strategi halaman, dan token di frontend/src/styles/tokens.css memegang nilai runtime.",
+    "keyCharacteristics": [
+      "Rail gelap, kanvas luas dan bagian data bergaris.",
+      "Sora untuk orientasi, Instrument Sans untuk kerja, monospace untuk nilai ilmiah.",
+      "Status nyata dan tindakan eksplisit; tidak membuat metrik atau hasil contoh.",
+      "Satu fondasi light/dark untuk halaman yang dikerjakan tiga developer."
+    ],
+    "rules": [
+      {
+        "name": "The Semantic Pair Rule",
+        "body": "Pakai pasangan warna per mode dari sumber token. Border kontrol membedakan field dari kanvas; border struktural hanya mengatur pembagian ruang.",
+        "section": "colors"
+      },
+      {
+        "name": "The Scientific Integrity Rule",
+        "body": "Monospace dan lebar kolom membantu membaca data, tanpa menyingkat, menyusun ulang atau mengubah REF, ALT, GT, QUAL, DP dan null.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Workspace Rule",
+        "body": "Halaman kerja memakai lapisan tonal dan garis; bayangan hanya memberi jarak pada bantuan mengambang. Scene tim asli tetap menjadi pengecualian lokal yang dilindungi.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do gunakan primitive bersama dan token semantik agar light/dark tetap berpasangan.",
+      "Do pertahankan focus terlihat, label, pesan status, akses keyboard, zoom dan rekomendasi target minimum 44 px.",
+      "Do tampilkan loading, kosong, gagal, retry dan data stale sesuai keadaan API yang sebenarnya.",
+      "Do pertahankan aset identitas, mapping kontributor dan interaksi normal tim; sediakan alternatif reduced-motion.",
+      "Do koordinasikan perubahan shell, token dan primitive melalui integrator sesuai frontend/README.md."
+    ],
+    "donts": [
+      "Don't membuat dummy data, persentase progress, grafik atau temuan biologis untuk mengisi layar.",
+      "Don't menghilangkan ALT multiallelic, pemisah GT, null atau batas filter dan ekspor demi kerapian visual.",
+      "Don't menggandakan Button, tabel atau shell dengan gaya baru pada setiap halaman.",
+      "Don't menjadikan glass, badge uppercase dan bayangan scene tim sebagai pola baru halaman kerja.",
+      "Don't mengubah backend, JWT, ownership, gate privat atau perilaku submission dalam pekerjaan desain."
+    ]
+  }
+}

@@ -22,6 +22,9 @@ colors:
   danger-bg: "#fceef0"
   rail: "#102f45"
   rail-muted: "#b4c8d7"
+  botanical: "#365d42"
+  botanical-soft: "#e8f0df"
+  rail-botanical: "#d9e8b8"
   dark-bg: "#101e29"
   dark-surface: "#172b39"
   dark-subtle: "#203746"
@@ -42,6 +45,8 @@ colors:
   dark-danger-bg: "#4c2934"
   dark-rail: "#0a1d2b"
   dark-rail-muted: "#b4c8d7"
+  dark-botanical: "#c5dcb1"
+  dark-botanical-soft: "#293e33"
 typography:
   display:
     fontFamily: "Sora, 'Instrument Sans', sans-serif"
@@ -276,3 +281,13 @@ Backend/API, AuthContext, JWT/ownership, gate privat, handler submission/UUID/re
 - **Don't** menggandakan Button, tabel atau shell dengan gaya baru pada setiap halaman.
 - **Don't** menjadikan glass, badge uppercase dan bayangan scene tim sebagai pola baru halaman kerja.
 - **Don't** mengubah backend, JWT, ownership, gate privat atau perilaku submission dalam pekerjaan desain.
+
+## Brand refinement, PROPOSED
+
+Status menunggu review Farrel dan Azril. Ini bukan logo atau identitas final.
+
+- `BrandIdentity` menyatukan wordmark dan nama spesies pada navigasi/login. Aksen botani memakai hijau existing pada hero sebagai pendamping biru tinta; bukan perubahan palet menjadi ungu. Active navigation memakai aksen yang sama tanpa mengubah warna status ilmiah.
+- `public/brand/genopath-prototype-v2.png` adalah salinan byte-identik lampiran pengguna `logo genopath sementara no background v2.png`. Asal: sketsa awal Azril yang dikembangkan dengan AI, lalu background remover online. Keputusan tim dan file sumber lebih baik dari Azril masih ditunggu. Bukan favicon atau logo resmi; tidak ada tracing, perubahan bentuk, cleanup atau generasi ulang.
+- Screenshot asli 500 x 441 memiliki background putih/abu. V2 mempertahankan bentuk/gradient utama, tetapi ada fringe terang tipis di latar gelap dan detail G/DNA menyatu pada 32 px. Pemakaian sementara dibatasi sebagai pendamping wordmark pada slot 50 x 44 px, bukan ikon standalone kecil.
+- Topline menyebut konteks varian DNA dan spesies. Empat langkah Beranda kini berupa urutan sampel/configuration/execution/output; diagram konseptual, bukan progress atau hasil Job. Copy dan aset tim tetap milik implementasi existing.
+- Motif bawang original, kampus, Naruto/cutout, mapping dan animasi tim tidak diubah. Tidak mengubah kontrak route, API, gate, ownership atau pembagian kerja.

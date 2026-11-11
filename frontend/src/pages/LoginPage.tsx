@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Dna, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Button, Alert, FormField } from '../components/ui/Foundation';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { BrandIdentity } from '../components/BrandIdentity';
 import { useAuth } from '../context/auth';
 import { ApiError } from '../services/api';
 
@@ -97,7 +98,7 @@ export const LoginPage: React.FC = () => {
 
   return <div className="gp-login">
     <div className="flex justify-between items-center max-w-6xl mx-auto"><Link to="/" className="gp-data-title text-sm"><ArrowLeft className="inline mr-2" size={16}/>Kembali ke Beranda</Link><ThemeToggle/></div>
-    <div className="gp-login-layout"><section className="gp-login-intro"><div className="inline-flex items-center gap-3 text-2xl font-semibold"><Dna size={30} aria-hidden="true"/>GenoPath</div><h1>Analisis Anda.<br/>Dalam satu ruang kerja.</h1><p>Siapkan sampel, pantau proses, dan telusuri hasil varian bawang putih dengan konteks yang tetap terhubung.</p><p className="mt-6 text-sm">Bioinformatika IPB University</p></section>
+    <div className="gp-login-layout"><section className="gp-login-intro"><BrandIdentity surface/><h1>Analisis Anda.<br/>Dalam satu ruang kerja.</h1><p>Siapkan sampel, pantau proses, dan telusuri hasil varian bawang putih dengan konteks yang tetap terhubung.</p><p className="mt-6 text-sm">Bioinformatika IPB University</p></section>
     <section className="gp-auth-form" aria-label="Akses akun GenoPath"><div className="gp-auth-tabs" role="tablist" aria-label="Akses akun" onKeyDown={event => { if (['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) { event.preventDefault(); const tab = event.key === 'Home' ? 'login' : event.key === 'End' ? 'register' : activeTab === 'login' ? 'register' : 'login'; setActiveTab(tab); setErrorMessage(null); setSuccessMessage(null); document.getElementById(tab + '-tab')?.focus(); } }}><button type="button" role="tab" id="login-tab" aria-controls="auth-panel" aria-selected={activeTab==='login'} onClick={()=>{setActiveTab('login');setErrorMessage(null);setSuccessMessage(null);}}>Masuk Akun</button><button type="button" role="tab" id="register-tab" aria-controls="auth-panel" aria-selected={activeTab==='register'} onClick={()=>{setActiveTab('register');setErrorMessage(null);setSuccessMessage(null);}}>Buat Akun</button></div>
     <div id="auth-panel" role="tabpanel" aria-labelledby={activeTab==='login'?'login-tab':'register-tab'}><h2 className="text-xl font-semibold mb-2">{activeTab==='login'?'Selamat datang kembali':'Mulai dengan akun Anda'}</h2><p className="gp-muted text-sm mb-6">{activeTab==='login'?'Masuk untuk melanjutkan analisis dan melihat riwayat.':'Daftar untuk menyimpan dan meninjau analisis Anda.'}</p>
     {errorMessage&&<Alert>{errorMessage}</Alert>}{successMessage&&<Alert tone="success">{successMessage}</Alert>}

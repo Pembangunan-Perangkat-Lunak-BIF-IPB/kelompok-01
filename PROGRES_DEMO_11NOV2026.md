@@ -4,6 +4,15 @@
 URL historis M10 (tunnel telah dihentikan pengguna): https://arise-priced-bio-exercises.trycloudflare.com
 Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
 
+## Brand identity refinement M11, PROPOSED
+
+- Basis 61f9c2d, branch M11 saja. Tiga refinement: BrandIdentity bersama pada navbar/login dengan wordmark dan prototype sementara; aksen botani serta konteks spesies; empat langkah Beranda menjadi urutan konseptual, bukan progress Job. Status menunggu Farrel dan Azril, bukan identitas final.
+- Prototype v2 disalin byte-identik dari lampiran pengguna. Berasal dari sketsa Azril + pengembangan AI + background remover; bukan favicon. Screenshot putih/abu hanya referensi. V2 masih memiliki fringe terang tipis dan detail kurang terbaca pada 32 px; penggunaan dibatasi sebagai pendamping wordmark pada slot 50 x 44 px, sambil menunggu file sumber lebih baik. Tidak mengubah aset original Azril.
+- PASS production build dan ESLint, 79 frontend tests/12 file. Pemanggilan test awal sempat memakai npm Windows pada UNC; diulang dengan Node Linux portable existing dan PASS, tanpa instalasi.
+- PASS Edge nyata: 20 tampilan desktop/mobile light/dark, login/profil/refresh, enam route utama termasuk Monitoring, Advanced/contextual help, dua unduhan VCF/CSV actual Completed, team hover/tap dan reduced-motion. Tidak ada request analisis mutatif atau pipeline baru. Focus/label, gambar asli, overflow dan kontras navigasi/wordmark diperiksa. Bukan sertifikasi aksesibilitas menyeluruh atau pengujian biologis.
+- Impeccable context/brief dan detector resmi dipakai tanpa subagen/hook. Satu warning overused-font existing pada Instrument Sans dipertahankan; tidak merombak tipografi. Bukti sebelum/sesudah dan evaluasi logo di .runtime/brand-refinement/ (ignored).
+- Runtime untuk browser bersifat sementara; M10 hanya dibaca melalui factory existing, tanpa mengubah source/build/config M10. Setelah pemeriksaan, preview/backend sementara dihentikan untuk mempertahankan kondisi awal shutdown. Tidak ada tunnel, push, merge atau PR.
+
 ## Refinement akhir M11 sebelum review tim
 
 - Basis 04937fa, branch/worktree M11 saja. Motif original garlic-pattern.png dari M10 identik byte dan kembali pada background workspace: opacity 0.055 light, 0.065/invert dark. Lapisan konten dan footer opaque melindungi teks, form dan tabel; motif noninteraktif. Sidebar/route/token/aset tim tidak diubah.

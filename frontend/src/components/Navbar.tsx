@@ -1,14 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Dna, House, LayoutDashboard, History, FlaskConical, LogOut, LogIn } from 'lucide-react';
+import { House, LayoutDashboard, History, FlaskConical, LogOut, LogIn } from 'lucide-react';
 import { useAuth } from '../context/auth';
 import { ThemeToggle } from './ThemeToggle';
+import { BrandIdentity } from './BrandIdentity';
 
 export function Navbar(){
  const {pathname}=useLocation();const {user,isAuthenticated,logout}=useAuth();
  const items=[{label:'Beranda',path:'/',icon:House},{label:'Dashboard',path:'/dashboard',icon:LayoutDashboard},{label:'Riwayat',path:'/riwayat',icon:History},{label:'Analisis Baru',path:'/analisis-baru',icon:FlaskConical}];
  const name=user?.nama||user?.name||'Profil';
  return <header className="gp-nav">
-  <div><Link to="/" className="gp-brand" aria-label="GenoPath, Beranda"><span className="gp-brand-icon"><Dna size={23} aria-hidden="true"/></span>GenoPath</Link><p className="gp-brand-note">Analisis varian bawang putih</p></div>
+  <div><BrandIdentity/><p className="gp-brand-note">Analisis varian bawang putih</p></div>
   <nav aria-label="Navigasi utama">{items.map(({label,path,icon:Icon})=>{
    const active=pathname===path||(path==='/riwayat'&&pathname.startsWith('/jobs/'));
    return <Link key={path} to={path} aria-current={active?'page':undefined} className="gp-nav-link"><Icon size={18} aria-hidden="true"/>{label}</Link>;

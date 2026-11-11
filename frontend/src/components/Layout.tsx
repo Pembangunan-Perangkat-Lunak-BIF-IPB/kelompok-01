@@ -8,7 +8,7 @@ export function Layout({children}:{children?:ReactNode}){
   <a className="gp-skip" href="#main-content">Lewati ke konten utama</a><Navbar/>
   <main className="gp-main" id="main-content" tabIndex={-1}>
    <div className={landing ? undefined : 'gp-workspace-content'}>
-   {!landing&&<div className="gp-topline"><span>GenoPath / Ruang kerja analisis</span><span>Allium sativum</span></div>}
+   {!landing&&<div className="gp-topline"><span>Analisis varian DNA</span><span className="gp-species-context"><i>Allium sativum</i><span>Bawang putih</span></span></div>}
    {children}
    </div>
    {!landing&&<footer className="gp-footer">GenoPath · Bioinformatika IPB University</footer>}

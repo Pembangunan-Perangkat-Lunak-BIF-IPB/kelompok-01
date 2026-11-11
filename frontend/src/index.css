@@ -48,3 +48,12 @@ button:disabled{cursor:not-allowed;opacity:.55}
  .gp-landing .gp-nav nav{width:100%;order:3;margin:0;justify-content:center}
  .gp-landing .gp-nav-footer{margin-left:auto}
 }
+
+/* Original Azril line-art lives behind the workspace, outside opaque content. */
+.gp-shell:not(.gp-landing){position:relative;isolation:isolate}
+.gp-workspace-motif{position:fixed;inset:0 0 0 236px;z-index:0;pointer-events:none;background-image:url('/garlic-pattern.png');background-repeat:repeat;background-size:300px;opacity:.055}
+.dark .gp-workspace-motif{filter:invert(1);opacity:.065}
+.gp-shell:not(.gp-landing) .gp-main{position:relative;z-index:1}
+.gp-workspace-content,.gp-shell:not(.gp-landing) .gp-footer{background:var(--gp-bg)}
+@media(max-width:900px){.gp-workspace-motif{left:196px}}
+@media(max-width:640px){.gp-workspace-motif{left:0;background-size:260px}}

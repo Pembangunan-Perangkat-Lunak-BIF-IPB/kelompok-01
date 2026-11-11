@@ -4,6 +4,14 @@
 URL historis M10 (tunnel telah dihentikan pengguna): https://arise-priced-bio-exercises.trycloudflare.com
 Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
 
+## Refinement akhir M11 sebelum review tim
+
+- Basis 04937fa, branch/worktree M11 saja. Motif original garlic-pattern.png dari M10 identik byte dan kembali pada background workspace: opacity 0.055 light, 0.065/invert dark. Lapisan konten dan footer opaque melindungi teks, form dan tabel; motif noninteraktif. Sidebar/route/token/aset tim tidak diubah.
+- Panel Panduan dan batas demo di Beranda dihapus tanpa pengganti panel besar. Format/limit FASTQ dan reference sintetis tetap di Analisis Baru, status/error di Monitoring, batas validasi biologis di Result Viewer. Batas global demo juga tetap dapat dibuka di Dashboard.
+- PASS production build, ESLint, 79 frontend tests. Satu batch Edge nyata desktop/mobile dan light/dark mencakup Beranda, Dashboard, Riwayat, Analisis Baru, Monitoring dan Result, login/profil/refresh, bantuan, VCF/CSV serta cutout/gelombang nama normal dan reduced-motion. Seluruh request analisis mutatif diblokir; tidak ada pipeline atau backend test yang tidak terdampak dijalankan.
+- Review visual memastikan motif terlihat pada ruang luar konten dan tidak di atas informasi padat. Aset kampus/Naruto/pattern dan mapping tim tetap utuh. Screenshot serta bukti privat di .runtime/m11-refinement/ dan .runtime/browser-refinement.json, tidak ikut commit. Detector hanya mengulang satu warning font body yang sudah diketahui, tanpa perluasan scope.
+- Preview localhost3001 tetap aktif; M10, database, gate/password dan pipeline tidak diubah. Tidak membuka tunnel atau push/merge/PR. Perubahan menunggu review pengguna/tim.
+
 ## Fondasi M11, preview lokal 11 November 2026
 
 - Worktree terisolasi `/home/zizi/projects/genopath-m11-impeccable`, branch `feature/m11-impeccable`, basis M10 `8b71771aaa10eed2f59142d70408759fdda17357`. Worktree/branch/build M10 dan stash dipertahankan. Tidak ada push/merge/PR; persetujuan visual pengguna masih diperlukan.

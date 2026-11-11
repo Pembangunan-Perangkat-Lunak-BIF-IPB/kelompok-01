@@ -219,6 +219,8 @@ Sampai 640 px, rail berubah menjadi header dalam alur dokumen. Empat tujuan utam
 
 Data memakai garis dan whitespace: ledger tiga bagian, tabel penuh, filter yang membungkus, dan pagination yang tetap terbaca. Tabel umum memiliki lebar minimum 680 px; tabel ilmiah 980 px, sehingga overflow berada pada region tabel yang bisa difokuskan dan digeser. REF/ALT mendapat minimum 100 px dan maksimum 320 px. Alokasi ini menjaga alel pendek terbaca utuh; alel panjang boleh membungkus dengan `overflow-wrap: anywhere`, tanpa pemotongan. Sumber tidak memakai `white-space: nowrap` pada seluruh kolom alel. Hint scroll tampil di bawah 768 px.
 
+Motif line-art bawang original Azril (`frontend/public/garlic-pattern.png`) tampil hanya di background workspace, dengan opacity 0.055 pada light dan 0.065 plus invert pada dark. Lapisan konten dan footer opaque melindungi teks, formulir dan tabel; motif tidak menangkap pointer. Beranda mempertahankan foto kampus dan tim tanpa panel panduan demo. Batas operasional tetap berada di halaman tugas terkait.
+
 ## Elevation & Depth
 
 Permukaan kerja datar: pemisahan berasal dari warna tonal dan border tipis. Tidak ada shadow pada surface workspace. Bantuan kontekstual mengambang memakai shadow sumber: light `0 10px 28px rgba(16,47,69,.09)`, dark `0 10px 28px rgba(0,0,0,.2)`. Nilai extension berada di sidecar karena schema frontmatter tidak memiliki properti shadow.

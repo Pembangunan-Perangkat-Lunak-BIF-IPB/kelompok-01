@@ -250,3 +250,19 @@ it('clears a mismatched recovery file without losing the frozen UUID', async () 
   expect(loadDraft('tester')?.parameters.request_id).toBe(parameters.request_id);
   expect(submitAnalysis).not.toHaveBeenCalled();
 });
+
+
+it('shows nested drag feedback without submitting and clears it after an invalid drop', async () => {
+  mount(); await screen.findByRole('option', { name: /Reference uji/ });
+  const input = screen.getByLabelText(/Pilih atau seret berkas FASTQ/);
+  const upload = input.closest('.gp-upload')!;
+  fireEvent.dragEnter(upload); fireEvent.dragEnter(input); fireEvent.dragLeave(input);
+  expect(upload.classList.contains('gp-upload--dragging')).toBe(true);
+  fireEvent.dragLeave(upload);
+  expect(upload.classList.contains('gp-upload--dragging')).toBe(false);
+  fireEvent.dragEnter(upload);
+  fireEvent.drop(upload, { dataTransfer: { files: [new File(['text'], 'invalid.txt')] } });
+  expect(upload.classList.contains('gp-upload--dragging')).toBe(false);
+  expect(screen.queryByText(/File siap dikirim/)).toBeNull();
+  expect(submitAnalysis).not.toHaveBeenCalled();
+});

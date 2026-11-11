@@ -210,3 +210,119 @@
  .gp-brand-prototype { width: 46px; height: 44px; }
  .gp-wordmark { font-size: 21px; }
 }
+
+/* Visual-depth refinement: fluid workspace, distinct functional surfaces and
+   interaction feedback. Keeps the record architecture and all data contracts. */
+body { font-size: 16px; }
+.gp-shell:not(.gp-landing) .gp-main { max-width: 1920px; padding-inline: clamp(24px, 3vw, 56px); }
+.gp-workspace-content { max-width: none; }
+.gp-page-header { padding-block: 8px 30px; }
+.gp-page-header h1 { font-size: clamp(32px, 2.6vw, 44px); font-weight: 600; }
+.gp-page-description { font-size: 16px; max-width: 70ch; }
+.gp-section-heading h2, .gp-attention > h2 { font-size: 21px; }
+.gp-nav-link { font-size: 15px; transition: background 180ms var(--gp-ease), color 180ms var(--gp-ease), transform 180ms var(--gp-ease); }
+.gp-nav-link:hover { transform: translateY(-1px); }
+.gp-research-grid { grid-template-columns: minmax(0, 2.2fr) minmax(300px, 1fr); gap: 32px; }
+.gp-analysis-focus { border: 0; border-radius: 16px; padding: 30px 32px 8px; box-shadow: var(--gp-panel-shadow); }
+.gp-record-identity h3 { font-size: clamp(28px, 2.3vw, 40px); }
+.gp-record-identity > p, .gp-record-state > p, .gp-updated { font-size: 13px; }
+.gp-status { font-size: 13px; padding: 6px 11px; }
+.gp-analysis-focus > .gp-analysis-record > .gp-record-action { padding: 11px 18px; min-height: 46px; border-radius: 8px; color: var(--gp-surface); background: var(--gp-brand); text-decoration: none; }
+.gp-analysis-focus > .gp-analysis-record > .gp-record-action:hover { background: var(--gp-brand-hover); box-shadow: var(--gp-hover-shadow); }
+.gp-variant-sentence { background: var(--gp-botanical-soft); border-radius: 10px; padding: 16px 18px; font-size: 18px; max-width: none; }
+.gp-selection-summary { grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+.gp-selection-summary > div:first-child { grid-column: 1/-1; }
+.gp-selection-summary dt, .gp-provenance dt { font-size: 13px; }
+.gp-selection-summary dd { font-size: 16px; }
+.gp-provenance { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px; }
+.gp-provenance dd { font-size: 13px; }
+.gp-attention { background: var(--gp-subtle); border: 0; border-radius: 14px; padding: 26px; }
+.gp-quiet-state, .gp-attention-help, .gp-record-error { font-size: 14px; }
+.gp-attention .gp-analysis-record--compact { padding-bottom: 12px; }
+.gp-recent-records .gp-analysis-record--compact { padding: 20px 24px; margin-top: 12px; border: 0; border-radius: 12px; background: var(--gp-surface); transition: background 180ms var(--gp-ease), box-shadow 180ms var(--gp-ease); }
+.gp-recent-records .gp-analysis-record--compact:hover, .gp-recent-records .gp-analysis-record--compact:focus-within { background: var(--gp-subtle); box-shadow: var(--gp-hover-shadow); }
+.gp-analysis-record--compact .gp-record-identity h3 { font-size: 17px; }
+.gp-record-action { transition: background 180ms var(--gp-ease), box-shadow 180ms var(--gp-ease); }
+.gp-record-action svg { transition: transform 180ms var(--gp-ease); }
+.gp-record-action:hover svg { transform: translate(2px,-2px); }
+.gp-filterbar { background: var(--gp-surface); border: 0; border-radius: 14px; padding: 22px 24px; margin-bottom: 22px; box-shadow: var(--gp-panel-shadow); gap: 20px; }
+.gp-filterbar label, .gp-field label { font-size: 15px; }
+.gp-input { min-height: 50px; font-size: 16px; padding: 12px 15px; }
+.gp-table-frame { border-radius: 14px; background: var(--gp-surface); }
+.gp-table-scroll { max-height: 72vh; }
+.gp-table-scroll th { font-size: 13px; padding: 18px 20px; }
+.gp-table-scroll td { font-size: 15px; padding: 20px; }
+.gp-table-scroll .gp-data { font-size: 13px; }
+.gp-row-meta { font-size: 13px; }
+.gp-table-scroll tbody tr { transition: background 160ms var(--gp-ease); }
+.gp-form-page { max-width: 1720px; }
+.gp-form-page form.gp-analysis-form { grid-template-columns: minmax(0,1fr) clamp(330px,26vw,420px); gap: 32px; }
+.gp-analysis-fields > .gp-section:first-child { border: 0; padding-top: 0; }
+.gp-analysis-fields > .gp-section { padding-block: 26px; }
+.gp-analysis-fields > .gp-section > h2 { font-size: 21px; color: var(--gp-botanical); margin-bottom: 20px; }
+.gp-upload { padding: 30px; border-width: 2px; min-height: 240px; border-radius: 14px; transition: background 180ms var(--gp-ease), border-color 180ms var(--gp-ease), box-shadow 180ms var(--gp-ease); }
+.gp-upload:hover, .gp-upload--dragging { background: var(--gp-botanical-soft); border-color: var(--gp-botanical); }
+.gp-upload--dragging { box-shadow: var(--gp-hover-shadow); }
+.gp-upload input::file-selector-button { min-height: 46px; }
+.gp-submit-panel { background: var(--gp-surface); border: 0; border-radius: 16px; padding: 26px; box-shadow: var(--gp-panel-shadow); }
+.gp-submit-panel .gp-summary h2 { font-size: 21px; margin-bottom: 20px; }
+.gp-submit-panel .gp-summary p { font-size: 15px; }
+.gp-submit-panel > div { display: grid; }
+.gp-submit-panel button { width: 100%; }
+.gp-disclosure-enter { padding: 20px; border-radius: 12px; background: var(--gp-subtle); animation: gp-settings-open 240ms var(--gp-ease); }
+.gp-result-identity { background: var(--gp-surface); border: 0; border-radius: 16px; padding: 28px 30px; box-shadow: var(--gp-panel-shadow); }
+.gp-result-identity h1 { font-size: 36px; }
+.gp-result-identity .text-sm { font-size: 15px; }
+.gp-result-stats { border: 0; background: var(--gp-subtle); border-radius: 14px; padding: 24px; gap: 24px; }
+.gp-result-stats > div { padding-inline: 6px; }
+.gp-result-stats h2 { font-size: 14px; }
+.gp-result-stats p { font-size: 32px; }
+.gp-download-panel { background: var(--gp-surface); border: 0; border-radius: 14px; padding: 24px 28px; }
+.gp-monitor-record { border: 0; border-radius: 16px; box-shadow: var(--gp-panel-shadow); }
+.gp-button, .gp-link-button { min-height: 48px; font-size: 15px; }
+.gp-button:hover:not(:disabled), .gp-link-button:hover { transform: translateY(-2px); box-shadow: var(--gp-hover-shadow); }
+.gp-button:active:not(:disabled), .gp-link-button:active { transform: translateY(0) scale(.98); box-shadow: none; }
+.gp-help-panel { animation: gp-help-open 160ms var(--gp-ease); }
+.gp-alert { animation: gp-help-open 160ms var(--gp-ease); }
+.gp-landing-body { max-width: 1760px; padding-inline: clamp(24px,4vw,64px); }
+.gp-team-wrap > section { max-width: 100%; }
+.gp-process h3 { font-size: 18px; }
+.gp-process p { font-size: 15px; max-width: 42ch; }
+.gp-hero { min-height: 560px; }
+.gp-workspace-motif { opacity: .035; }
+.dark .gp-workspace-motif { opacity: .045; }
+@keyframes gp-settings-open { from { opacity: .8; clip-path: inset(0 0 12% 0); transform: translateY(-5px); } to { opacity: 1; clip-path: inset(0); transform: translateY(0); } }
+@keyframes gp-help-open { from { opacity: .8; } to { opacity: 1; } }
+@media (max-width: 1150px) {
+ .gp-research-grid { grid-template-columns: minmax(0,1.7fr) minmax(250px,1fr); gap: 24px; }
+ .gp-form-page form.gp-analysis-form { grid-template-columns: minmax(0,1fr) 320px; gap: 24px; }
+ .gp-provenance { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 900px) {
+ .gp-research-grid, .gp-form-page form.gp-analysis-form { grid-template-columns: 1fr; }
+ .gp-attention { padding: 24px; }
+ .gp-submit-panel { position: static; }
+ .gp-page-header h1 { font-size: 34px; }
+ .gp-table-scroll td { padding: 16px; }
+}
+@media (max-width: 640px) {
+ .gp-shell:not(.gp-landing) .gp-main { padding-inline: 16px; }
+ .gp-analysis-focus { padding: 24px 20px 4px; }
+ .gp-selection-summary { grid-template-columns: 1fr; }
+ .gp-selection-summary > div:first-child { grid-column: auto; }
+ .gp-section-heading h2, .gp-attention > h2 { font-size: 20px; }
+ .gp-record-identity h3 { font-size: 29px; }
+ .gp-variant-sentence { font-size: 16px; padding: 14px; }
+ .gp-attention, .gp-submit-panel { padding: 22px; }
+ .gp-filterbar { padding: 18px; }
+ .gp-result-identity { padding: 24px 20px; }
+ .gp-result-identity h1 { font-size: 30px; }
+ .gp-download-panel { padding: 22px 20px; }
+ .gp-upload { padding: 22px; }
+ .gp-nav-link { font-size: 11px; }
+ .gp-result-stats { gap: 20px; padding: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+ .gp-disclosure-enter, .gp-help-panel, .gp-alert { animation: none; }
+ .gp-button:hover:not(:disabled), .gp-link-button:hover, .gp-button:active:not(:disabled), .gp-link-button:active, .gp-nav-link:hover, .gp-record-action:hover svg { transform: none; }
+}

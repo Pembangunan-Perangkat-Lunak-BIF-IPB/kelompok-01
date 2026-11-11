@@ -61,19 +61,19 @@ typography:
     letterSpacing: "-0.04em"
   headline:
     fontFamily: "Sora, 'Instrument Sans', sans-serif"
-    fontSize: "clamp(28px, 2.7vw, 38px)"
-    fontWeight: 500
+    fontSize: "clamp(32px, 2.6vw, 44px)"
+    fontWeight: 600
     lineHeight: 1.25
     letterSpacing: "-0.035em"
   title:
     fontFamily: "Sora, 'Instrument Sans', sans-serif"
-    fontSize: "18px"
+    fontSize: "21px"
     fontWeight: 600
     lineHeight: 1.4
     letterSpacing: "-0.025em"
   body:
     fontFamily: "'Instrument Sans', system-ui, sans-serif"
-    fontSize: "15px"
+    fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.6
   label:
@@ -83,19 +83,21 @@ typography:
     lineHeight: 1.6
   action:
     fontFamily: "'Instrument Sans', system-ui, sans-serif"
-    fontSize: "14px"
+    fontSize: "15px"
     fontWeight: 600
     lineHeight: 1.4
   data:
     fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace"
-    fontSize: "12px"
+    fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.6
 rounded:
   panel: "12px"
   control: "8px"
   status: "5px"
-  table: "4px"
+  table: "14px"
+  sheet: "16px"
+  toolbar: "14px"
   flat: "0px"
 spacing:
   base: "8px"
@@ -108,7 +110,7 @@ components:
     typography: "{typography.action}"
     rounded: "{rounded.control}"
     padding: "10px 18px"
-    height: "44px"
+    height: "48px"
   button-primary-hover:
     backgroundColor: "{colors.brand-hover}"
   button-secondary:
@@ -117,7 +119,7 @@ components:
     typography: "{typography.action}"
     rounded: "{rounded.control}"
     padding: "10px 18px"
-    height: "44px"
+    height: "48px"
   button-secondary-hover:
     backgroundColor: "{colors.subtle}"
   button-ghost:
@@ -126,7 +128,7 @@ components:
     typography: "{typography.action}"
     rounded: "{rounded.control}"
     padding: "10px 18px"
-    height: "44px"
+    height: "48px"
   button-ghost-hover:
     backgroundColor: "{colors.subtle}"
   input:
@@ -138,7 +140,7 @@ components:
   review-summary:
     backgroundColor: "transparent"
     textColor: "{colors.text}"
-    rounded: "{rounded.flat}"
+    rounded: "{rounded.sheet}"
     padding: "0px"
   analysis-sheet:
     backgroundColor: "{colors.surface}"
@@ -215,9 +217,9 @@ Pasangan ini memberi orientasi yang tegas tanpa mengubah tabel menjadi dekorasi.
 | Hierarki | Pemakaian dan adaptasi |
 | --- | --- |
 | Display | Judul beranda, maksimum 16ch; menjadi 38 px sampai 640 px |
-| Headline | Judul halaman kerja dengan weight 500; menjadi 30 px sampai 640 px |
+| Headline | Judul halaman kerja dengan weight 600; 34 px di laptop/mobile |
 | Title | Judul bagian dan attention; judul section form tetap 17 px |
-| Body | Teks kerja; deskripsi halaman 14 px, maksimum 68ch |
+| Body | Teks kerja; deskripsi halaman 16 px, maksimum 70ch |
 | Label/action | Label field dan tombol; hint 13 px, metadata/status 12 px |
 | Data | Isi tabel ilmiah dan ID sumber; angka tabular untuk posisi, hasil dan waktu |
 
@@ -232,25 +234,25 @@ Font disajikan lokal dari `frontend/public/fonts/` menggunakan `font-display: sw
 
 Navigasi utama horizontal berada dalam alur dokumen pada semua route yang memakai shell. Desktop menempatkan identitas, empat tujuan dan kontrol akun/tema dalam tiga kolom; profil disembunyikan sampai 1150 px. Sampai 900 px, tujuan pindah ke baris kedua. Sampai 640 px, empat tujuan menjadi grid empat kolom dengan ikon di atas label dan tinggi minimum 60 px. Breadcrumb menghubungkan Ruang kerja ke konteks halaman saat ini. Halaman monitoring dan hasil tetap berada dalam tujuan Riwayat.
 
-Main workspace dibatasi 1568 px dengan padding 24 px clamp(24px, 4vw, 64px) 36 px; kontennya maksimum 1440 px. Sampai 640 px, padding menjadi 20 px 16 px 32 px. Ritme dasar 8 px diterapkan bersama jarak kerja 16, 24 dan 32 px; jangan memaksakan kelipatan delapan pada padding kontrol atau tabel yang sudah terukur.
+Main workspace dibatasi 1920 px dengan padding horizontal clamp(24px, 3vw, 56px); konten tidak diberi cap 1440 px lagi. Pada viewport 1920 px, area konten terukur 1808 px. Deskripsi tetap maksimum 70ch agar lebar kerja tidak memanjangkan narasi. Sampai 640 px, padding menjadi 20 px 16 px 32 px. Ritme dasar 8 px diterapkan bersama jarak kerja 16, 24 dan 32 px; jangan memaksakan kelipatan delapan pada padding kontrol atau tabel yang sudah terukur.
 
-Dashboard memakai dua kolom untuk lembar hasil dan attention: rasio 2:1, minimum attention 280 px, gap 48 px. Sampai 1150 px, rasionya 1.7:1, minimum attention 240 px dan gap 28 px. Sampai 900 px, konten menjadi satu kolom. Saat ada analisis aktif atau gagal, useNarrowWorkspace memindahkan attention sebelum lembar hasil dalam DOM, urutan baca dan tab. Keadaan tenang tetap setelah lembar hasil. Attention sendiri memakai dua kolom pada 641 sampai 900 px dan satu kolom sampai 640 px. Lembar memakai padding 26 px 28 px 0, menjadi 24 px 18 px 0 pada mobile.
+Dashboard memakai dua kolom untuk lembar hasil dan attention: rasio 2.2:1, minimum attention 300 px, gap 32 px. Sampai 1150 px, rasionya 1.7:1, minimum attention 250 px dan gap 24 px. Sampai 900 px, konten menjadi satu kolom. Saat ada analisis aktif atau gagal, useNarrowWorkspace memindahkan attention sebelum lembar hasil dalam DOM, urutan baca dan tab. Keadaan tenang tetap setelah lembar hasil. Attention sendiri memakai dua kolom pada 641 sampai 900 px dan satu kolom sampai 640 px. Lembar hasil memakai padding 30 px 32 px 8 px, radius 16 px dan shadow panel; pada mobile padding 24 px 20 px 4 px. Selection summary memakai dua kolom pada desktop, provenance empat kolom di desktop lebar dan dua kolom di laptop/mobile.
 
-Form analisis dibatasi 1360 px, dengan field dan review berdampingan dalam grid 1fr 340 px dan gap 64 px. Sampai 1150 px, review menjadi 300 px dan gap 32 px. Sampai 900 px, keduanya menumpuk. Panel review sticky pada desktop di atas 1100 px dan mengikuti alur dokumen di bawahnya. Ringkasan review tidak memiliki kartu tambahan, background atau radius sendiri. Monitoring menggunakan lembar record dan provenance yang sama dengan Dashboard.
+Form analisis dibatasi 1720 px, dengan field dan review berdampingan dalam grid 1fr clamp(330px,26vw,420px) dan gap 32 px. Sampai 1150 px, review menjadi 320 px dan gap 24 px. Sampai 900 px, keduanya menumpuk. Panel review sticky pada desktop di atas 1100 px dan mengikuti alur dokumen di bawahnya. Panel review menjadi surface utama tersendiri dengan padding 26 px, radius 16 px dan shadow panel; isi ringkasan tidak dibungkus kartu tambahan. Monitoring menggunakan lembar record dan provenance yang sama dengan Dashboard.
 
 Tabel umum memiliki lebar minimum 680 px; tabel ilmiah 980 px, sehingga overflow berada pada region tabel yang bisa difokuskan dan digeser. REF/ALT mendapat minimum 100 px dan maksimum 320 px. Alel panjang boleh membungkus dengan overflow-wrap: anywhere, tanpa pemotongan. Hint scroll tampil di bawah 768 px. Beranda memakai foto dan copy dua kolom, menjadi satu kolom sampai 640 px. Urutan proses empat langkah juga menjadi satu kolom vertikal pada mobile.
 
-Motif line-art bawang original Azril (frontend/public/garlic-pattern.png) tampil hanya di background workspace, dengan ukuran 340 px, opacity 0.055 pada light dan 0.065 plus invert pada dark. Lapisan konten dan footer opaque melindungi teks, formulir dan tabel; motif tidak menangkap pointer. Beranda mempertahankan foto kampus dan tim tanpa panel panduan demo. Batas operasional tetap berada di halaman tugas terkait.
+Motif line-art bawang original Azril (frontend/public/garlic-pattern.png) tampil hanya di background workspace, dengan ukuran 340 px, opacity 0.035 pada light dan 0.045 plus invert pada dark. Lapisan konten dan footer opaque melindungi teks, formulir dan tabel; motif tidak menangkap pointer. Beranda mempertahankan foto kampus dan tim tanpa panel panduan demo. Batas operasional tetap berada di halaman tugas terkait.
 
 ## Elevation & Depth
 
-Permukaan kerja datar: pemisahan berasal dari warna tonal dan border tipis. Tidak ada shadow pada surface workspace. Bantuan kontekstual mengambang memakai shadow sumber: light `0 10px 28px rgba(16,47,69,.09)`, dark `0 10px 28px rgba(0,0,0,.2)`. Nilai extension berada di sidecar karena schema frontmatter tidak memiliki properti shadow.
+Surface hasil terakhir, identitas hasil, toolbar dan panel review memakai bayangan panel lembut dengan offset. Attention dan ringkasan varian memakai lapisan tonal tanpa shadow yang sama. Garis tipis tetap membantu metadata dan tabel, tetapi tidak menjadi satu-satunya pembatas section. Nilai shadow light/dark disimpan pada token CSS dan extension sidecar.
 
-**The Flat Workspace Rule.** Halaman kerja memakai lapisan tonal dan garis; bayangan hanya memberi jarak pada bantuan mengambang. Scene tim asli tetap menjadi pengecualian lokal yang dilindungi.
+**The Functional Surface Rule.** Gunakan depth untuk membedakan record utama, review yang akan dikirim dan kontrol pencarian. Jangan membungkus setiap field atau metadata menjadi kartu. Hover menambah feedback sementara pada tindakan dan record interaktif, bukan animasi konstan pada data ilmiah.
 
 ## Shapes
 
-Kontrol dan area upload bersudut lembut (8 px); bingkai tabel dan tujuan navigasi lebih rapat (4 px); badge status (5 px). Lembar analisis memakai garis atas 2 px dan tanpa radius kartu. Field dan tabel memakai stroke 1 px, upload memakai garis putus. Panel ringkasan umum (12 px) tetap tersedia; review submission menghapus radius dan bidangnya melalui konteks panel. Panel bantuan (10 px) dan auth form (16 px) adalah bentuk komponen yang sudah ada, bukan alasan menambah skala radius baru. Hindari menumpuk bingkai kartu di dalam bagian workspace yang sudah memiliki struktur garis.
+Record utama/review memakai radius 16 px; attention, toolbar, tabel dan upload 14 px. Control 8 px dan status 5 px tetap. Upload memakai garis putus 2 px serta feedback drag aktual. Field tetap memiliki tepi yang terbaca. Motif bawang, kampus, scene tim, gambar dan mapping original tetap menjadi bagian produk.
 
 ## Components
 
@@ -289,6 +291,12 @@ Status menunggu review Farrel dan Azril. Ini bukan logo atau identitas final.
 `frontend/README.md` adalah matriks ownership yang berlaku: Developer Dashboard memegang `/dashboard`; Developer Riwayat memegang `/riwayat` serta hasil; Developer Analisis memegang `/analisis-baru`. Integrator memegang monitoring dan registrasi route/shell. `components/ui/`, `components/analysis/`, `styles/`, `useJobPolling` dan `useNarrowWorkspace` adalah fondasi bersama melalui integrator. Perluas lewat props/children dan primitive existing, tanpa salinan per halaman.
 
 Backend/API, AuthContext, JWT/ownership, gate privat, handler submission/UUID/recovery, polling dan data ilmiah tetap dilindungi. Dokumen ini bukan bukti push, persetujuan visual akhir, validasi biologis, atau pengujian Full Garlic.V2/1 GB. Scan dokumentasi memakai sumber final; screenshot review dan verdict dikelola pada pass review terpisah. Sidecar menyimpan snippet mandiri dan ramp tonal turunan untuk panel, bukan token warna runtime tambahan.
+
+### Visual depth and interaction refinement, PROPOSED
+
+Shared workspace.css mempertahankan arsitektur record dan navbar. Primary/secondary buttons minimum 48 px; field 50 px. Header hasil dan unduhan diberi surface terpisah, toolbar/filter dikelompokkan, table headers 13 px dan cells 15 px. Record ilmiah tidak bergerak terus-menerus. Beranda memakai area body maksimum 1760 px dan Team Section mengikuti lebar area tersebut, dengan aset dan interaksi original tetap.
+
+Hover tombol naik 2 px dengan shadow ber-offset; press kembali ke posisi dasar dengan scale .98. Arrow tindakan record bergeser 2 px. Drag enter/leave/drop memakai state visual dan nested counter agar feedback tidak berkedip pada child; handler validasi/submission tetap. Advanced Mode membuka panel tonal dalam 240 ms, contextual help/alert muncul dalam 160 ms. Reduced-motion menonaktifkan animasi dan transform hover/press. Tidak ada delay loading buatan atau progress palsu.
 
 ## Do's and Don'ts
 

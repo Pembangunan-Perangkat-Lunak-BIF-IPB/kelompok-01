@@ -81,7 +81,7 @@ export function JobResultPage() {
   const inputClass = 'gp-input';
   return <div className="gp-result-page space-y-6">
     <Link to={'/jobs/' + jobId} className="text-blue-700 dark:text-blue-300 underline text-sm"><ArrowLeft className="inline w-4 h-4 mr-1" />Pemantauan analisis</Link>
-    <header className="gp-section space-y-4">
+    <header className="gp-section gp-result-identity space-y-4">
       <div className="flex justify-between items-start gap-4">
         <div><h1 className="text-2xl font-black">{summary?.analysis_name ?? 'Hasil analisis'}</h1>
           {summary && <p className="text-sm mt-2">Analisis #{summary.analysis_number ?? '?'} · <StatusBadge status={summary.status} /> · Mode: {summary.execution_mode ?? 'Tidak diketahui'}</p>}</div>
@@ -105,7 +105,7 @@ export function JobResultPage() {
         ['Other', summary.counts.other], ['Tidak terklasifikasi', summary.counts.unclassified]].map(([label, value]) =>
         <div key={label} className=""><h2 className="text-sm">{label}</h2><p className="mt-2">{Number(value).toLocaleString('id-ID')}</p></div>)}
     </div><p className="text-xs">Ringkasan seluruh hasil analisis.<ContextHelp label="Ringkasan varian">Filter tabel tidak mengubah ringkasan. Record multiallelic, dengan beberapa ALT, dihitung sebagai satu record. GT mempertahankan indeks alel dan pemisah asli VCF.</ContextHelp></p></section>}
-    <section className="gp-section space-y-3">
+    <section className="gp-section gp-download-panel space-y-3" aria-label="Unduhan hasil">
       <div className="flex flex-wrap gap-3">
         <button type="button" disabled={!summary || Boolean(downloading)} onClick={() => void download('vcf')} className="gp-button gp-button--primary">{downloading === 'vcf' ? 'Mengunduh VCF…' : 'Unduh VCF hasil analisis'}</button>
         <button type="button" disabled={!summary || !table || Boolean(downloading)} onClick={() => void download('csv')} className="gp-button gp-button--primary"><FileSpreadsheet className="inline w-4 h-4 mr-1" />{downloading === 'csv' ? 'Mengunduh CSV…' : 'Unduh CSV seluruh hasil sesuai filter'}</button>

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-11T14:36:33.321224Z",
+  "generatedAt": "2026-11-11T15:18:42.882945Z",
   "title": "Design System: GenoPath",
   "extensions": {
     "colorMeta": {
@@ -745,6 +745,26 @@
         "name": "context-help-dark",
         "value": "0 10px 28px rgba(0,0,0,.2)",
         "purpose": "Override bantuan mengambang pada mode dark."
+      },
+      {
+        "name": "panel-light",
+        "value": "0 12px 34px rgba(16,47,69,.08)",
+        "purpose": "Functional panel depth or transient action feedback; source tokens.css."
+      },
+      {
+        "name": "panel-dark",
+        "value": "0 12px 34px rgba(0,0,0,.20)",
+        "purpose": "Functional panel depth or transient action feedback; source tokens.css."
+      },
+      {
+        "name": "hover-light",
+        "value": "0 7px 18px rgba(16,47,69,.13)",
+        "purpose": "Functional panel depth or transient action feedback; source tokens.css."
+      },
+      {
+        "name": "hover-dark",
+        "value": "0 7px 18px rgba(0,0,0,.28)",
+        "purpose": "Functional panel depth or transient action feedback; source tokens.css."
       }
     ],
     "motion": [
@@ -761,7 +781,7 @@
       {
         "name": "motion-fast",
         "value": "120ms",
-        "purpose": "Tekanan tombol translateY(1px)."
+        "purpose": "Press returns to baseline with scale(.98); reduced-motion transform none."
       },
       {
         "name": "motion-reveal",
@@ -777,6 +797,16 @@
         "name": "reduced-motion",
         "value": "animation:none!important;transition:none!important",
         "purpose": "Alternatif prefers-reduced-motion; transform tekanan dihapus dan handler tim melewati gelombang huruf."
+      },
+      {
+        "name": "settings-open",
+        "value": "240ms cubic-bezier(.22,1,.36,1)",
+        "purpose": "Advanced panel opacity/clip/translate reveal; disabled with reduced motion."
+      },
+      {
+        "name": "hover-press",
+        "value": "180ms; translateY(-2px) hover; scale(.98) press",
+        "purpose": "Actual interactive actions, never constant scientific-row animation; reduced-motion transform none."
       }
     ],
     "breakpoints": [
@@ -813,7 +843,7 @@
       "refersTo": "button-primary",
       "description": "Tindakan primary dari primitive Button; minimum 44 px.",
       "html": "<button class=\"ds-button-primary\" type=\"button\">Analisis Baru</button>",
-      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration),transform var(--gp-motion-fast) var(--gp-ease);background:var(--gp-brand);color:var(--gp-surface);}.ds-button-primary:hover{background:var(--gp-brand-hover);}.ds-button-primary:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-primary:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-primary{transition:none!important}}.ds-button-primary:active:not(:disabled){transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-button-primary:active:not(:disabled){transform:none}}"
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration),transform var(--gp-motion-fast) var(--gp-ease);background:var(--gp-brand);color:var(--gp-surface);}.ds-button-primary:hover{background:var(--gp-brand-hover);}.ds-button-primary:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-primary:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-primary{transition:none!important}}.ds-button-primary:active:not(:disabled){transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-button-primary:active:not(:disabled){transform:none}}\nbutton{min-height:48px;font-size:15px}"
     },
     {
       "name": "Secondary button",
@@ -821,7 +851,7 @@
       "refersTo": "button-secondary",
       "description": "Tindakan secondary dari primitive Button; minimum 44 px.",
       "html": "<button class=\"ds-button-secondary\" type=\"button\">Sebelumnya</button>",
-      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration),transform var(--gp-motion-fast) var(--gp-ease);background:var(--gp-surface);color:var(--gp-text);border-color:var(--gp-border);}.ds-button-secondary:hover{background:var(--gp-subtle);}.ds-button-secondary:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-secondary:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-secondary{transition:none!important}}.ds-button-secondary:active:not(:disabled){transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-button-secondary:active:not(:disabled){transform:none}}"
+      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration),transform var(--gp-motion-fast) var(--gp-ease);background:var(--gp-surface);color:var(--gp-text);border-color:var(--gp-border);}.ds-button-secondary:hover{background:var(--gp-subtle);}.ds-button-secondary:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-secondary:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-secondary{transition:none!important}}.ds-button-secondary:active:not(:disabled){transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-button-secondary:active:not(:disabled){transform:none}}\nbutton{min-height:48px;font-size:15px}"
     },
     {
       "name": "Ghost button",
@@ -829,7 +859,7 @@
       "refersTo": "button-ghost",
       "description": "Tindakan ghost dari primitive Button; minimum 44 px.",
       "html": "<button class=\"ds-button-ghost\" type=\"button\">Lihat riwayat</button>",
-      "css": ".ds-button-ghost{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration),transform var(--gp-motion-fast) var(--gp-ease);background:transparent;color:var(--gp-link);}.ds-button-ghost:hover{background:var(--gp-subtle);}.ds-button-ghost:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-ghost:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-ghost{transition:none!important}}.ds-button-ghost:active:not(:disabled){transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-button-ghost:active:not(:disabled){transform:none}}"
+      "css": ".ds-button-ghost{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;font-weight:600;line-height:1.4;text-decoration:none;white-space:normal;cursor:pointer;transition:background var(--gp-duration),color var(--gp-duration),transform var(--gp-motion-fast) var(--gp-ease);background:transparent;color:var(--gp-link);}.ds-button-ghost:hover{background:var(--gp-subtle);}.ds-button-ghost:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-button-ghost:disabled{opacity:.55;cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-button-ghost{transition:none!important}}.ds-button-ghost:active:not(:disabled){transform:translateY(1px)}@media(prefers-reduced-motion:reduce){.ds-button-ghost:active:not(:disabled){transform:none}}\nbutton{min-height:48px;font-size:15px}"
     },
     {
       "name": "Analysis name field",
@@ -837,7 +867,7 @@
       "refersTo": "input",
       "description": "Input berlabel dengan tepi kontrol, error dan disabled.",
       "html": "<div class=\"ds-field\"><label for=\"ds-analysis-name\">Nama analisis</label><input id=\"ds-analysis-name\" class=\"ds-input\" type=\"text\" /></div>",
-      "css": ".ds-field{display:grid;gap:7px;color:var(--gp-text);font-family:var(--gp-body);font-size:14px}.ds-field label{font-weight:600}.ds-input{width:100%;min-height:46px;padding:10px 13px;background:var(--gp-surface);color:var(--gp-text);border:1px solid var(--gp-control-border);border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;line-height:1.5}.ds-input:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-input::placeholder{color:var(--gp-muted);opacity:1}.ds-input[aria-invalid=true]{border-color:var(--gp-danger)}.ds-input:disabled{opacity:.6}"
+      "css": ".ds-field{display:grid;gap:7px;color:var(--gp-text);font-family:var(--gp-body);font-size:14px}.ds-field label{font-weight:600}.ds-input{width:100%;min-height:46px;padding:10px 13px;background:var(--gp-surface);color:var(--gp-text);border:1px solid var(--gp-control-border);border-radius:var(--gp-radius-control);font-family:var(--gp-body);font-size:14px;line-height:1.5}.ds-input:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-input::placeholder{color:var(--gp-muted);opacity:1}.ds-input[aria-invalid=true]{border-color:var(--gp-danger)}.ds-input:disabled{opacity:.6}\ninput{min-height:50px;font-size:16px}"
     },
     {
       "name": "Identity navigation",
@@ -858,7 +888,7 @@
       "name": "Submission review",
       "kind": "card",
       "refersTo": "review-summary",
-      "description": "Ringkasan review pada kolom pengiriman, tanpa kartu tambahan.",
+      "description": "Ringkasan review pada kolom pengiriman, tanpa kartu tambahan. Current depth refinement: 16px radius and panel shadow; see workspace.css final cascade.",
       "html": "<section class=\"ds-summary\"><h2>Ringkasan sebelum dikirim</h2><p>Berkas: Belum dipilih</p></section>",
       "css": ".ds-summary{padding:0;margin:0 0 22px;border-radius:0;background:none;color:var(--gp-text);font-family:var(--gp-body);font-size:14px;line-height:1.8}.ds-summary h2{font-family:var(--gp-heading);font-size:17px;font-weight:600;letter-spacing:-.025em;margin:0 0 12px}.ds-summary p{margin:0}"
     },
@@ -868,7 +898,7 @@
       "refersTo": "table-frame",
       "description": "Tabel ilmiah dengan scroll region keyboard dan batas kolom alel. Tidak memuat hasil contoh.",
       "html": "<div class=\"ds-table-frame\"><div class=\"ds-table-scroll\" role=\"region\" aria-label=\"Varian hasil analisis\" tabindex=\"0\"><table class=\"ds-scientific-table\"><caption>Record varian sesuai filter aktif</caption><thead><tr><th scope=\"col\">Kromosom</th><th scope=\"col\">Posisi (bp)</th><th scope=\"col\">REF</th><th scope=\"col\">ALT</th><th scope=\"col\">QUAL</th><th scope=\"col\">FORMAT/DP</th><th scope=\"col\">GT asli</th><th scope=\"col\">FILTER</th><th scope=\"col\">Tipe</th></tr></thead><tbody></tbody></table></div><p class=\"ds-table-hint\">Geser tabel untuk melihat seluruh kolom pada layar kecil.</p></div>",
-      "css": ".ds-table-frame{border:1px solid var(--gp-border);border-radius:4px;overflow:hidden;background:var(--gp-surface);color:var(--gp-text);font-family:var(--gp-body)}.ds-table-scroll{overflow-x:auto}.ds-table-scroll:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-scientific-table{width:100%;min-width:980px;border-collapse:collapse;text-align:left;font-size:14px}.ds-scientific-table caption{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.ds-scientific-table th{padding:15px 18px;background:var(--gp-subtle);color:var(--gp-muted);font-size:12px;font-weight:600;white-space:nowrap}.ds-scientific-table td{padding:18px;border-top:1px solid var(--gp-border);vertical-align:top;font-family:var(--gp-data);font-size:12px;font-variant-numeric:tabular-nums}.ds-scientific-table tbody tr:hover{background:var(--gp-subtle)}.ds-scientific-table .ds-allele{min-width:100px;max-width:320px;word-break:normal;overflow-wrap:anywhere}.ds-table-hint{font-size:12px;padding:10px 18px;color:var(--gp-muted);border-top:1px solid var(--gp-border)}@media(min-width:768px){.ds-table-hint{display:none}}"
+      "css": ".ds-table-frame{border:1px solid var(--gp-border);border-radius:4px;overflow:hidden;background:var(--gp-surface);color:var(--gp-text);font-family:var(--gp-body)}.ds-table-scroll{overflow-x:auto}.ds-table-scroll:focus-visible{outline:3px solid var(--gp-focus);outline-offset:4px}.ds-scientific-table{width:100%;min-width:980px;border-collapse:collapse;text-align:left;font-size:14px}.ds-scientific-table caption{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.ds-scientific-table th{padding:15px 18px;background:var(--gp-subtle);color:var(--gp-muted);font-size:12px;font-weight:600;white-space:nowrap}.ds-scientific-table td{padding:18px;border-top:1px solid var(--gp-border);vertical-align:top;font-family:var(--gp-data);font-size:12px;font-variant-numeric:tabular-nums}.ds-scientific-table tbody tr:hover{background:var(--gp-subtle)}.ds-scientific-table .ds-allele{min-width:100px;max-width:320px;word-break:normal;overflow-wrap:anywhere}.ds-table-hint{font-size:12px;padding:10px 18px;color:var(--gp-muted);border-top:1px solid var(--gp-border)}@media(min-width:768px){.ds-table-hint{display:none}}\n.frame{border-radius:14px}"
     },
     {
       "name": "Context help panel",
@@ -881,14 +911,14 @@
       "name": "Analysis sheet",
       "kind": "card",
       "refersTo": "analysis-sheet",
-      "description": "Lembar record untuk hasil terakhir atau monitoring; isi selalu berasal dari API.",
+      "description": "Lembar record untuk hasil terakhir atau monitoring; isi selalu berasal dari API. Current depth refinement: 16px radius and panel shadow; see workspace.css final cascade.",
       "html": "<section class=\"ds-analysis-sheet\" aria-labelledby=\"ds-sheet-title\"><h2 id=\"ds-sheet-title\">Hasil terakhir</h2><p class=\"ds-sheet-loading\" role=\"status\">Memuat ringkasan hasil tersimpan…</p></section>",
       "css": ".ds-analysis-sheet{background:var(--gp-surface);color:var(--gp-text);border-top:2px solid var(--gp-sheet-rule);padding:26px 28px 0;min-width:0;font-family:var(--gp-body);animation:ds-sheet-reveal var(--gp-motion-reveal) var(--gp-ease)}.ds-analysis-sheet h2{font:600 18px/1.4 var(--gp-heading);margin:0 0 24px}.ds-sheet-loading{padding:24px 0;font-size:13px;color:var(--gp-muted)}@keyframes ds-sheet-reveal{from{opacity:.92;clip-path:inset(0 0 2% 0)}to{opacity:1;clip-path:inset(0)}}@media(max-width:640px){.ds-analysis-sheet{padding:24px 18px 0}}@media(prefers-reduced-motion:reduce){.ds-analysis-sheet{animation:none}}"
     }
   ],
   "narrative": {
     "northStar": "Stasiun riset GenoPath",
-    "overview": "Ruang kerja kampus untuk analisis genom yang menempatkan record analisis, sumber data dan tindakan berikutnya di depan. Navigasi horizontal tinta biru memberi orientasi; kanvas mineral hangat, lembar analisis dan garis pembagi menjaga halaman kerja tenang. Beranda lebih ekspresif melalui judul editorial dan foto kampus asli.\n\nDokumen ini merekam overhaul M11 berstatus PROPOSED. Arah code-led sudah dipilih pengguna; penerimaan visual akhir oleh tim masih menunggu review. PRODUCT.md memegang kebenaran produk dan surface brief memegang strategi halaman. Nilai runtime berasal dari frontend/src/styles/tokens.css, dengan aturan komponen dan cascade pada index.css serta styles/workspace.css.",
+    "overview": "PROPOSED scientific research workspace: horizontal navigation, real analysis records and provenance, fluid desktop width, functional surface hierarchy and restrained perceptible interaction. Original campus, garlic motif and contributor scene remain.",
     "keyCharacteristics": [
       "Navigasi horizontal, kanvas luas dan lembar analisis dengan provenance.",
       "Sora untuk orientasi, Instrument Sans untuk kerja, monospace untuk nilai ilmiah.",

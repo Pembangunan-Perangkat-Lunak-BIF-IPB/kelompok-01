@@ -14,6 +14,8 @@ export function NewAnalysisPage() {
   const navigate = useNavigate();
   const inFlight = useRef(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const dragDepth = useRef(0);
+  const [dragActive, setDragActive] = useState(false);
   const [restored] = useState(() => {
     try { return { draft: loadDraft(username), error: '' }; }
     catch (error) { return { draft: null, error: (error as Error).message }; }
@@ -143,9 +145,11 @@ export function NewAnalysisPage() {
       </section>
       <section className="gp-section space-y-4">
         <h2 className="font-bold text-blue-700 dark:text-blue-300">01 · Input FASTQ single-end</h2>
-        <div className="gp-upload space-y-3"
-          onDragOver={event => event.preventDefault()} onDrop={event => {
-            event.preventDefault(); if (event.dataTransfer.files[0]) selectFile(event.dataTransfer.files[0]);
+        <div className={'gp-upload space-y-3' + (dragActive ? ' gp-upload--dragging' : '')}
+          onDragEnter={event => { event.preventDefault(); dragDepth.current += 1; setDragActive(true); }}
+          onDragLeave={event => { event.preventDefault(); dragDepth.current = Math.max(0, dragDepth.current - 1); if (dragDepth.current === 0) setDragActive(false); }}
+          onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; }} onDrop={event => {
+            event.preventDefault(); dragDepth.current = 0; setDragActive(false); if (event.dataTransfer.files[0]) selectFile(event.dataTransfer.files[0]);
           }}>
           <UploadCloud aria-hidden="true" className="w-8 h-8 text-blue-600" />
           <label htmlFor="fastq" className="block text-sm font-semibold">{draft ? 'Pilih kembali FASTQ yang sama untuk melanjutkan submission' : 'Pilih atau seret berkas FASTQ'}</label>

@@ -4,6 +4,14 @@
 URL historis M10 (tunnel telah dihentikan pengguna): https://arise-priced-bio-exercises.trycloudflare.com
 Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
 
+## Visual depth and interaction refinement M11, PROPOSED
+
+- Basis 18bbceb, satu pass terarah tanpa subagen atau audit ulang. Workspace maksimum 1920 px; area konten pada 1920 terukur 1808 px, body 16 px, tombol utama 48 px, field 50 px. Narasi tetap dibatasi, tabel dan form memperoleh ruang lebih proporsional.
+- Hierarki functional surface: record hasil/review dan identitas Result memiliki depth lembut; attention/statistik hasil tonal; toolbar/filter/tabel lebih tegas. Metadata scan dua/empat kolom; motif bawang dipertahankan dengan opacity lebih rendah. Workflow/Team Beranda dibesarkan memakai aset original, tanpa penggantian gambar atau animasi.
+- Hover/press, record action arrow, feedback drag FASTQ, Advanced Mode dan bantuan diperkuat. Counter nested drag tidak mengubah validasi, UUID atau submission. Test baru memastikan feedback bersih setelah drop invalid dan tanpa request analisis.
+- PASS build, ESLint, 90 frontend tests/13 file. PASS Edge 30 tampilan 1920/1440/390 light/dark, auth/profile, Advanced/help, drag feedback, monitoring, results dan VCF/CSV; JWT invalid 401, foreign results 404. Zero request analisis mutatif, tidak menjalankan pipeline/backend tests. Reduced-motion dan reflow keyboard diuji. Tidak mengklaim validasi biologis.
+- Screenshot full-resolution dan laporan browser di .runtime/depth-refinement/, ignored. Rekaman interaksi tidak dibuat; tidak memasang encoder/dependency. Motion dapat ditinjau langsung di localhost:3001. Dokumentasi desain/sidecar diselaraskan, status tetap menunggu review pengguna/tim. Tidak push/merge/PR, tunnel atau perubahan M10.
+
 ## Scientific research workspace overhaul M11, PROPOSED
 
 - Basis 3dc0e9b. Dashboard mengganti ledger tiga statistik/tabel dengan hasil Completed terakhir, counts/selection/reference dari Result API actual, source IDs/timestamps dan perhatian pada Job aktif/gagal. Tidak menambah progress per tahap, QC, anotasi atau statistik fiktif. Summary loading/error tidak diubah menjadi angka nol.

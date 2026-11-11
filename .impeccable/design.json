@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-11T15:18:42.882945Z",
+  "generatedAt": "2026-11-11T16:04:48.319553Z",
   "title": "Design System: GenoPath",
   "extensions": {
     "colorMeta": {
@@ -807,6 +807,16 @@
         "name": "hover-press",
         "value": "180ms; translateY(-2px) hover; scale(.98) press",
         "purpose": "Actual interactive actions, never constant scientific-row animation; reduced-motion transform none."
+      },
+      {
+        "name": "landing-pipeline-entrance",
+        "value": "line 850ms; nodes 650ms stagger 90ms; sample 4.8s after 750ms",
+        "purpose": "One conceptual FASTQ/configuration/pipeline/result sequence, never live Job status."
+      },
+      {
+        "name": "landing-pipeline-idle",
+        "value": "14s",
+        "purpose": "Slow CSS loop after native sample animationend; paused manually, offscreen or hidden; reduced-motion static."
       }
     ],
     "breakpoints": [
@@ -914,6 +924,14 @@
       "description": "Lembar record untuk hasil terakhir atau monitoring; isi selalu berasal dari API. Current depth refinement: 16px radius and panel shadow; see workspace.css final cascade.",
       "html": "<section class=\"ds-analysis-sheet\" aria-labelledby=\"ds-sheet-title\"><h2 id=\"ds-sheet-title\">Hasil terakhir</h2><p class=\"ds-sheet-loading\" role=\"status\">Memuat ringkasan hasil tersimpan…</p></section>",
       "css": ".ds-analysis-sheet{background:var(--gp-surface);color:var(--gp-text);border-top:2px solid var(--gp-sheet-rule);padding:26px 28px 0;min-width:0;font-family:var(--gp-body);animation:ds-sheet-reveal var(--gp-motion-reveal) var(--gp-ease)}.ds-analysis-sheet h2{font:600 18px/1.4 var(--gp-heading);margin:0 0 24px}.ds-sheet-loading{padding:24px 0;font-size:13px;color:var(--gp-muted)}@keyframes ds-sheet-reveal{from{opacity:.92;clip-path:inset(0 0 2% 0)}to{opacity:1;clip-path:inset(0)}}@media(max-width:640px){.ds-analysis-sheet{padding:24px 18px 0}}@media(prefers-reduced-motion:reduce){.ds-analysis-sheet{animation:none}}"
+    },
+    {
+      "name": "Conceptual landing pipeline",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "PipelineHero.tsx: scoped CSS/SVG illustration, four product stages, one moving file token and result reveal. Not scientific data or a real Job progress indicator. Pause/keyboard/reduced-motion supported.",
+      "html": "<figure class=\"pipeline\"><ol><li>FASTQ</li><li>Konfigurasi</li><li>Pipeline</li><li>Hasil varian</li></ol><figcaption>Ilustrasi alur analisis</figcaption></figure>",
+      "css": ".pipeline{background:#183d4c;color:#eef3e8;border:1px solid #527380;border-radius:16px;padding:18px;font:14px system-ui}.pipeline ol{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:0;list-style:none}.pipeline figcaption{font-size:11px;color:#c2d4d8}"
     }
   ],
   "narrative": {

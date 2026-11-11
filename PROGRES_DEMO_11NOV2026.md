@@ -4,6 +4,13 @@
 URL historis M10 (tunnel telah dihentikan pengguna): https://arise-priced-bio-exercises.trycloudflare.com
 Password final telah ditetapkan pengguna lewat terminal tersamar dan diverifikasi. Browser Edge pada PC host telah menguji alur melalui Cloudflare HTTPS. Pengguna mengonfirmasi PASS password gate pada Chrome Incognito PC dan Chrome HP melalui hotspot berbasis data seluler pada jaringan berbeda. Rehearsal Default dan validasi penolakan FASTQ juga PASS; versi demo dibekukan untuk rehearsal tim.
 
+## Landing pipeline motion hook M11, PROPOSED
+
+- Basis 9452e29, scope landing saja. PipelineHero menggambarkan FASTQ -> konfigurasi -> eksekusi -> hasil varian dengan garis SVG, satu token file, entrance node/line dan tanda keluaran. Caption menyatakan ilustrasi, tanpa data biologis atau progress Job palsu. Kampus, motif bawang, Team/NIM/cutout/wave/hover tetap.
+- Traversal pertama 4.8 detik setelah delay 750 ms; idle 14 detik. Jeda/Putar keyboard, pause offscreen/tab tersembunyi, reduced-motion statis. Tidak memasang dependency atau polling JS. Event akhir SVG memakai listener native dengan cleanup. Pengukuran motion dipisah dari screenshot full-page agar perubahan viewport capture tidak mengganggu IntersectionObserver.
+- PASS build, lint dan 96 frontend tests/14 file; tests baru mencakup empat tahap, pause/resume, first-to-idle, reduced-motion, offscreen dan visibility. PASS Edge desktop/mobile dua tema: token benar-benar berpindah, output reveal, posisi stabil saat dijeda, idle14s dan offscreen pause. Reduced-motion meniadakan spatial motion tanpa menghilangkan tahap/CTA. Laporan dan fase screenshot di .runtime/landing-hook/, ignored.
+- Smoke 20 tampilan halaman existing, profil/login, Advanced, monitoring, result, VCF/CSV dan Team PASS; zero request analisis mutatif. Tidak menjalankan pipeline/backend tests atau mengubah backend/API/M10. Detector hook landing tidak menemukan warning. Tidak ada push/merge/PR/tunnel. Preview localhost:3001 tetap untuk review; desain belum final.
+
 ## Visual depth and interaction refinement M11, PROPOSED
 
 - Basis 18bbceb, satu pass terarah tanpa subagen atau audit ulang. Workspace maksimum 1920 px; area konten pada 1920 terukur 1808 px, body 16 px, tombol utama 48 px, field 50 px. Narasi tetap dibatasi, tabel dan form memperoleh ruang lebih proporsional.

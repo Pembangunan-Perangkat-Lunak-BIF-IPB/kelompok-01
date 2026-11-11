@@ -298,6 +298,14 @@ Shared workspace.css mempertahankan arsitektur record dan navbar. Primary/second
 
 Hover tombol naik 2 px dengan shadow ber-offset; press kembali ke posisi dasar dengan scale .98. Arrow tindakan record bergeser 2 px. Drag enter/leave/drop memakai state visual dan nested counter agar feedback tidak berkedip pada child; handler validasi/submission tetap. Advanced Mode membuka panel tonal dalam 240 ms, contextual help/alert muncul dalam 160 ms. Reduced-motion menonaktifkan animasi dan transform hover/press. Tidak ada delay loading buatan atau progress palsu.
 
+### Landing pipeline hook, PROPOSED
+
+PipelineHero.tsx dan PipelineHero.css menambahkan satu ilustrasi konseptual di hero: FASTQ, konfigurasi, pipeline, hasil varian. SVG menghubungkan empat node; satu indikator berkas melewati tahap dan tanda keluaran muncul di ujung. Tidak ada progress Job, data genom atau statistik ilustratif. Aset kampus dan TeamSection tetap.
+
+Entrance: garis tergambar 850 ms, node 650 ms dengan stagger 90 ms, lalu traversal pertama 4.8 detik setelah delay 750 ms. Setelah event animationend native dari token, loop idle menjadi 14 detik. Tidak ada polling atau timer berulang JavaScript. Jeda/Putar dapat diakses keyboard; loop berhenti saat hero keluar viewport atau dokumen tersembunyi. Reduced-motion menampilkan diagram statis lengkap tanpa token bergerak. Semua label tahap dan CTA tersedia sejak awal, tanpa menunggu animasi.
+
+Figure menggunakan surface lokal gelap yang konsisten dengan hero pada light/dark. Ukurannya mengikuti kolom hero dan satu baris empat tahap tetap terbaca pada mobile. Caption menyatakan ilustrasi alur, bukan status analisis. Ini pola landing saja, bukan komponen progress halaman kerja. Pengukuran motion dilakukan sebelum capture full-page karena perubahan viewport saat screenshot dapat memicu pause IntersectionObserver.
+
 ## Do's and Don'ts
 
 ### Do:

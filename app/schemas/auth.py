@@ -15,7 +15,7 @@ class RegisterRequest(BaseModel):
     email: str = Field(min_length=3, max_length=254, description="Unquoted ASCII email, stored lowercase.")
     password: SecretStr = Field(
         min_length=12, max_length=128,
-        description="12–128 characters; whitespace-only passwords are rejected. Never trimmed.",
+        description="12-128 characters; whitespace-only passwords are rejected. Never trimmed.",
     )
 
     @field_validator("username", "nama", "email", mode="before")

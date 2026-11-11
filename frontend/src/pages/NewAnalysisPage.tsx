@@ -4,6 +4,7 @@ import { UploadCloud, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/auth';
 import { ApiError, downloadDemoInput, getJobOptions, submitAnalysis, validateFile, type JobOptions, type SubmissionResponse } from '../services/api';
 import { ContextHelp } from '../components/ContextHelp';
+import { displayReferenceName } from '../services/displayText';
 import { clearDraft, loadDraft, makeParameters, matchesFile, saveDraft, type SubmissionDraft } from '../services/submissionDraft';
 
 export function NewAnalysisPage() {
@@ -11,6 +12,7 @@ export function NewAnalysisPage() {
   const username = user?.username || '';
   const navigate = useNavigate();
   const inFlight = useRef(false);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [restored] = useState(() => {
     try { return { draft: loadDraft(username), error: '' }; }
     catch (error) { return { draft: null, error: (error as Error).message }; }
@@ -32,6 +34,15 @@ export function NewAnalysisPage() {
   const [downloadingInput, setDownloadingInput] = useState(false);
 
   useEffect(() => {
+    const input = fileInput.current;
+    const cancel = () => {
+      if (!inFlight.current && !input?.files?.length) { setFile(null); setError(''); setPartial(null); }
+    };
+    input?.addEventListener('cancel', cancel);
+    return () => input?.removeEventListener('cancel', cancel);
+  }, []);
+
+  useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
     getJobOptions(token, controller.signal).then(data => {
@@ -47,8 +58,10 @@ export function NewAnalysisPage() {
   const qualError = !qual.trim() || !Number.isFinite(Number(qual)) || Number(qual) < 0 ? 'QUAL harus berupa angka ≥ 0.' : '';
   const dpError = !dp.trim() || !Number.isInteger(Number(dp)) || Number(dp) < 0 || Number(dp) > 2147483647 ? 'DP harus bilangan bulat 0-2147483647.' : '';
   const configured = options?.pipeline_enabled && options.alignment_strategy === 'bowtie2';
-  const selectFile = (candidate: File) => {
+  const selectFile = (candidate: File | null) => {
     if (inFlight.current || draft?.reconciliation || restored.error) return;
+    setFile(null); setError(''); setPartial(null);
+    if (!candidate) return;
     try {
       validateFile(candidate, options?.upload_max_bytes);
       if (draft && !matchesFile(draft, candidate)) throw new Error('Pilih kembali berkas yang sama dengan submission tertunda (nama, ukuran, waktu modifikasi).');
@@ -85,7 +98,10 @@ export function NewAnalysisPage() {
           try { saveDraft(username, blocked); } catch { /* Keep the blocked in-memory state. */ }
         }
       } else if (reason instanceof ApiError && [413, 422].includes(reason.status)) {
-        // Rejected content/configuration is definitive; a corrected upload needs a new UUID.
+        // Rejected content/configuration is definitive; never leave rejected input ready.
+        setFile(null);
+        if (fileInput.current) fileInput.current.value = '';
+        // A corrected upload needs a new UUID.
         try { clearDraft(username); setDraft(null); } catch { /* Retain identity if storage fails. */ }
       }
     } finally { inFlight.current = false; setUploading(false); }
@@ -134,8 +150,9 @@ export function NewAnalysisPage() {
           }}>
           <UploadCloud aria-hidden="true" className="w-8 h-8 text-blue-600" />
           <label htmlFor="fastq" className="block text-sm font-semibold">{draft ? 'Pilih kembali FASTQ yang sama untuk melanjutkan submission' : 'Pilih atau seret berkas FASTQ'}</label>
-          <input id="fastq" type="file" accept=".fastq,.fastq.gz" disabled={uploading || draft?.reconciliation || Boolean(restored.error)}
-            onChange={event => { if (event.target.files?.[0]) selectFile(event.target.files[0]); }} className="block w-full text-sm" />
+          <input ref={fileInput} id="fastq" type="file" accept=".fastq,.fastq.gz" disabled={uploading || draft?.reconciliation || Boolean(restored.error)}
+            onChange={event => selectFile(event.currentTarget.files?.[0] ?? null)}
+            className="block w-full text-sm" />
           <p className="text-xs">.fastq / .fastq.gz · {options ? 'Maksimum ' + (options.upload_max_bytes / 1024 ** 2).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' MiB.' : 'Memuat batas unggah…'} Validasi isi dilakukan server saat dikirim.</p>
           {options?.references.some(item => item.sumber === 'genopath:synthetic-fixture') && <div className="text-xs space-y-2">
             <p>Demo teknis: gunakan contoh sintetis 20 kbp dengan reference fixture, ploidi 2. Bukan data biologis Garlic.V2.</p>
@@ -152,7 +169,7 @@ export function NewAnalysisPage() {
           <div><label htmlFor="reference" className="block text-sm font-semibold mb-1">Genom reference</label>
             <select id="reference" required className={inputClass} value={reference} onChange={event => setReference(event.target.value)}>
               <option value="">Pilih reference yang tersedia</option>
-              {options?.references.map(item => <option key={item.id_reference_genome} value={item.id_reference_genome}>{item.nama_genom}{item.versi ? ' · ' + item.versi : ''} (#{item.id_reference_genome})</option>)}
+              {options?.references.map(item => <option key={item.id_reference_genome} value={item.id_reference_genome}>{displayReferenceName(item.nama_genom)}{item.versi ? ' · ' + item.versi : ''} (#{item.id_reference_genome})</option>)}
             </select>
             {selectedReference?.sumber && <p className="text-xs mt-1">Sumber: {selectedReference.sumber}</p>}
           </div>
@@ -196,7 +213,7 @@ export function NewAnalysisPage() {
       <section className="glass-card rounded-2xl p-5 space-y-2 text-sm">
         <h2 className="font-bold">Ringkasan sebelum dikirim</h2>
         <p>Nama: {name.trim() || 'Otomatis setelah dikirim'}</p>
-        <p>Reference: {selectedReference?.nama_genom ?? (reference ? '#' + reference : 'Belum dipilih')} · Ploidi: {ploidy || 'Belum dipilih'}</p>
+        <p>Reference: {selectedReference ? displayReferenceName(selectedReference.nama_genom) : (reference ? '#' + reference : 'Belum dipilih')} · Ploidi: {ploidy || 'Belum dipilih'}</p>
         <p>Single-end · Bowtie2 / Nextflow · QUAL ≥ {qualError ? 'Tidak valid' : qual} · FORMAT/DP ≥ {dpError ? 'Tidak valid' : dp} · FILTER=PASS</p>
         {draft && <div role="status" className="space-y-2 break-all">
           <p>UUID submission: <code>{draft.parameters.request_id}</code></p>

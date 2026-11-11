@@ -80,7 +80,7 @@ def reference():
     with Session(engine) as db, db.begin():
         row = db.scalar(select(ReferenceGenome).where(ReferenceGenome.path_fasta == "reference.fa"))
         if row is None:
-            row = ReferenceGenome(nama_genom="Fixture sintetis 20 kbp — BUKAN Garlic.V2",
+            row = ReferenceGenome(nama_genom="Fixture sintetis 20 kbp - BUKAN Garlic.V2",
                                   versi="seed-20261104", sumber="genopath:synthetic-fixture", path_fasta="reference.fa")
             db.add(row)
             db.flush()

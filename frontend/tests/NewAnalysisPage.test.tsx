@@ -104,6 +104,9 @@ it.each([413, 422])('unlocks a definitive HTTP %s rejection for a corrected subm
   const firstId = vi.mocked(submitAnalysis).mock.calls[0][2].request_id;
   expect(loadDraft('tester')).toBeNull();
   expect((screen.getByLabelText('Genom reference') as HTMLSelectElement).matches(':disabled')).toBe(false);
+  expect(screen.queryByText(/File siap dikirim/)).toBeNull();
+  expect((screen.getByLabelText('Pilih atau seret berkas FASTQ') as HTMLInputElement).files?.length).toBe(0);
+  await user.upload(screen.getByLabelText('Pilih atau seret berkas FASTQ'), file);
   await user.click(screen.getByRole('button', { name: 'Jalankan Analisis' }));
   await screen.findByRole('heading', { name: 'Monitoring tujuan' });
   expect(vi.mocked(submitAnalysis).mock.calls[1][2].request_id).not.toBe(firstId);
@@ -173,4 +176,77 @@ it('freezes the trimmed custom name across Advanced and ambiguous retries', asyn
   await user.click(screen.getByRole('button', { name: 'Kirim ulang submission yang sama' }));
   await screen.findByRole('heading', { name: 'Monitoring tujuan' });
   expect(vi.mocked(submitAnalysis).mock.calls[1][2]).toEqual(first);
+});
+
+
+it.each([
+  [new File([], 'kosong.fastq'), 'Berkas FASTQ kosong.'],
+  [new File(['text'], 'demo_file_tdk sesuai.txt'), 'Gunakan ekstensi .fastq atau .fastq.gz (huruf kecil).'],
+  [new File(['123456'], 'besar.fastq'), 'Ukuran berkas melebihi batas unggahan.'],
+])('clears previous ready metadata when a replacement is rejected locally: %s', async (invalid, message) => {
+  mount(); await configure();
+  expect(screen.getByText(/reads.fastq.*File siap dikirim/)).toBeTruthy();
+  // Use an actual small configured limit for the size case without allocating a large file.
+  if (invalid.name === 'besar.fastq') {
+    Object.defineProperty(invalid, 'size', {value: options.upload_max_bytes + 1});
+  }
+  fireEvent.change(screen.getByLabelText('Pilih atau seret berkas FASTQ'), {target:{files:[invalid]}});
+  expect(screen.getByRole('alert').textContent).toContain(message);
+  expect(screen.queryByText(/File siap dikirim/)).toBeNull();
+  expect((screen.getByRole('button',{name:'Jalankan Analisis'}) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.submit(screen.getByRole('button',{name:'Jalankan Analisis'}).closest('form')!);
+  expect(submitAnalysis).not.toHaveBeenCalled();
+});
+
+it('handles malformed FASTQ rejection, unsupported extension, empty input and valid recovery in sequence', async () => {
+  vi.mocked(submitAnalysis).mockRejectedValueOnce(new ApiError(422,'Isi FASTQ tidak valid.'));
+  mount(); const user=await configure();
+  const picker=userEvent.setup({applyAccept:false});
+  const input=screen.getByLabelText('Pilih atau seret berkas FASTQ') as HTMLInputElement;
+  await user.upload(input,new File(['not FASTQ'], 'demo_fastqsalah.fastq'));
+  await user.click(screen.getByRole('button',{name:'Jalankan Analisis'}));
+  await screen.findByText('Isi FASTQ tidak valid.');
+  expect(screen.queryByText(/File siap dikirim/)).toBeNull();
+  expect(input.files?.length).toBe(0);
+  const id=vi.mocked(submitAnalysis).mock.calls[0][2].request_id;
+  await picker.upload(input,new File(['text'],'demo_file_tdk sesuai.txt'));
+  expect(screen.getByRole('alert').textContent).toContain('Gunakan ekstensi');
+  expect(screen.queryByText(/demo_fastqsalah.fastq/)).toBeNull();
+  expect(screen.queryByText(/File siap dikirim/)).toBeNull();
+  await picker.upload(input,new File([],'kosong.fastq'));
+  expect(screen.getByRole('alert').textContent).toContain('FASTQ kosong');
+  expect(screen.queryByText(/File siap dikirim/)).toBeNull();
+  expect(submitAnalysis).toHaveBeenCalledTimes(1);
+  await user.upload(input,file);
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.getByText(/reads.fastq.*File siap dikirim/)).toBeTruthy();
+  expect(submitAnalysis).toHaveBeenCalledTimes(1);
+  await user.click(screen.getByRole('button',{name:'Jalankan Analisis'}));
+  await screen.findByRole('heading',{name:'Monitoring tujuan'});
+  expect(vi.mocked(submitAnalysis).mock.calls[1][2].request_id).not.toBe(id);
+});
+
+it('clears metadata for an empty selection but preserves a real retained file on native cancel', async () => {
+  mount(); await configure();
+  const input=screen.getByLabelText('Pilih atau seret berkas FASTQ') as HTMLInputElement;
+  fireEvent(input,new Event('cancel'));
+  expect(screen.getByText(/reads.fastq.*File siap dikirim/)).toBeTruthy();
+  fireEvent.change(input,{target:{files:[]}});
+  fireEvent(input,new Event('cancel'));
+  expect(screen.queryByText(/File siap dikirim/)).toBeNull();
+  expect((screen.getByRole('button',{name:'Jalankan Analisis'}) as HTMLButtonElement).disabled).toBe(true);
+  expect(submitAnalysis).not.toHaveBeenCalled();
+});
+
+it('clears a mismatched recovery file without losing the frozen UUID', async () => {
+  const parameters=makeParameters({reference:'7',ploidy:'2',qual:'30',dp:'10',filename:file.name});
+  saveDraft('tester',{parameters,file:{name:file.name,size:file.size,lastModified:file.lastModified},reconciliation:false});
+  mount();await screen.findByRole('option',{name:/Reference uji/});
+  const input=screen.getByLabelText(/Pilih kembali FASTQ/);
+  fireEvent.change(input,{target:{files:[file]}});
+  expect(screen.getByText(/File siap dikirim/)).toBeTruthy();
+  fireEvent.change(input,{target:{files:[new File(['other'],'other.fastq')]}});
+  expect(screen.queryByText(/File siap dikirim/)).toBeNull();
+  expect(loadDraft('tester')?.parameters.request_id).toBe(parameters.request_id);
+  expect(submitAnalysis).not.toHaveBeenCalled();
 });

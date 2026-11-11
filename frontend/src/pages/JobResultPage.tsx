@@ -1,4 +1,5 @@
 import { ContextHelp } from '../components/ContextHelp';
+import { displayReferenceName } from '../services/displayText';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, FileSpreadsheet, Loader2, RefreshCw } from 'lucide-react';
@@ -90,7 +91,7 @@ export function JobResultPage() {
       {summary && <div className="text-sm space-y-2">
         {summary.execution_mode === 'synthetic' && <p role="status" className="font-bold text-amber-800 dark:text-amber-300">DATA SINTETIS: untuk pengujian teknis, bukan hasil biologis nyata.</p>}
         {summary.reference?.sumber === 'genopath:synthetic-fixture' && <p role="status" className="font-bold text-amber-800 dark:text-amber-300">INPUT SINTETIS TERKONTROL: toolchain nyata; bukan validasi biologis Garlic.V2.</p>}
-        {summary.reference && <p>Reference: {summary.reference.nama_genom} · {summary.reference.versi ?? 'Versi tidak tersedia'}</p>}
+        {summary.reference && <p>Reference: {displayReferenceName(summary.reference.nama_genom)} · {summary.reference.versi ?? 'Versi tidak tersedia'}</p>}
         <p>Reference ID: #{summary.id_reference_genome} · Mulai: {date(summary.waktu_mulai)} · Selesai: {date(summary.waktu_selesai)}</p>
         <p>Seleksi analisis: QUAL ≥ {summary.parameters.parameter_qual}; FORMAT/DP ≥ {summary.parameters.parameter_dp};
           FILTER=PASS: {summary.parameters.require_pass == null ? 'Tidak diketahui' : summary.parameters.require_pass ? 'Ya' : 'Tidak'};

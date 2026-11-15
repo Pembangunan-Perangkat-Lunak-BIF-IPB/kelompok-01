@@ -8,6 +8,9 @@ class ReferenceOption(BaseModel):
     nama_genom: str
     versi: str | None
     sumber: str | None
+    accession: str | None = None
+    strain: str | None = None
+    is_demo: bool = False
 
 
 class JobOptions(BaseModel):

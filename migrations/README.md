@@ -16,7 +16,7 @@ Mode offline tidak membaca `.env` dan tidak membuat koneksi.
 - `0003_m8_pipeline`: menambahkan metadata JSON konfigurasi
   Job, `analysis.other_count`, serta `variant.variant_type`, `filter_status`,
   dan `info`. Kelima kolom nullable, tanpa memilih aligner tertentu.
-- `0004_m9_result_indexes` (head branch M9): menambahkan index
+- `0004_m9_result_indexes` (revision M9): menambahkan index
   `variant(id_analysis, id_variant)`, `variant(id_analysis, variant_type, qual)`,
   dan `genotype(id_variant, id_sample)`. Tidak mengubah data, kolom, atau tabel.
   CREATE INDEX biasa dapat menahan penulisan; tinjau maintenance untuk database
@@ -24,10 +24,17 @@ Mode offline tidak membaca `.env` dan tidak membuat koneksi.
   pada cluster disposable terisolasi. Ketiga index valid/ready dan query Result
   API kompatibel. Database fixture PostgreSQL M8 tidak diubah; belum ada
   benchmark performa data besar.
+- `0005_analysis_identity`: backfill nomor/nama analisis dan constraint Job
+  yang stabil, tanpa menghapus data.
+- `0006_ecoli_biological_demo`: menambah metadata accession/strain/demo dan
+  prefix Bowtie2 per reference, lalu mendaftarkan RefSeq E. coli `NC_000913.3`.
+  FASTA, index, dan FASTQ harus lebih dahulu dipasang di bawah
+  `GENOPATH_REFERENCE_ROOT`; record tidak mengekspos path ke API. Reference
+  lama tetap dapat memakai prefix index global sebagai fallback.
 
 Revision ditulis eksplisit, tidak dibuat dengan autogenerate terhadap database
 development. Indeks primary key tambahan yang sudah ada tidak dihapus.
-Downgrade otomatis keempat revision ditolak agar tidak menghapus tabel M6,
+Downgrade otomatis untuk revision yang melindungi data ditolak agar tidak menghapus tabel M6,
 data username, analisis, metadata M8, atau index tanpa review. Rollback memerlukan rencana yang
 ditinjau terpisah.
 
@@ -99,6 +106,6 @@ Untuk database M6 existing yang telah diverifikasi cocok, setelah disetujui:
 ```
 
 Stamp menulis riwayat Alembic tanpa membuat tabel M6. Upgrade berikutnya menerapkan
-revision M7, M8, dan M9. Jangan menggunakan `stamp head` karena akan mencatat seluruh
+revision `0002_m7_schema` sampai `0006_ecoli_biological_demo`. Jangan menggunakan `stamp head` karena akan mencatat seluruh
 migrasi sebagai selesai tanpa menerapkan perubahan schema. Perintah online menggunakan konfigurasi koneksi
 aktif, sehingga database tujuan harus selalu diverifikasi sebelum eksekusi.

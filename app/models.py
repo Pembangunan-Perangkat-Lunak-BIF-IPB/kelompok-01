@@ -1,5 +1,6 @@
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Column,
     DateTime,
@@ -40,6 +41,10 @@ class ReferenceGenome(Base):
     versi = Column(String)
     sumber = Column(String)
     path_fasta = Column(String, nullable=False)
+    accession = Column(String)
+    strain = Column(String)
+    is_demo = Column(Boolean)
+    path_bowtie2_index = Column(String)
 
     jobs = relationship("Job", back_populates="reference_genome")
 

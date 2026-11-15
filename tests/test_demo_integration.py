@@ -54,7 +54,9 @@ def test_options_never_expose_paths_or_missing_reference(m8_case, app_factory):
         assert data["variant_ploidies"] == [1, 2]
         assert data["upload_max_bytes"] == case.settings.upload_max_bytes
         assert [row["id_reference_genome"] for row in data["references"]] == [1]
-        assert set(data["references"][0]) == {"id_reference_genome", "nama_genom", "versi", "sumber"}
+        assert set(data["references"][0]) == {
+            "id_reference_genome", "nama_genom", "versi", "sumber", "accession", "strain", "is_demo"
+        }
         assert str(case.tmp) not in response.text
         assert "path_fasta" not in response.text
         assert "not-a-public-reference" not in response.text

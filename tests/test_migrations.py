@@ -20,6 +20,7 @@ M7 = ROOT / "migrations/versions/0002_m7_schema.py"
 M8 = ROOT / "migrations/versions/0003_m8_pipeline.py"
 M5 = ROOT / "migrations/versions/0005_analysis_identity.py"
 M9 = ROOT / "migrations/versions/0004_m9_result_indexes.py"
+M6 = ROOT / "migrations/versions/0006_ecoli_biological_demo.py"
 
 
 def revision_tree(path):
@@ -62,6 +63,7 @@ def test_revision_chain_is_explicit_and_linear():
         (M8, "0003_m8_pipeline", "0002_m7_schema"),
         (M9, "0004_m9_result_indexes", "0003_m8_pipeline"),
         (M5, "0005_analysis_identity", "0004_m9_result_indexes"),
+        (M6, "0006_ecoli_biological_demo", "0005_analysis_identity"),
     ]:
         assignments = {
             node.targets[0].id: ast.literal_eval(node.value)
@@ -166,9 +168,10 @@ def test_alembic_resolves_one_head(offline_config):
     from alembic.script import ScriptDirectory
 
     scripts = ScriptDirectory.from_config(offline_config)
-    assert scripts.get_heads() == ["0005_analysis_identity"]
+    assert scripts.get_heads() == ["0006_ecoli_biological_demo"]
     assert [item.revision for item in scripts.walk_revisions()] == [
-        "0005_analysis_identity", "0004_m9_result_indexes", "0003_m8_pipeline", "0002_m7_schema", "0001_m6_baseline"
+        "0006_ecoli_biological_demo", "0005_analysis_identity", "0004_m9_result_indexes",
+        "0003_m8_pipeline", "0002_m7_schema", "0001_m6_baseline"
     ]
 
 

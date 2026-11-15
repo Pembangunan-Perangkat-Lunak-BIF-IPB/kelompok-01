@@ -71,7 +71,9 @@ def summary(factory, identifier, owner):
             id_job=job.id_job, id_analysis=analysis.id_analysis, id_sample=job.id_sample,
             id_reference_genome=job.id_reference_genome, status="Completed",
             reference=ReferenceOption(id_reference_genome=reference.id_reference_genome,
-                                      nama_genom=reference.nama_genom, versi=reference.versi, sumber=reference.sumber)
+                                      nama_genom=reference.nama_genom, versi=reference.versi, sumber=reference.sumber,
+                                      accession=reference.accession, strain=reference.strain,
+                                      is_demo=bool(reference.is_demo))
             if reference is not None else None,
             counts=VariantCounts(**dict(zip(("total_variants", "snps", "indels", "other", "unclassified"), counts))),
             parameters=ResultParameters(parameter_qual=analysis.parameter_qual, parameter_dp=analysis.parameter_dp,

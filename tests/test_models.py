@@ -231,7 +231,8 @@ def test_m6_columns_are_preserved_pending_migration_review():
         "id_user", "nama", "email", "password_hash", "role"
     } <= set(User.__table__.columns.keys())
     assert {
-        "id_reference_genome", "nama_genom", "versi", "sumber", "path_fasta"
+        "id_reference_genome", "nama_genom", "versi", "sumber", "path_fasta",
+        "accession", "strain", "is_demo", "path_bowtie2_index"
     } <= set(ReferenceGenome.__table__.columns.keys())
     assert {
         "id_sample", "id_user", "nama_berkas", "path_penyimpanan", "ukuran_berkas", "waktu_unggah"

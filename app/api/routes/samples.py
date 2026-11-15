@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_upload_owner_id, get_settings
@@ -13,7 +14,7 @@ from app.schemas.auth import ErrorResponse
 from app.schemas.sample import SampleUploadResponse
 from app.schemas.submission import SubmissionRequest, SubmissionResponse, SubmissionValidationError
 from app.services import jobs, submissions
-from app.services.pipeline import PipelineUnavailable, check_gate
+from app.services.pipeline import PipelineUnavailable, check_gate, confined_file
 from app.services.submission_record import SubmissionBusy, SubmissionRecord
 from app.services.fastq import InvalidFastqError, InvalidFilenameError, UploadLimitError
 from app.services.multipart_upload import (
@@ -27,6 +28,37 @@ from app.services.upload_validation import ValidationBudgetError, joined_thread
 router = APIRouter(prefix="/samples", tags=["samples"])
 # Shared by app instances in this process. Multiple Uvicorn workers have own slots.
 upload_slot = Lock()
+
+
+@router.get(
+    "/demo-fastq",
+    response_class=FileResponse,
+    response_model=None,
+    summary="Download the original E. coli K-12 MG1655 demo FASTQ",
+    responses={
+        200: {"content": {"application/gzip": {"schema": {"type": "string", "format": "binary"}}}},
+        401: {"model": ErrorResponse}, 404: {"model": ErrorResponse},
+    },
+)
+def download_demo_fastq(
+    _id_user: Annotated[int, Depends(get_upload_owner_id)],
+    settings: Annotated[Settings, Depends(get_settings)],
+):
+    # Fixed asset path beneath the configured reference root; never accept a
+    # filesystem path or filename from the request.
+    try:
+        path = confined_file(
+            settings.reference_root,
+            "ecoli-k12-mg1655/reads/SRR522156.fastq.gz",
+        )
+    except PipelineUnavailable:
+        raise HTTPException(404, "Demo FASTQ is unavailable.") from None
+    return FileResponse(
+        path,
+        media_type="application/gzip",
+        filename="ecoli-k12-mg1655-demo.fastq.gz",
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 @contextmanager

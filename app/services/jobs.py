@@ -5,6 +5,7 @@ Queued/Running; never infer an abandoned worker or automatically resume it.
 """
 
 from datetime import datetime, timezone
+from pathlib import Path
 from uuid import uuid4
 
 from pydantic import ValidationError
@@ -41,6 +42,14 @@ SAFE_ERRORS = {
     "Workflow execution failed.", "Execution configuration or input is unavailable.",
     "Result persistence failed; review before retry.", "Internal workflow failure.",
 }
+
+
+def reference_index_prefix(reference, settings):
+    value = reference.path_bowtie2_index or settings.pipeline_bowtie2_index_prefix
+    if value is None:
+        return None
+    prefix = Path(value)
+    return prefix if prefix.is_absolute() else settings.reference_root.absolute() / prefix
 
 
 def now():
@@ -88,12 +97,12 @@ def build_plan(db, settings, owner, request):
         raise PipelineUnavailable("Unsafe output root.")
     biological = request.execution_mode == "nextflow"
     bowtie = biological and settings.pipeline_alignment_strategy == "bowtie2"
-    prefix = settings.pipeline_bowtie2_index_prefix if bowtie else None
+    prefix = None
     if bowtie:
         try:
+            prefix = reference_index_prefix(reference, settings)
             if prefix is None:
                 raise ValueError
-            prefix = prefix if prefix.is_absolute() else settings.reference_root.absolute() / prefix
             for path in index_files(prefix):
                 confined_file(settings.reference_root, path)
         except (OSError, ValueError):
@@ -169,7 +178,8 @@ def analysis_options(factory, settings):
                 continue
             references.append(ReferenceOption(
                 id_reference_genome=reference.id_reference_genome, nama_genom=reference.nama_genom,
-                versi=reference.versi, sumber=reference.sumber,
+                versi=reference.versi, sumber=reference.sumber, accession=reference.accession,
+                strain=reference.strain, is_demo=bool(reference.is_demo),
             ))
     # Enabled is a configuration flag, not a claim that tools/indexes passed preflight.
     return JobOptions(pipeline_enabled=settings.pipeline_enabled,
@@ -233,6 +243,8 @@ def run_job(factory, settings: Settings, identifier: int, executor: Executor | N
                     or job.id_reference_genome != plan.request.id_reference_genome
                     or confined_file(settings.upload_root, sample.path_penyimpanan, relative=True) != plan.reads
                     or confined_file(settings.reference_root, reference.path_fasta) != plan.reference
+                    or (plan.bowtie2_index_prefix is not None
+                        and plan.bowtie2_index_prefix != reference_index_prefix(reference, settings))
                     or plan.outdir != settings.pipeline_root.absolute() / plan.run_id):
                 raise PipelineUnavailable("Stored Job inputs are inconsistent.")
             job.status, job.waktu_mulai, job.waktu_selesai, job.pesan_error = "Running", now(), None, None

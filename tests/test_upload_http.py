@@ -206,6 +206,18 @@ def test_http_file_size_limit_inclusive_without_content_length(case, compressed,
     assert response.status == (413 if delta == 1 else 201)
 
 
+def test_production_upload_limit_error_reports_90_mib_without_reading_body(case):
+    case.settings.upload_max_bytes = 90 * 1024**2
+    declared = case.settings.upload_max_bytes + multipart_upload.OVERHEAD_BYTES + 1
+    response = asyncio.run(call_app(case.app, headers=[
+        (b"content-type", CONTENT_TYPE), (b"content-length", str(declared).encode()),
+    ], forbid_receive=True))
+    assert response.status == 413
+    assert "90 MiB" in response.body["detail"]
+    assert response.reads == 0
+    assert case.temporary_files == []
+
+
 @pytest.mark.parametrize("declared", [None, "correct", "0", "1", "larger", "-1", "abc", "9000000000"])
 def test_content_length_is_checked_and_not_trusted(case, declared):
     data = multipart()

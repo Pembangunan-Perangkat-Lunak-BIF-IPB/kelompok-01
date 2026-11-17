@@ -326,3 +326,107 @@ body { font-size: 16px; }
  .gp-disclosure-enter, .gp-help-panel, .gp-alert { animation: none; }
  .gp-button:hover:not(:disabled), .gp-link-button:hover, .gp-button:active:not(:disabled), .gp-link-button:active, .gp-nav-link:hover, .gp-record-action:hover svg { transform: none; }
 }
+
+/* History page */
+.gp-history-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gp-history-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--gp-border);
+  border-radius: 12px;
+  background: var(--gp-surface);
+}
+
+.gp-history-toolbar label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gp-history-search {
+  flex: 1 1 260px;
+}
+
+.gp-history-status {
+  flex: 0 1 190px;
+}
+
+.gp-search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.gp-search-input > svg {
+  position: absolute;
+  left: 12px;
+  color: var(--gp-muted);
+  pointer-events: none;
+}
+
+.gp-search-input .gp-input {
+  width: 100%;
+  padding-left: 38px;
+}
+
+.gp-history-status .gp-input {
+  width: 100%;
+}
+
+.gp-history-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--gp-muted);
+}
+
+.gp-history-summary strong {
+  color: var(--gp-text);
+  font-size: 18px;
+}
+
+.gp-category-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--gp-botanical-soft);
+  color: var(--gp-botanical);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gp-table-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .gp-history-toolbar {
+    align-items: stretch;
+  }
+
+  .gp-history-search,
+  .gp-history-status {
+    flex-basis: 100%;
+  }
+
+  .gp-history-summary {
+    align-items: flex-start;
+  }
+}

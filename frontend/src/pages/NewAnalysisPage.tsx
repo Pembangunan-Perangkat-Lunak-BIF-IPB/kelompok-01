@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UploadCloud, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/auth';
-import { ApiError, downloadDemoInput, getJobOptions, submitAnalysis, validateFile, type JobOptions, type SubmissionResponse } from '../services/api';
+import { ApiError, downloadDemoInput, downloadEcoliDemoFastq, getJobOptions, submitAnalysis, validateFile, type JobOptions, type SubmissionResponse } from '../services/api';
 import { ContextHelp } from '../components/ContextHelp';
 import { PageHeader } from '../components/ui/Foundation';
 import { displayReferenceName } from '../services/displayText';
@@ -111,6 +111,7 @@ export function NewAnalysisPage() {
   };
   const inputClass = 'gp-input';
   const selectedReference = options?.references.find(item => item.id_reference_genome === Number(reference));
+  const selectedEcoliDemo = selectedReference?.is_demo === true && selectedReference.accession === 'NC_000913.3';
   const getDemoInput = async () => {
     if (!token || downloadingInput) return;
     setDownloadingInput(true); setError('');
@@ -121,6 +122,19 @@ export function NewAnalysisPage() {
       document.body.appendChild(link); link.click(); link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Contoh FASTQ tidak tersedia.'); }
+    finally { setDownloadingInput(false); }
+  };
+  const downloadEcoliInput = async () => {
+    if (!token || downloadingInput) return;
+    setDownloadingInput(true); setError('');
+    try {
+      const file = await downloadEcoliDemoFastq(token);
+      const url = URL.createObjectURL(file.blob);
+      const link = document.createElement('a');
+      link.href = url; link.download = file.filename;
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'FASTQ demo E. coli tidak dapat diunduh.'); }
     finally { setDownloadingInput(false); }
   };
 
@@ -157,7 +171,13 @@ export function NewAnalysisPage() {
             onChange={event => selectFile(event.currentTarget.files?.[0] ?? null)}
             className="block w-full text-sm" />
           <p className="text-xs">.fastq / .fastq.gz · {options ? 'Maksimum ' + (options.upload_max_bytes / 1024 ** 2).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' MiB.' : 'Memuat batas unggah…'} Validasi isi dilakukan server saat dikirim.</p>
-          {options?.references.some(item => item.sumber === 'genopath:synthetic-fixture') && <div className="text-xs space-y-2">
+          {selectedEcoliDemo && <div className="text-xs space-y-2">
+            <p>Reference demo E. coli K-12 MG1655 · NC_000913.3. FASTQ tersedia untuk pengujian unggah.</p>
+            <button type="button" onClick={() => void downloadEcoliInput()} disabled={!token || downloadingInput} className="text-blue-700 dark:text-blue-300 underline py-2">
+              {downloadingInput ? 'Mengunduh FASTQ E. coli…' : 'Unduh FASTQ demo E. coli'}
+            </button>
+          </div>}
+          {selectedReference?.sumber === 'genopath:synthetic-fixture' && <div className="text-xs space-y-2">
             <p>Demo teknis: gunakan contoh sintetis 20 kbp dengan reference fixture, ploidi 2. Bukan data biologis Garlic.V2.</p>
             <button type="button" onClick={() => void getDemoInput()} disabled={downloadingInput} className="text-blue-700 dark:text-blue-300 underline py-2">
               {downloadingInput ? 'Mengunduh contoh…' : 'Unduh FASTQ contoh sintetis'}
@@ -172,7 +192,10 @@ export function NewAnalysisPage() {
           <div><label htmlFor="reference" className="block text-sm font-semibold mb-1">Genom reference</label>
             <select id="reference" required className={inputClass} value={reference} onChange={event => setReference(event.target.value)}>
               <option value="">Pilih reference yang tersedia</option>
-              {options?.references.map(item => <option key={item.id_reference_genome} value={item.id_reference_genome}>{displayReferenceName(item.nama_genom)}{item.versi ? ' · ' + item.versi : ''} (#{item.id_reference_genome})</option>)}
+              {options?.references.map(item => <option key={item.id_reference_genome} value={item.id_reference_genome}>
+                {displayReferenceName(item.nama_genom)}{item.versi ? ' · ' + item.versi : ''}
+                {item.is_demo === true ? ` · DEMO${item.accession === 'NC_000913.3' ? ' · NC_000913.3' : ''}` : ''} (#{item.id_reference_genome})
+              </option>)}
             </select>
             {selectedReference?.sumber && <p className="text-xs mt-1">Sumber: {selectedReference.sumber}</p>}
           </div>

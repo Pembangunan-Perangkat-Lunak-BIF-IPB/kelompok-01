@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, downloadJobResult, getJobVariants, submitAnalysis, validateFile } from '../src/services/api';
+import { ApiError, downloadJobResult, getJobVariants, getJobVariantsForPlot, MAX_VARIANT_PLOT_POINTS, submitAnalysis, validateFile } from '../src/services/api';
 import { clearDraft, loadDraft, makeParameters, matchesFile, saveDraft } from '../src/services/submissionDraft';
 import { pageCsv } from '../src/services/resultExport';
 import type { VariantItem } from '../src/services/api';
@@ -65,6 +65,45 @@ describe('submission contract and recovery', () => {
     await getJobVariants(3, { limit: 10, offset: 20, min_qual: 0, max_qual: 42, variant_type: 'unclassified' }, 'test-token');
     const query = new URL(fetcher.mock.calls[0][0], 'http://localhost').searchParams;
     expect(Object.fromEntries(query)).toEqual({ limit: '10', offset: '20', min_qual: '0', max_qual: '42', variant_type: 'unclassified' });
+  });
+  it('fetches all filtered plot pages in bounded batches using the API cursor contract', async () => {
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      const query = new URL(url, 'http://localhost').searchParams;
+      const offset = Number(query.get('offset'));
+      const limit = Number(query.get('limit'));
+      const returned = Math.min(limit, 601 - offset);
+      return Promise.resolve(new Response(JSON.stringify({
+        id_job: 8, id_analysis: 2, items: Array.from({ length: returned }, (_, index) => ({ position: offset + index + 1, qual: 50 })),
+        total: 601, limit, offset, returned, has_more: offset + returned < 601,
+        next_offset: offset + returned < 601 ? offset + returned : null,
+        filters: { variant_type: 'snp', min_qual: 20, max_qual: null },
+      })));
+    });
+    vi.stubGlobal('fetch', fetcher);
+    const result = await getJobVariantsForPlot(8, { variant_type: 'snp', min_qual: 20 }, 'test-token');
+    expect(result.items).toHaveLength(601);
+    expect(result).toMatchObject({ total: 601, truncated: false });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls.map(([url]) => new URL(url, 'http://localhost').searchParams.get('offset'))).toEqual(['0', '500']);
+    expect(new Headers(fetcher.mock.calls[0][1].headers).get('Authorization')).toBe('Bearer test-token');
+  });
+  it('caps plot pagination at 5000 points and discloses truncation metadata', async () => {
+    const fetcher = vi.fn().mockImplementation((url: string) => {
+      const query = new URL(url, 'http://localhost').searchParams;
+      const offset = Number(query.get('offset'));
+      const limit = Number(query.get('limit'));
+      return Promise.resolve(new Response(JSON.stringify({
+        id_job: 8, id_analysis: 2,
+        items: Array.from({ length: limit }, (_, index) => ({ position: offset + index + 1, qual: 50 })),
+        total: MAX_VARIANT_PLOT_POINTS + 1, limit, offset, returned: limit, has_more: true,
+        next_offset: offset + limit, filters: { variant_type: null, min_qual: null, max_qual: null },
+      })));
+    });
+    vi.stubGlobal('fetch', fetcher);
+    const result = await getJobVariantsForPlot(8, {}, 'test-token');
+    expect(result.items).toHaveLength(MAX_VARIANT_PLOT_POINTS);
+    expect(result).toMatchObject({ total: MAX_VARIANT_PLOT_POINTS + 1, truncated: true });
+    expect(fetcher).toHaveBeenCalledTimes(10);
   });
 });
 describe('file validation and immutable submission draft', () => {

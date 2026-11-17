@@ -14,6 +14,7 @@ export interface JobItem {
 }
 export interface ReferenceOption {
   id_reference_genome: number; nama_genom: string; versi: string | null; sumber: string | null;
+  accession?: string | null; is_demo?: boolean;
 }
 export interface JobOptions {
   pipeline_enabled: boolean; alignment_strategy: string | null; upload_max_bytes: number;
@@ -154,6 +155,51 @@ export function getJobVariants(id: string | number, params: VariantQueryParams, 
   return request<JobVariantsResponse>('/jobs/' + id + '/variants?' + query, token, { signal });
 }
 
+export const MAX_VARIANT_PLOT_POINTS = 5000;
+const VARIANT_PAGE_SIZE = 500;
+
+export async function getJobVariantsForPlot(
+  id: string | number,
+  filters: VariantQueryParams,
+  token: string,
+  signal?: AbortSignal,
+): Promise<{ items: VariantItem[]; total: number; truncated: boolean }> {
+  const items: VariantItem[] = [];
+  let offset = 0;
+  let total: number | null = null;
+  const maxPages = Math.ceil(MAX_VARIANT_PLOT_POINTS / VARIANT_PAGE_SIZE);
+
+  for (let pageNumber = 0; pageNumber < maxPages; pageNumber += 1) {
+    const page = await getJobVariants(id, { ...filters, limit: VARIANT_PAGE_SIZE, offset }, token, signal);
+    if (!Array.isArray(page.items) || !Number.isSafeInteger(page.total) || page.total < 0 ||
+        page.offset !== offset || page.returned !== page.items.length ||
+        page.items.length > VARIANT_PAGE_SIZE || typeof page.has_more !== 'boolean' ||
+        page.total < offset + page.returned || !page.filters ||
+        page.filters.variant_type !== (filters.variant_type ?? null) ||
+        page.filters.min_qual !== (filters.min_qual ?? null) ||
+        page.filters.max_qual !== (filters.max_qual ?? null)) {
+      throw new Error('Respons pagination varian tidak sesuai kontrak API.');
+    }
+    if (total === null) total = page.total;
+    else if (page.total !== total) throw new Error('Jumlah varian berubah saat grafik sedang dimuat. Muat ulang hasil.');
+
+    items.push(...page.items.slice(0, MAX_VARIANT_PLOT_POINTS - items.length));
+    if (!page.has_more) {
+      if (items.length !== total) throw new Error('Respons pagination varian berakhir sebelum seluruh hasil diterima.');
+      return { items, total, truncated: false };
+    }
+
+    const expectedOffset = offset + page.returned;
+    if (!Number.isSafeInteger(page.next_offset) || page.next_offset !== expectedOffset || page.returned === 0) {
+      throw new Error('Respons pagination varian tidak memiliki offset lanjutan yang valid.');
+    }
+    if (items.length >= MAX_VARIANT_PLOT_POINTS) return { items, total, truncated: total > items.length };
+    offset = page.next_offset;
+  }
+
+  return { items, total: total ?? 0, truncated: (total ?? 0) > items.length };
+}
+
 export async function downloadJobResult(id: string | number, format: 'vcf' | 'csv', token: string, filters: VariantQueryParams = {}): Promise<{ blob: Blob; filename: string }> {
   const query = new URLSearchParams();
   if (format === 'csv') {
@@ -168,6 +214,11 @@ export async function downloadJobResult(id: string | number, format: 'vcf' | 'cs
 
 export async function downloadDemoInput(token: string): Promise<Blob> {
   return (await authenticatedDownload('/api/demo/reads.fastq.gz', token)).blob;
+}
+
+export async function downloadEcoliDemoFastq(token: string): Promise<{ blob: Blob; filename: string }> {
+  const download = await authenticatedDownload('/api/samples/demo-fastq', token);
+  return { blob: download.blob, filename: download.filename ?? 'ecoli-k12-mg1655-demo.fastq.gz' };
 }
 
 async function authenticatedDownload(url: string, token: string): Promise<{ blob: Blob; filename: string | null }> {

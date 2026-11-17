@@ -121,10 +121,13 @@ export async function loginUser(payload: LoginPayload): Promise<TokenResponse> {
   }
   return result;
 }
-export function validateFile(file: File, maxBytes = 1_000_000_000): void {
+export const MAX_UPLOAD_BYTES = 90 * 1024 ** 2;
+
+export function validateFile(file: File, maxBytes = MAX_UPLOAD_BYTES): void {
   if (!/(?:\.fastq|\.fastq\.gz)$/.test(file.name)) throw new ApiError(422, 'Gunakan ekstensi .fastq atau .fastq.gz (huruf kecil).');
   if (file.size === 0) throw new ApiError(422, 'Berkas FASTQ kosong.');
-  if (file.size > maxBytes) throw new ApiError(413, 'Ukuran berkas melebihi batas unggahan.');
+  if (file.size > maxBytes) throw new ApiError(413,
+    `Ukuran berkas melebihi batas maksimum ${ (maxBytes / 1024 ** 2).toLocaleString('id-ID', { maximumFractionDigits: 2 }) } MiB.`);
 }
 export function uploadSample(file: File, token: string): Promise<SampleUploadResponse> {
   validateFile(file);

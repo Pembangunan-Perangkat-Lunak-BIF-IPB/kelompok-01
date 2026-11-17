@@ -11,7 +11,7 @@ vi.mock('../src/services/api', async importOriginal => ({
   ...await importOriginal<typeof import('../src/services/api')>(),
   getJobOptions: vi.fn(), submitAnalysis: vi.fn(),
 }));
-const options = { pipeline_enabled: true, alignment_strategy: 'bowtie2', upload_max_bytes: 1_000_000_000, variant_ploidies: [1, 2],
+const options = { pipeline_enabled: true, alignment_strategy: 'bowtie2', upload_max_bytes: 90 * 1024 ** 2, variant_ploidies: [1, 2],
   references: [{ id_reference_genome: 7, nama_genom: 'Reference uji kontrak', versi: 'test', sumber: 'fixture' }] };
 const file = new File(['@r\nACGT\n+\nIIII\n'], 'reads.fastq', { lastModified: 123 });
 const accepted = (id: string) => ({ request_id: id, submission_status: 'accepted' as const, sample: null,
@@ -182,7 +182,7 @@ it('freezes the trimmed custom name across Advanced and ambiguous retries', asyn
 it.each([
   [new File([], 'kosong.fastq'), 'Berkas FASTQ kosong.'],
   [new File(['text'], 'demo_file_tdk sesuai.txt'), 'Gunakan ekstensi .fastq atau .fastq.gz (huruf kecil).'],
-  [new File(['123456'], 'besar.fastq'), 'Ukuran berkas melebihi batas unggahan.'],
+  [new File(['123456'], 'besar.fastq'), 'Ukuran berkas melebihi batas maksimum 90 MiB.'],
 ])('clears previous ready metadata when a replacement is rejected locally: %s', async (invalid, message) => {
   mount(); await configure();
   expect(screen.getByText(/reads.fastq.*File siap dikirim/)).toBeTruthy();

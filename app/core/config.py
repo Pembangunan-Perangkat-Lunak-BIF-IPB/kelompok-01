@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     jwt_algorithm: Literal["HS256"] = "HS256"
     access_token_expire_minutes: int = Field(default=240, gt=0)
     upload_root: Path = Path("data/samples")
-    upload_max_bytes: int = Field(default=1_000_000_000, gt=0, le=1_000_000_000)
+    upload_max_bytes: int = Field(default=90 * 1024**2, gt=0, le=90 * 1024**2)
     upload_max_decompressed_bytes: int = Field(default=4 * 1024**3, gt=0)
     upload_chunk_bytes: int = Field(default=1024**2, gt=0)
     upload_max_line_bytes: int = Field(default=1024**2, gt=0)

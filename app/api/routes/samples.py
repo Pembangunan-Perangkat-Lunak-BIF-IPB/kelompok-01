@@ -62,7 +62,7 @@ def download_demo_fastq(
 
 
 @contextmanager
-def upload_errors():
+def upload_errors(settings: Settings):
     """The same sanitized multipart/storage policy for both upload endpoints."""
     try:
         yield
@@ -71,7 +71,11 @@ def upload_errors():
     except MultipartError:
         raise HTTPException(400, "Malformed or incomplete upload request.") from None
     except UploadLimitError:
-        raise HTTPException(413, "Upload resource limit exceeded.") from None
+        maximum_mib = settings.upload_max_bytes / 1024**2
+        raise HTTPException(
+            413,
+            f"Berkas FASTQ melebihi batas maksimum {maximum_mib:g} MiB atau batas validasi sumber daya.",
+        ) from None
     except (UploadFieldsError, InvalidFilenameError, InvalidFastqError, ValidationBudgetError):
         raise HTTPException(422, "Invalid upload or validation budget exceeded.") from None
     except (StorageError, OSError):
@@ -103,7 +107,7 @@ async def upload_sample(
     if not upload_slot.acquire(blocking=False):
         raise HTTPException(503, "Upload capacity unavailable.", headers={"Retry-After": "1"})
     try:
-        with upload_errors():
+        with upload_errors(settings):
             async with receive_upload(request, settings) as incoming:
                 return await persist_upload(
                     incoming.file, incoming.filename, settings, id_user, session_factory,
@@ -149,7 +153,7 @@ async def upload_and_run(
     held = []
     try:
         response.headers["Cache-Control"] = "private, no-store"
-        with upload_errors():
+        with upload_errors(settings):
             check_gate(settings, parameters.execution_mode)
 
             def acquire():

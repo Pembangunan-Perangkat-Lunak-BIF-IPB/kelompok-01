@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, downloadJobResult, getJobVariants, getJobVariantsForPlot, MAX_VARIANT_PLOT_POINTS, submitAnalysis, validateFile } from '../src/services/api';
+import { ApiError, downloadJobResult, getJobVariants, getJobVariantsForPlot, MAX_VARIANT_PLOT_POINTS, MAX_UPLOAD_BYTES, submitAnalysis, validateFile } from '../src/services/api';
 import { clearDraft, loadDraft, makeParameters, matchesFile, saveDraft } from '../src/services/submissionDraft';
 import { pageCsv } from '../src/services/resultExport';
 import type { VariantItem } from '../src/services/api';
@@ -127,6 +127,9 @@ describe('file validation and immutable submission draft', () => {
     expect(() => validateFile(new File(['x'], 'reads.FASTQ'))).toThrow();
     expect(() => validateFile(new File([], 'reads.fastq'))).toThrow();
     expect(() => validateFile(file, 1)).toThrow();
+    const oversized = new File(['x'], 'large.fastq');
+    Object.defineProperty(oversized, 'size', { value: MAX_UPLOAD_BYTES + 1 });
+    expect(() => validateFile(oversized)).toThrow(/90 MiB/);
   });
 });
 describe('owned result download contract', () => {

@@ -443,7 +443,7 @@ def test_storage_write_failure_cleans_owned_file(store, monkeypatch):
 
 
 @pytest.mark.parametrize("field,value", [
-    ("upload_max_bytes", 0), ("upload_max_bytes", 1_000_000_001),
+    ("upload_max_bytes", 0), ("upload_max_bytes", 90 * 1024**2 + 1),
     ("upload_max_decompressed_bytes", 0), ("upload_chunk_bytes", 0), ("upload_max_line_bytes", 0),
 ])
 def test_invalid_resource_settings_are_rejected(field, value):
@@ -454,13 +454,20 @@ def test_invalid_resource_settings_are_rejected(field, value):
 def test_defaults_and_environment_names(monkeypatch, tmp_path):
     defaults = Settings(_env_file=None)
     assert defaults.upload_root == Path("data/samples")
-    assert defaults.upload_max_bytes == 1_000_000_000
+    assert defaults.upload_max_bytes == 90 * 1024**2
     assert defaults.upload_max_decompressed_bytes == 4 * 1024**3
     monkeypatch.setenv("GENOPATH_UPLOAD_ROOT", str(tmp_path / "private"))
+    monkeypatch.setenv("GENOPATH_UPLOAD_MAX_BYTES", str(90 * 1024**2))
     monkeypatch.setenv("GENOPATH_UPLOAD_MAX_DECOMPRESSED_BYTES", "1024")
     settings = Settings(_env_file=None)
     assert settings.upload_root == tmp_path / "private"
+    assert settings.upload_max_bytes == 90 * 1024**2
     assert settings.upload_max_decompressed_bytes == 1024
+
+
+def test_upload_maximum_cannot_be_raised_above_90_mib():
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, upload_max_bytes=90 * 1024**2 + 1)
 
 
 @pytest.mark.parametrize("operation", ["fstat", "fdopen"])

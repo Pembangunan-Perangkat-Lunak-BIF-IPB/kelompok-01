@@ -4,8 +4,10 @@ import hmac
 import html
 import ipaddress
 import json
+import os
 from pathlib import Path
 import secrets
+import stat
 import time
 from urllib.parse import parse_qs
 
@@ -17,6 +19,39 @@ from app.core.security import verify_password
 COOKIE = "genopath_demo_access"
 CSRF_COOKIE = "genopath_demo_csrf"
 SESSION_SECONDS = 16 * 60 * 60
+MAX_GATE_CONFIG_BYTES = 8192
+
+
+def read_demo_gate_config(config_path: Path) -> dict:
+    """Read only a small, owner-private gate configuration; never follow symlinks."""
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(config_path, flags)
+    except OSError:
+        raise ValueError("Demo gate configuration unavailable.") from None
+    try:
+        metadata = os.fstat(descriptor)
+        if (not stat.S_ISREG(metadata.st_mode) or metadata.st_size > MAX_GATE_CONFIG_BYTES or
+                (os.name == "posix" and (metadata.st_uid != os.geteuid() or metadata.st_mode & 0o077))):
+            raise ValueError("Demo gate configuration unavailable.")
+        with os.fdopen(descriptor, "rb") as source:
+            descriptor = -1
+            raw = source.read(MAX_GATE_CONFIG_BYTES + 1)
+        if len(raw) > MAX_GATE_CONFIG_BYTES:
+            raise ValueError("Demo gate configuration unavailable.")
+        config = json.loads(raw)
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        raise ValueError("Demo gate configuration unavailable.") from None
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+    if (not isinstance(config, dict) or config.get("purpose") != "approved_demo" or
+            not isinstance(config.get("password_hash"), str) or
+            not config["password_hash"].startswith("$argon2id$") or
+            not isinstance(config.get("session_secret"), str) or len(config["session_secret"]) < 32 or
+            config.get("secure_cookie") is not True):
+        raise ValueError("Demo gate configuration unavailable.")
+    return config
 
 
 class DemoGate:
@@ -87,10 +122,7 @@ button{margin-top:16px;background:#1d4ed8;color:white;border:0;cursor:pointer}p{
     def reload_configuration(self):
         if self.config_path is None:
             return
-        config = json.loads(self.config_path.read_text())
-        if (not config["password_hash"].startswith("$argon2id$") or len(config["session_secret"]) < 32
-                or config.get("secure_cookie") is not True):
-            raise ValueError("Invalid private gate configuration.")
+        config = read_demo_gate_config(self.config_path)
         self.password_hash, self.key = config["password_hash"], config["session_secret"].encode()
 
     async def __call__(self, scope, receive, send):
@@ -112,7 +144,6 @@ button{margin-top:16px;background:#1d4ed8;color:white;border:0;cursor:pointer}p{
                 headers.extend([
                     (b"x-frame-options", b"DENY"), (b"referrer-policy", b"same-origin"),
                     (b"content-security-policy", b"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"),
-                    (b"x-demo-gate-revision", hashlib.sha256(self.key).hexdigest()[:16].encode()),
                 ])
                 message = {**message, "headers": headers}
             await send(message)

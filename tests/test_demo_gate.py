@@ -109,7 +109,9 @@ def test_private_password_rotation_invalidates_old_sessions_and_fails_closed(gat
     original = dict(middleware.kwargs)
     config_path = tmp_path / "gate.json"
     config = {key: original[key] for key in ("password_hash", "session_secret", "secure_cookie")}
+    config["purpose"] = "approved_demo"
     config_path.write_text(json.dumps(config))
+    config_path.chmod(0o600)
     middleware.kwargs["config_path"] = config_path
     with TestClient(app, base_url="https://demo.test") as client:
         assert unlock(client).status_code == 303
@@ -121,6 +123,7 @@ def test_private_password_rotation_invalidates_old_sessions_and_fails_closed(gat
         assert unlock(client, "rotated-test-password-only").status_code == 303
         assert client.get("/api/jobs").status_code == 200
         config_path.write_text("{}")
+        config_path.chmod(0o600)
         assert client.get("/api/jobs").status_code == 503
 
 

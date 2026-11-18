@@ -1,6 +1,5 @@
 data/reference/
 data/samples/
-data/jobs/
 .venv/
 __pycache__/
 *.py[cod]
@@ -13,11 +12,3 @@ htmlcov/
 build/
 dist/
 docs/
-.vscode/
-.tools/
-.test-artifacts/
-.runtime/
-# M11 local visual evidence and engine output
-.impeccable/review/
-.impeccable/mocks/
-.impeccable/build/

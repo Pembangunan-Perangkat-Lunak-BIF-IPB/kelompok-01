@@ -1,12 +1,19 @@
 /* One authored conceptual pipeline sequence, scoped entirely to the landing hero. */
-.gp-pipeline-hook { margin: 28px 0 0; padding: 18px 18px 8px; border: 1px solid #527380; border-radius: 16px; background: #183d4c; color: #eef3e8; max-width: 780px; }
+.gp-pipeline-hook { margin: 28px auto 0; padding: 18px 18px 8px; border: 1px solid #527380; border-radius: 16px; background: rgba(24, 61, 76, 0.88); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #eef3e8; width: 100%; max-width: 680px; }
+.gp-pipeline-hook--compact { padding: 14px 18px 16px; border-radius: 14px; }
+.gp-pipeline-hook--compact .gp-pipeline-diagram,
+.gp-pipeline-hook--compact .gp-hook-stages { width: 100%; max-width: 460px; margin-inline: auto; }
+.gp-pipeline-hook--compact .gp-pipeline-diagram { max-height: none; }
+.gp-pipeline-hook--compact .gp-hook-stages { margin-top: -14px; margin-bottom: 0; }
+.gp-pipeline-hook--compact .gp-hook-stages strong { font-size: 13px; }
+.gp-pipeline-hook--compact .gp-hook-stages span { font-size: 11px; margin-top: 2px; }
 .gp-pipeline-diagram { display: block; width: 100%; height: auto; overflow: visible; }
 .gp-hook-track, .gp-hook-stem { fill: none; stroke: #668893; stroke-width: 2; }
 .gp-hook-draw { fill: none; stroke: #d9e8b8; stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 0; animation: gp-hook-line 850ms cubic-bezier(.16,1,.3,1) both; }
 .gp-hook-node { transform-box: fill-box; transform-origin: center; animation: gp-hook-arrive 650ms cubic-bezier(.16,1,.3,1) var(--gp-node-delay) both; }
 .gp-hook-node > rect { fill: #edf3e5; stroke: #d9e8b8; stroke-width: 1; }
 .gp-hook-node > svg { color: #234e42; }
-.gp-flow-sample { transform: translate(56px,84px); animation: gp-sample-first 4.8s 750ms both; }
+.gp-flow-sample { transform: translate(66.5px,84px); animation: gp-sample-first 4.8s 750ms both; }
 .gp-flow-sample > rect { fill: #d9e8b8; stroke: #183d4c; stroke-width: 2; }
 .gp-flow-sample > path { fill: none; stroke: #234e42; stroke-width: 1.5; stroke-linecap: round; }
 .gp-hook-result-mark { opacity: 1; animation: gp-result-first 4.8s 750ms both; }
@@ -14,8 +21,8 @@
 .gp-hook-result-mark > path { fill: none; stroke: #234e42; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .gp-pipeline-hook.is-idle .gp-flow-sample { animation: gp-sample-loop 14s infinite; }
 .gp-pipeline-hook.is-idle .gp-hook-result-mark { animation: gp-result-loop 14s infinite; }
-.gp-hook-stages { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; list-style: none; margin: -2px -5px 8px; padding: 0; text-align: center; }
-.gp-hook-stages li { min-width: 0; }
+.gp-hook-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; list-style: none; margin: -2px 0 8px; padding: 0; text-align: center; }
+.gp-hook-stages li { min-width: 0; text-align: center; }
 .gp-hook-stages strong { display: block; font-size: 14px; font-weight: 600; color: #eef3e8; }
 .gp-hook-stages span { display: block; margin-top: 4px; font-size: 11px; color: #c2d4d8; overflow-wrap: anywhere; }
 .gp-hook-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #527380; margin-top: 14px; padding-top: 2px; }
@@ -32,31 +39,31 @@
 @keyframes gp-hook-line { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes gp-hook-arrive { from { opacity: .45; transform: translateY(8px) scale(.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes gp-sample-first {
-  0%, 8% { transform: translate(56px,84px); opacity: 1; }
-  26%, 34% { transform: translate(196px,84px); opacity: 1; }
-  54%, 62% { transform: translate(336px,84px); opacity: 1; }
-  82%, 94% { transform: translate(476px,84px); opacity: 1; }
-  100% { transform: translate(476px,84px); opacity: 0; }
+  0%, 8% { transform: translate(66.5px,84px); opacity: 1; }
+  26%, 34% { transform: translate(199.5px,84px); opacity: 1; }
+  54%, 62% { transform: translate(332.5px,84px); opacity: 1; }
+  82%, 94% { transform: translate(465.5px,84px); opacity: 1; }
+  100% { transform: translate(465.5px,84px); opacity: 0; }
 }
 @keyframes gp-sample-loop {
-  0%, 8% { transform: translate(56px,84px); opacity: .85; }
-  26%, 34% { transform: translate(196px,84px); opacity: .85; }
-  54%, 62% { transform: translate(336px,84px); opacity: .85; }
-  82%, 94% { transform: translate(476px,84px); opacity: .85; }
-  100% { transform: translate(476px,84px); opacity: 0; }
+  0%, 8% { transform: translate(66.5px,84px); opacity: .85; }
+  26%, 34% { transform: translate(199.5px,84px); opacity: .85; }
+  54%, 62% { transform: translate(332.5px,84px); opacity: .85; }
+  82%, 94% { transform: translate(465.5px,84px); opacity: .85; }
+  100% { transform: translate(465.5px,84px); opacity: 0; }
 }
 @keyframes gp-result-first { 0%, 73% { opacity: .2; } 82%, 100% { opacity: 1; } }
 @keyframes gp-result-loop { 0%, 73% { opacity: .2; } 82%, 97% { opacity: 1; } 100% { opacity: .2; } }
 @media (max-width: 640px) {
- .gp-pipeline-hook { padding: 14px 10px 5px; margin-top: 24px; }
- .gp-hook-stages { gap: 4px; margin-inline: -4px; }
- .gp-hook-stages strong { font-size: 11px; }
- .gp-hook-stages span { font-size: 10px; }
- .gp-hook-controls { margin-top: 12px; }
+  .gp-pipeline-hook { padding: 14px 10px 5px; margin-top: 24px; }
+  .gp-hook-stages { gap: 4px; margin-inline: -4px; }
+  .gp-hook-stages strong { font-size: 11px; }
+  .gp-hook-stages span { font-size: 10px; }
+  .gp-hook-controls { margin-top: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
- .gp-pipeline-hook *, .gp-pipeline-hook { animation: none !important; }
- .gp-flow-sample { display: none; }
- .gp-hook-result-mark { opacity: 1; }
- .gp-hero-start:hover > svg { transform: none; }
+  .gp-pipeline-hook *, .gp-pipeline-hook { animation: none !important; }
+  .gp-flow-sample { display: none; }
+  .gp-hook-result-mark { opacity: 1; }
+  .gp-hero-start:hover > svg { transform: none; }
 }

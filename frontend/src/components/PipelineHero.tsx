@@ -8,10 +8,10 @@ const stages = [
   { title: 'Pipeline', detail: 'Nextflow', icon: Workflow },
   { title: 'Hasil varian', detail: 'VCF / CSV', icon: FileCheck2 },
 ];
-const centers = [56, 196, 336, 476];
+const centers = [66.5, 199.5, 332.5, 465.5];
 
 /** Conceptual product diagram. Never reads, creates or simulates a real Job. */
-export function PipelineHero() {
+export function PipelineHero({ showControls = false }: { showControls?: boolean } = {}) {
   const ref = useRef<HTMLElement>(null);
   const sampleRef = useRef<SVGGElement>(null);
   const caption = useId();
@@ -49,11 +49,11 @@ export function PipelineHero() {
   }, []);
   const paused = userPaused || !inView || !pageVisible;
   return <figure ref={ref} aria-label="Dari FASTQ ke hasil varian" aria-describedby={caption}
-    className={'gp-pipeline-hook' + (idle ? ' is-idle' : '') + (paused ? ' is-paused' : '') + (reduced ? ' is-reduced' : '')}
+    className={'gp-pipeline-hook' + (idle ? ' is-idle' : '') + (paused ? ' is-paused' : '') + (reduced ? ' is-reduced' : '') + (!showControls ? ' gp-pipeline-hook--compact' : '')}
     data-motion={reduced ? 'static' : paused ? 'paused' : idle ? 'idle' : 'entrance'}>
     <svg className="gp-pipeline-diagram" viewBox="0 0 532 116" aria-hidden="true" focusable="false">
-      <path className="gp-hook-track" d="M56 84H476" />
-      <path className="gp-hook-draw" d="M56 84H476" pathLength="1" />
+      <path className="gp-hook-track" d="M66.5 84H465.5" />
+      <path className="gp-hook-draw" d="M66.5 84H465.5" pathLength="1" />
       {stages.map(({ title, icon: Icon }, index) => <g key={title} className={'gp-hook-node gp-hook-node-' + index} style={{ '--gp-node-delay': index * 90 + 'ms' } as CSSProperties}>
         <path className="gp-hook-stem" d={'M' + centers[index] + ' 68V84'} />
         <rect x={centers[index] - 25} y="16" width="50" height="52" rx="12" />
@@ -63,14 +63,18 @@ export function PipelineHero() {
         <rect x="-9" y="-12" width="18" height="24" rx="4" />
         <path d="M-4 -5H4M-4 0H4M-4 5H1" />
       </g>
-      <g className="gp-hook-result-mark"><circle cx="504" cy="22" r="12" /><path d="M498 22L502 26L510 17" pathLength="1" /></g>
+      <g className="gp-hook-result-mark"><circle cx="493.5" cy="22" r="12" /><path d="M487.5 22L491.5 26L499.5 17" pathLength="1" /></g>
     </svg>
     <ol className="gp-hook-stages" aria-label="Tahap pipeline GenoPath">{stages.map(stage => <li key={stage.title}><strong>{stage.title}</strong><span>{stage.detail}</span></li>)}</ol>
-    <div className="gp-hook-controls"><figcaption id={caption}>Ilustrasi alur analisis</figcaption>
-      <button type="button" className="gp-hook-toggle" disabled={reduced} aria-pressed={userPaused}
-        aria-label={reduced ? 'Animasi alur nonaktif sesuai preferensi perangkat' : userPaused ? 'Putar animasi alur' : 'Jeda animasi alur'} onClick={() => setUserPaused(value => !value)}>
-        {userPaused || reduced ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{reduced ? 'Gerak dikurangi' : userPaused ? 'Putar' : 'Jeda'}
-      </button>
-    </div>
+    {showControls ? (
+      <div className="gp-hook-controls"><figcaption id={caption}>Ilustrasi alur analisis</figcaption>
+        <button type="button" className="gp-hook-toggle" disabled={reduced} aria-pressed={userPaused}
+          aria-label={reduced ? 'Animasi alur nonaktif sesuai preferensi perangkat' : userPaused ? 'Putar animasi alur' : 'Jeda animasi alur'} onClick={() => setUserPaused(value => !value)}>
+          {userPaused || reduced ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}{reduced ? 'Gerak dikurangi' : userPaused ? 'Putar' : 'Jeda'}
+        </button>
+      </div>
+    ) : (
+      <figcaption id={caption} className="sr-only">Ilustrasi alur analisis</figcaption>
+    )}
   </figure>;
 }

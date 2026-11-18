@@ -19,7 +19,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [theme]);
 
   const toggleTheme = () => {
+    const root = document.documentElement;
+    root.classList.add('gp-theme-transition');
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    window.setTimeout(() => {
+      root.classList.remove('gp-theme-transition');
+    }, 450);
   };
 
   return (

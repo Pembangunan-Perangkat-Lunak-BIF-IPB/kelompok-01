@@ -21,3 +21,6 @@ docs/
 .impeccable/review/
 .impeccable/mocks/
 .impeccable/build/
+
+.venv*
+venv/

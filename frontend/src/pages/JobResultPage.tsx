@@ -5,143 +5,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, FileSpreadsheet, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/auth';
-import { downloadJobResult, getJobResult, getJobVariants, getJobVariantsForPlot, type JobResultSummary, type JobVariantsResponse, type VariantItem, type VariantQueryParams, type VariantType } from '../services/api';
-
-const variantTypes = [
-  { key: 'snps', label: 'SNP', color: 'bg-blue-600' },
-  { key: 'indels', label: 'InDel', color: 'bg-emerald-600' },
-  { key: 'other', label: 'Other', color: 'bg-amber-500' },
-  { key: 'unclassified', label: 'Tidak terklasifikasi', color: 'bg-violet-600' },
-] as const;
-
-function variantCount(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
-}
-
-function hasVariantCounts(value: unknown): value is JobResultSummary['counts'] {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
-  const counts = value as Record<string, unknown>;
-  return ['total_variants', 'snps', 'indels', 'other', 'unclassified'].every(key =>
-    Object.prototype.hasOwnProperty.call(counts, key) &&
-    (counts[key] === null || (typeof counts[key] === 'number' && Number.isFinite(counts[key]))));
-}
-
-function VariantDistribution({ counts }: { counts: JobResultSummary['counts'] }) {
-  const values = variantTypes.map(type => ({ ...type, count: variantCount(counts[type.key]) }));
-  const classifiedTotal = values.reduce((sum, item) => sum + item.count, 0);
-  const description = values.map(item => `${item.label} ${item.count.toLocaleString('id-ID')}`).join(', ');
-
-  return <figure className="gp-section space-y-3" aria-labelledby="variant-distribution-title">
-    <figcaption id="variant-distribution-title" className="font-semibold">Distribusi tipe varian</figcaption>
-    {classifiedTotal > 0 ? <>
-      <div role="img" aria-label={`Distribusi tipe varian: ${description}`} className="flex h-5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-        {values.map(item => item.count > 0 && <span key={item.key} className={item.color}
-          style={{ width: `${(item.count / classifiedTotal) * 100}%` }} />)}
-      </div>
-      <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-        {values.map(item => <li key={item.key} className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2"><span aria-hidden="true" className={`h-3 w-3 rounded-sm ${item.color}`} />{item.label}</span>
-          <span className="tabular-nums">{item.count.toLocaleString('id-ID')} <span className="text-xs text-slate-600 dark:text-slate-300">
-            {((item.count / classifiedTotal) * 100).toFixed(1)}%
-          </span></span>
-        </li>)}
-      </ul>
-    </> : <p role="status" className="text-sm text-slate-600 dark:text-slate-300">Belum ada varian untuk ditampilkan.</p>}
-  </figure>;
-}
-
-type PlotPoint = { position: number; qual: number };
-type VariantPlotData = { items: VariantItem[]; total: number; truncated: boolean };
-
-function GenomeQualScatter({ loading, error, data }: {
-  loading: boolean; error: string; data: VariantPlotData | null;
-}) {
-  if (loading) return <section className="gp-section" aria-labelledby="genome-qual-title">
-    <h2 id="genome-qual-title" className="font-semibold">Posisi genom vs QUAL</h2>
-    <p role="status" className="mt-3 text-sm text-slate-600 dark:text-slate-300">Memuat seluruh varian untuk grafik…</p>
-  </section>;
-  if (error) return <section className="gp-section" aria-labelledby="genome-qual-title">
-    <h2 id="genome-qual-title" className="font-semibold">Posisi genom vs QUAL</h2>
-    <p role="alert" className="mt-3 text-sm text-rose-800 dark:text-rose-300">Grafik tidak dapat dimuat: {error}</p>
-  </section>;
-  if (!data) return null;
-
-  const points: PlotPoint[] = [];
-  for (const rawItem of data.items as unknown[]) {
-    if (typeof rawItem !== 'object' || rawItem === null || Array.isArray(rawItem)) continue;
-    const item = rawItem as Record<string, unknown>;
-    const position: unknown = item.position;
-    const qual: unknown = item.qual;
-    if (Number.isSafeInteger(position) && Number(position) > 0 &&
-        typeof qual === 'number' && Number.isFinite(qual) && qual >= 0) {
-      points.push({ position: Number(position), qual });
-    }
-  }
-  const excluded = data.items.length - points.length;
-  return <section className="gp-section min-w-0 space-y-3" aria-labelledby="genome-qual-title">
-    <div>
-      <h2 id="genome-qual-title" className="font-semibold">Posisi genom vs QUAL</h2>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        {points.length.toLocaleString('id-ID')} titik valid dari {data.total.toLocaleString('id-ID')} varian yang mengikuti filter tabel aktif.
-      </p>
-    </div>
-    {data.truncated && <p role="status" className="text-sm text-amber-800 dark:text-amber-300">
-      Grafik dibatasi pada {data.items.length.toLocaleString('id-ID')} dari {data.total.toLocaleString('id-ID')} varian agar tetap responsif.
-    </p>}
-    {excluded > 0 && <p role="status" className="text-sm text-amber-800 dark:text-amber-300">
-      {excluded.toLocaleString('id-ID')} record dilewati karena posisi atau QUAL tidak valid.
-    </p>}
-    {points.length === 0 ? <p role="status" className="text-sm text-slate-600 dark:text-slate-300">
-      {data.total === 0 ? 'Tidak ada varian yang cocok dengan filter aktif.' : 'Tidak ada titik dengan posisi dan QUAL valid untuk ditampilkan.'}
-    </p> : <GenomeQualPlot points={points} />}
-  </section>;
-}
-
-function GenomeQualPlot({ points }: { points: PlotPoint[] }) {
-  const width = 800;
-  const height = 360;
-  const left = 86;
-  const right = 24;
-  const top = 18;
-  const bottom = 62;
-  const plotWidth = width - left - right;
-  const plotHeight = height - top - bottom;
-  const minPosition = Math.min(...points.map(point => point.position));
-  const maxPosition = Math.max(...points.map(point => point.position));
-  const minQual = Math.min(...points.map(point => point.qual));
-  const maxQual = Math.max(...points.map(point => point.qual));
-  const x = (position: number) => left + (maxPosition === minPosition ? 0.5 : (position - minPosition) / (maxPosition - minPosition)) * plotWidth;
-  const y = (qual: number) => top + plotHeight - (maxQual === minQual ? 0.5 : (qual - minQual) / (maxQual - minQual)) * plotHeight;
-  const ticks = [0, 1, 2, 3, 4];
-  const formatTick = (value: number) => value.toLocaleString('id-ID', { maximumFractionDigits: 2 });
-
-  return <figure className="m-0 min-w-0" aria-labelledby="genome-qual-title">
-    <svg className="block h-auto w-full" viewBox={`0 0 ${width} ${height}`} role="img"
-      aria-label={`Scatter plot posisi genom dan QUAL, ${points.length.toLocaleString('id-ID')} varian`}>
-      {ticks.map(tick => {
-        const ratio = tick / 4;
-        const yValue = top + plotHeight * ratio;
-        const qualValue = maxQual === minQual ? maxQual : maxQual - (maxQual - minQual) * ratio;
-        const positionValue = minPosition === maxPosition ? minPosition : minPosition + (maxPosition - minPosition) * ratio;
-        const xValue = left + plotWidth * ratio;
-        return <g key={tick}>
-          <line x1={left} x2={width - right} y1={yValue} y2={yValue} stroke="var(--gp-border)" strokeDasharray="3 5" />
-          <text x={left - 12} y={yValue + 4} textAnchor="end" fill="var(--gp-muted)" fontSize="12">{formatTick(qualValue)}</text>
-          <text x={xValue} y={height - bottom + 20} textAnchor="middle" fill="var(--gp-muted)" fontSize="12">{formatTick(Math.round(positionValue))}</text>
-        </g>;
-      })}
-      <line x1={left} x2={left} y1={top} y2={height - bottom} stroke="var(--gp-control-border)" />
-      <line x1={left} x2={width - right} y1={height - bottom} y2={height - bottom} stroke="var(--gp-control-border)" />
-      {points.map((point, index) => <circle key={`${point.position}-${index}`} cx={x(point.position)} cy={y(point.qual)} r="4"
-        fill="var(--gp-brand)" stroke="var(--gp-surface)" strokeWidth="1.5">
-        <title>{`Posisi genom: ${formatTick(point.position)} bp · QUAL: ${formatTick(point.qual)}`}</title>
-      </circle>)}
-      <text x={left + plotWidth / 2} y={height - 12} textAnchor="middle" fill="var(--gp-text)" fontSize="13">Posisi varian pada genom (bp)</text>
-      <text transform={`translate(20 ${top + plotHeight / 2}) rotate(-90)`} textAnchor="middle" fill="var(--gp-text)" fontSize="13">QUAL</text>
-    </svg>
-    <figcaption className="sr-only">Setiap titik adalah satu varian dengan posisi dan nilai QUAL dari API.</figcaption>
-  </figure>;
-}
+import { downloadJobResult, getJobResult, getJobVariants, type JobResultSummary, type JobVariantsResponse, type VariantQueryParams, type VariantType } from '../services/api';
 
 export function JobResultPage() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -157,11 +21,9 @@ export function JobResultPage() {
   const [downloading, setDownloading] = useState<'vcf' | 'csv' | null>(null);
   const [summaryState, setSummary] = useState<{ key: string; data: JobResultSummary | null; error: string }>({ key: '', data: null, error: '' });
   const [tableState, setTable] = useState<{ key: string; data: JobVariantsResponse | null; error: string }>({ key: '', data: null, error: '' });
-  const [plotState, setPlot] = useState<{ key: string; data: VariantPlotData | null; error: string }>({ key: '', data: null, error: '' });
   const limit = 10;
   const summaryKey = jobId + ':' + reload;
   const tableKey = summaryKey + ':' + offset + ':' + JSON.stringify(filters);
-  const plotKey = summaryKey + ':' + JSON.stringify(filters);
   const valid = Boolean(jobId && /^[1-9]\d*$/.test(jobId) && Number(jobId) <= 2 ** 31 - 1);
   useEffect(() => {
     if (!valid || !jobId || !token) return;
@@ -183,23 +45,10 @@ export function JobResultPage() {
     });
     return () => controller.abort();
   }, [jobId, token, valid, filters, offset, tableKey]);
-  useEffect(() => {
-    if (!valid || !jobId || !token) return;
-    const controller = new AbortController();
-    getJobVariantsForPlot(jobId, filters, token, controller.signal).then(data => {
-      if (!controller.signal.aborted) setPlot({ key: plotKey, data, error: '' });
-    }).catch(error => {
-      if (!controller.signal.aborted) setPlot({ key: plotKey, data: null, error: error instanceof Error ? error.message : 'Data varian tidak dapat dimuat.' });
-    });
-    return () => controller.abort();
-  }, [jobId, token, valid, filters, plotKey]);
   const loadingSummary = summaryState.key !== summaryKey;
   const loadingTable = tableState.key !== tableKey;
-  const loadingPlot = plotState.key !== plotKey;
   const summary = loadingSummary ? null : summaryState.data;
   const table = loadingTable ? null : tableState.data;
-  const plot = loadingPlot ? null : plotState.data;
-  const plotError = loadingPlot ? '' : plotState.error;
   const applyFilters = (event: FormEvent) => {
     event.preventDefault();
     const min = minQual.trim() ? Number(minQual) : undefined;
@@ -251,17 +100,11 @@ export function JobResultPage() {
 
       </div>}
     </header>
-    {summary && (hasVariantCounts(summary.counts) ? <section className="space-y-2"><div className="gp-result-stats">
-      {[
-        ['Total record varian', variantCount(summary.counts.total_variants)],
-        ['SNP', variantCount(summary.counts.snps)],
-        ['InDel', variantCount(summary.counts.indels)],
-        ['Other', variantCount(summary.counts.other)],
-        ['Tidak terklasifikasi', variantCount(summary.counts.unclassified)],
-      ].map(([label, value]) => <div key={label}><h2 className="text-sm">{label}</h2><p className="mt-2">{Number(value).toLocaleString('id-ID')}</p></div>)}
-    </div><p className="text-xs">Ringkasan seluruh hasil analisis.<ContextHelp label="Ringkasan varian">Filter tabel tidak mengubah ringkasan. Record multiallelic, dengan beberapa ALT, dihitung sebagai satu record. GT mempertahankan indeks alel dan pemisah asli VCF.</ContextHelp></p>
-    <VariantDistribution counts={summary.counts} /></section> : <p role="alert" className="text-rose-800 dark:text-rose-300">Ringkasan jumlah varian dari server tidak valid; statistik dan distribusi tidak dapat ditampilkan.</p>)}
-    <GenomeQualScatter loading={loadingPlot} error={plotError} data={plot} />
+    {summary && <section className="space-y-2"><div className="gp-result-stats">
+      {[['Total record varian', summary.counts.total_variants], ['SNP', summary.counts.snps], ['InDel', summary.counts.indels],
+        ['Other', summary.counts.other], ['Tidak terklasifikasi', summary.counts.unclassified]].map(([label, value]) =>
+        <div key={label} className=""><h2 className="text-sm">{label}</h2><p className="mt-2">{Number(value).toLocaleString('id-ID')}</p></div>)}
+    </div><p className="text-xs">Ringkasan seluruh hasil analisis.<ContextHelp label="Ringkasan varian">Filter tabel tidak mengubah ringkasan. Record multiallelic, dengan beberapa ALT, dihitung sebagai satu record. GT mempertahankan indeks alel dan pemisah asli VCF.</ContextHelp></p></section>}
     <section className="gp-section gp-download-panel space-y-3" aria-label="Unduhan hasil">
       <div className="flex flex-wrap gap-3">
         <button type="button" disabled={!summary || Boolean(downloading)} onClick={() => void download('vcf')} className="gp-button gp-button--primary">{downloading === 'vcf' ? 'Mengunduh VCF…' : 'Unduh VCF hasil analisis'}</button>

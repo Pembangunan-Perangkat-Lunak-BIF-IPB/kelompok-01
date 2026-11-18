@@ -14,7 +14,8 @@ it('explains four real product stages without claiming a live job or biological 
  expect(screen.getByText('Ilustrasi alur analisis')).toBeTruthy();expect(screen.queryByRole('progressbar')).toBeNull();
 });
 it('lets keyboard users pause and resume the illustration without submitting anything',async()=>{
- render(<PipelineHero/>);const pause=screen.getByRole('button',{name:'Jeda animasi alur'});await userEvent.tab();expect(document.activeElement).toBe(pause);
+ render(<PipelineHero showControls />);const pause=screen.getByRole('button',{name:'Jeda animasi alur'});await userEvent.tab();expect(document.activeElement).toBe(pause);
+ expect(screen.getByText('Ilustrasi alur analisis')).toBeTruthy();
  await userEvent.keyboard('{Enter}');expect(screen.getByRole('button',{name:'Putar animasi alur'}).getAttribute('aria-pressed')).toBe('true');
  await userEvent.keyboard('{Enter}');expect(screen.getByRole('button',{name:'Jeda animasi alur'}).getAttribute('aria-pressed')).toBe('false');
 });
@@ -25,7 +26,7 @@ it('changes to a slow idle loop only after the sample completes its first traver
 });
 it('provides a static diagram and disabled motion control for reduced-motion',()=>{
  vi.stubGlobal('matchMedia',vi.fn(()=>({matches:true,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
- const {container}=render(<PipelineHero/>);expect(container.querySelector('figure')?.getAttribute('data-motion')).toBe('static');
+ const {container}=render(<PipelineHero showControls />);expect(container.querySelector('figure')?.getAttribute('data-motion')).toBe('static');
  expect((screen.getByRole('button',{name:'Animasi alur nonaktif sesuai preferensi perangkat'}) as HTMLButtonElement).disabled).toBe(true);
 });
 it('pauses a nonessential loop when the hero leaves the viewport',()=>{

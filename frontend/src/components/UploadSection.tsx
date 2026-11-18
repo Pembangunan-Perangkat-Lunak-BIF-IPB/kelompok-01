@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/auth';
-import { uploadSample, ApiError, MAX_UPLOAD_BYTES, type SampleUploadResponse } from '../services/api';
+import { uploadSample, ApiError, type SampleUploadResponse } from '../services/api';
 
 export const UploadSection: React.FC = () => {
   const { token, isAuthenticated } = useAuth();
@@ -58,7 +58,7 @@ export const UploadSection: React.FC = () => {
         <Upload className="w-4 h-4 text-blue-600" /> Unggah Sampel FASTQ
       </h3>
       <p className="text-xs text-slate-500 mb-4">
-        Dukungan berkas Single-End (.fastq, .fastq.gz) maksimal {(MAX_UPLOAD_BYTES / 1024 ** 2).toLocaleString('id-ID')} MiB per file.
+        Dukungan berkas Single-End (.fastq, .fastq.gz) hingga 1 GB.
       </p>
 
       <form onSubmit={handleUploadSubmit} className="space-y-4">
@@ -84,7 +84,7 @@ export const UploadSection: React.FC = () => {
 
         {selectedFile && (
           <div className="text-xs text-slate-600 flex justify-between bg-slate-100 p-2.5 rounded-lg font-mono">
-            <span>Ukuran: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MiB</span>
+            <span>Ukuran: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
             <span className="text-emerald-600 font-bold">SIAP DIUNGGAH</span>
           </div>
         )}

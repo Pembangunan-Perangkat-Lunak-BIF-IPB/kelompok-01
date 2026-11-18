@@ -1,11 +1,10 @@
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
-from app.main import create_app
 
 
-def test_health_returns_ok() -> None:
-    application = create_app(Settings(_env_file=None, debug=False))
+def test_health_returns_ok(app_factory) -> None:
+    application = app_factory(Settings(_env_file=None, debug=False))
 
     with TestClient(application) as client:
         response = client.get("/health")
@@ -15,8 +14,8 @@ def test_health_returns_ok() -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_health_is_documented_in_openapi() -> None:
-    application = create_app(Settings(_env_file=None, debug=False))
+def test_health_is_documented_in_openapi(app_factory) -> None:
+    application = app_factory(Settings(_env_file=None, debug=False))
 
     with TestClient(application) as client:
         response = client.get("/openapi.json")
@@ -28,9 +27,9 @@ def test_health_is_documented_in_openapi() -> None:
     }
 
 
-def test_app_instances_have_independent_settings() -> None:
-    first = create_app(Settings(_env_file=None, app_name="First API", debug=False))
-    second = create_app(Settings(_env_file=None, app_name="Second API", debug=False))
+def test_app_instances_have_independent_settings(app_factory) -> None:
+    first = app_factory(Settings(_env_file=None, app_name="First API", debug=False))
+    second = app_factory(Settings(_env_file=None, app_name="Second API", debug=False))
 
     assert first is not second
     assert first.title == "First API"
